@@ -41,24 +41,24 @@ const FLOW_AREA_COLORS: Record<string, string> = {
 };
 
 const AREA_ANCHORS: Record<string, { x: number; y: number }> = {
-  北海道: { x: 860, y: 110 },
-  東北: { x: 780, y: 195 },
-  東京: { x: 815, y: 295 },
-  中部: { x: 715, y: 350 },
-  北陸: { x: 695, y: 265 },
-  関西: { x: 625, y: 410 },
-  中国: { x: 510, y: 435 },
-  四国: { x: 560, y: 505 },
-  九州: { x: 430, y: 545 },
-  沖縄: { x: 245, y: 625 },
-  default: { x: 660, y: 360 },
+  北海道: { x: 760, y: 82 },
+  東北: { x: 695, y: 155 },
+  東京: { x: 724, y: 236 },
+  中部: { x: 620, y: 292 },
+  北陸: { x: 598, y: 220 },
+  関西: { x: 540, y: 342 },
+  中国: { x: 436, y: 366 },
+  四国: { x: 482, y: 426 },
+  九州: { x: 360, y: 462 },
+  沖縄: { x: 230, y: 520 },
+  default: { x: 610, y: 300 },
 };
 
 const MAP_CORRIDOR_ORDER = ["沖縄", "九州", "中国", "関西", "中部", "東京", "東北", "北海道"];
 const MAP_VIEWBOX = {
-  width: 1080,
-  height: 700,
-  padding: 36,
+  width: 920,
+  height: 560,
+  padding: 30,
 };
 
 export function DashboardApp({ data }: DashboardAppProps) {
@@ -308,49 +308,57 @@ export function DashboardApp({ data }: DashboardAppProps) {
   }, [data.meta.slotLabels.flow, filteredLines]);
 
   const flowNetworkOption = useMemo(() => {
-    const ranked = [...filteredLines]
-      .filter((line) => parseDirection(line.positiveDirection) !== null)
-      .sort((a, b) => Math.abs(b.avgMw) - Math.abs(a.avgMw));
-    const targetEdgeCount = selectedArea === "全エリア" ? 120 : 180;
-    const targetLines = ranked.slice(0, targetEdgeCount);
-
-    const nodeArea = new Map<string, string>();
-    const nodeDegree = new Map<string, number>();
-    const linkRows: Array<{
+    type NetworkLink = {
+      kind: "intra" | "intertie" | "anchor";
       source: string;
       target: string;
       value: number;
       absAvgMw: number;
-      area: string;
-      lineName: string;
-      voltageKv: string;
-      positiveDirection: string;
-      peakAbsMw: number;
-    }> = [];
+      area?: string;
+      lineName?: string;
+      intertieName?: string;
+      voltageKv?: string;
+      positiveDirection?: string;
+      peakAbsMw?: number;
+      sourceArea?: string;
+      targetArea?: string;
+    };
 
-    targetLines.forEach((line) => {
+    const scopedInterties = (data.flows.intertieSeries ?? []).filter((row) =>
+      selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
+    );
+
+    const visibleAreas = new Set<string>();
+    const stationsByArea = new Map<string, Set<string>>();
+    const nodeDegree = new Map<string, number>();
+    const links: NetworkLink[] = [];
+
+    filteredLines.forEach((line) => {
       const direction = parseDirection(line.positiveDirection);
       if (!direction) {
         return;
       }
-      const source = line.avgMw >= 0 ? direction.source : direction.target;
-      const target = line.avgMw >= 0 ? direction.target : direction.source;
-      const absAvgMw = Math.abs(line.avgMw);
+      visibleAreas.add(line.area);
 
-      if (!nodeArea.has(source)) {
-        nodeArea.set(source, line.area);
-      }
-      if (!nodeArea.has(target)) {
-        nodeArea.set(target, line.area);
-      }
+      const sourceName = line.avgMw >= 0 ? direction.source : direction.target;
+      const targetName = line.avgMw >= 0 ? direction.target : direction.source;
+      const source = buildStationNodeId(line.area, sourceName);
+      const target = buildStationNodeId(line.area, targetName);
+
+      const stationSet = stationsByArea.get(line.area) ?? new Set<string>();
+      stationSet.add(sourceName);
+      stationSet.add(targetName);
+      stationsByArea.set(line.area, stationSet);
+
       nodeDegree.set(source, (nodeDegree.get(source) ?? 0) + 1);
       nodeDegree.set(target, (nodeDegree.get(target) ?? 0) + 1);
 
-      linkRows.push({
+      links.push({
+        kind: "intra",
         source,
         target,
         value: line.avgMw,
-        absAvgMw,
+        absAvgMw: Math.abs(line.avgMw),
         area: line.area,
         lineName: line.lineName,
         voltageKv: line.voltageKv,
@@ -359,51 +367,162 @@ export function DashboardApp({ data }: DashboardAppProps) {
       });
     });
 
-    const maxAbsFlow = Math.max(...linkRows.map((line) => line.absAvgMw), 0);
-    const areaCategories = Array.from(new Set(Array.from(nodeArea.values()))).sort(compareAreaOrder);
-    const categoryIndex = new Map(areaCategories.map((area, index) => [area, index]));
+    scopedInterties.forEach((line) => {
+      visibleAreas.add(line.sourceArea);
+      visibleAreas.add(line.targetArea);
 
-    const nodes = Array.from(nodeArea.entries()).map(([name, area]) => {
-      const degree = nodeDegree.get(name) ?? 0;
+      const sourceAreaId = buildAreaNodeId(line.sourceArea);
+      const targetAreaId = buildAreaNodeId(line.targetArea);
+      const source = line.avgMw >= 0 ? sourceAreaId : targetAreaId;
+      const target = line.avgMw >= 0 ? targetAreaId : sourceAreaId;
+
+      nodeDegree.set(sourceAreaId, (nodeDegree.get(sourceAreaId) ?? 0) + 1);
+      nodeDegree.set(targetAreaId, (nodeDegree.get(targetAreaId) ?? 0) + 1);
+
+      links.push({
+        kind: "intertie",
+        source,
+        target,
+        value: line.avgMw,
+        absAvgMw: line.avgAbsMw,
+        intertieName: line.intertieName,
+        peakAbsMw: line.peakAbsMw,
+        sourceArea: line.sourceArea,
+        targetArea: line.targetArea,
+      });
+    });
+
+    if (selectedArea === "全エリア" && visibleAreas.size === 0) {
+      data.flows.areaSummaries.forEach((row) => visibleAreas.add(row.area));
+    }
+    if (selectedArea !== "全エリア") {
+      visibleAreas.add(selectedArea);
+    }
+
+    const areaCategories = Array.from(visibleAreas).sort(compareAreaOrder);
+    const categoryIndex = new Map(areaCategories.map((area, index) => [area, index]));
+    const stationPositions = buildStationLayout(stationsByArea);
+
+    const nodes: Array<Record<string, unknown>> = [];
+    areaCategories.forEach((area) => {
+      const areaNodeId = buildAreaNodeId(area);
       const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
-      const offset = getNodeOffset(`${area}-${name}`, 22 + Math.min(16, degree * 1.6));
-      return {
-        id: name,
-        name,
+      const degree = nodeDegree.get(areaNodeId) ?? 0;
+      nodes.push({
+        id: areaNodeId,
+        name: area,
         area,
         category: categoryIndex.get(area) ?? 0,
         value: degree,
-        x: clamp(anchor.x + offset.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
-        y: clamp(anchor.y + offset.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
-        symbolSize: 11 + Math.min(16, degree * 1.9),
+        isAreaHub: true,
+        x: anchor.x,
+        y: anchor.y,
+        fixed: true,
+        symbolSize: 18 + Math.min(12, degree * 1.2),
         itemStyle: {
           color: FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default,
           borderColor: "#ffffff",
-          borderWidth: 1,
+          borderWidth: 2,
+          shadowBlur: 8,
+          shadowColor: "rgba(30, 41, 59, 0.18)",
         },
-      };
+      });
     });
 
-    const links = linkRows.map((line) => {
-      const ratio = maxAbsFlow > 0 ? line.absAvgMw / maxAbsFlow : 0;
-      const sourceArea = nodeArea.get(line.source) ?? line.area;
-      const targetArea = nodeArea.get(line.target) ?? line.area;
-      const crossArea = line.source !== line.target && sourceArea !== targetArea;
+    stationsByArea.forEach((stationSet, area) => {
+      const areaNodeId = buildAreaNodeId(area);
+      Array.from(stationSet)
+        .sort((a, b) => a.localeCompare(b, "ja-JP"))
+        .forEach((station) => {
+          const stationNodeId = buildStationNodeId(area, station);
+          const degree = nodeDegree.get(stationNodeId) ?? 0;
+          const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
+          const position = stationPositions.get(stationNodeId) ?? anchor;
+          nodes.push({
+            id: stationNodeId,
+            name: station,
+            area,
+            category: categoryIndex.get(area) ?? 0,
+            value: degree,
+            isAreaHub: false,
+            x: position.x,
+            y: position.y,
+            symbolSize: 6.5 + Math.min(9, degree * 1.4),
+            itemStyle: {
+              color: FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default,
+              borderColor: "#ffffff",
+              borderWidth: 1,
+            },
+          });
+
+          links.push({
+            kind: "anchor",
+            source: areaNodeId,
+            target: stationNodeId,
+            value: 0,
+            absAvgMw: 0,
+            area,
+          });
+        });
+    });
+
+    const maxAbsIntra = Math.max(
+      ...links.filter((line) => line.kind === "intra").map((line) => line.absAvgMw),
+      1,
+    );
+    const maxAbsIntertie = Math.max(
+      ...links.filter((line) => line.kind === "intertie").map((line) => line.absAvgMw),
+      1,
+    );
+
+    const renderedLinks = links.map((line) => {
+      if (line.kind === "anchor") {
+        return {
+          ...line,
+          lineStyle: {
+            width: 0.8,
+            opacity: 0.2,
+            curveness: 0,
+            color: "rgba(148, 163, 184, 0.5)",
+            type: "dashed",
+          },
+          emphasis: { disabled: true },
+          tooltip: { show: false },
+          silent: true,
+        };
+      }
+
+      if (line.kind === "intertie") {
+        const ratio = line.absAvgMw / maxAbsIntertie;
+        return {
+          ...line,
+          lineStyle: {
+            width: 2.8 + ratio * 4.8,
+            opacity: 0.86,
+            curveness: 0.12,
+            color: line.value >= 0 ? "#ef4444" : "#1d4ed8",
+          },
+          z: 4,
+        };
+      }
+
+      const ratio = line.absAvgMw / maxAbsIntra;
       return {
         ...line,
         lineStyle: {
-          width: 1.2 + ratio * 5.4,
-          curveness: crossArea ? 0.2 : 0.08,
-          opacity: 0.72,
-          color: line.value >= 0 ? "#ef8354" : "#1d3557",
+          width: 0.7 + ratio * 2.8,
+          opacity: 0.58,
+          curveness: 0.06,
+          color: line.value >= 0 ? "rgba(249,115,22,0.9)" : "rgba(30,64,175,0.9)",
         },
+        z: 2,
       };
     });
 
     const guideGraphics = buildJapanGuideGraphics(areaCategories);
 
     return {
-      animationDurationUpdate: 420,
+      animationDurationUpdate: 360,
       tooltip: {
         trigger: "item",
         confine: true,
@@ -411,20 +530,39 @@ export function DashboardApp({ data }: DashboardAppProps) {
           dataType: "node" | "edge";
           name: string;
           data: {
+            kind?: "intra" | "intertie" | "anchor";
             value: number;
             area?: string;
             lineName?: string;
+            intertieName?: string;
             voltageKv?: string;
             positiveDirection?: string;
             peakAbsMw?: number;
+            sourceArea?: string;
+            targetArea?: string;
+            isAreaHub?: boolean;
           };
         }) => {
           if (params.dataType === "edge") {
-            return `${params.data.area} | ${params.data.lineName}<br/>定義方向: ${
-              params.data.positiveDirection
-            }<br/>平均潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
-              params.data.peakAbsMw ?? 0,
-            )} MW<br/>電圧: ${params.data.voltageKv}`;
+            if (params.data.kind === "intertie") {
+              return `${params.data.intertieName}<br/>区分: 連系線<br/>接続: ${params.data.sourceArea} ⇄ ${
+                params.data.targetArea
+              }<br/>平均潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
+                params.data.peakAbsMw ?? 0,
+              )} MW`;
+            }
+            if (params.data.kind === "intra") {
+              return `${params.data.area} | ${params.data.lineName}<br/>区分: 地域内送電線<br/>定義方向: ${
+                params.data.positiveDirection
+              }<br/>平均潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
+                params.data.peakAbsMw ?? 0,
+              )} MW<br/>電圧: ${params.data.voltageKv}`;
+            }
+            return "";
+          }
+
+          if (params.data.isAreaHub) {
+            return `${params.data.area ?? params.name}<br/>接続本数: ${numberFmt.format(params.data.value)} 本`;
           }
           return `${params.data.area ?? "不明"} | ${params.name}<br/>接続本数: ${numberFmt.format(
             params.data.value,
@@ -451,24 +589,30 @@ export function DashboardApp({ data }: DashboardAppProps) {
           right: 0,
           bottom: 0,
           data: nodes,
-          links,
+          links: renderedLinks,
           categories: areaCategories.map((name) => ({
             name,
             itemStyle: { color: FLOW_AREA_COLORS[name] ?? FLOW_AREA_COLORS.default },
           })),
-          edgeSymbol: ["none", "arrow"],
-          edgeSymbolSize: [3, 9],
+          edgeSymbol: ["none", "none"],
           lineStyle: {
             opacity: 0.72,
           },
           label: {
-            show: selectedArea !== "全エリア",
-            formatter: (params: { data: { value: number }; name: string }) =>
-              params.data.value >= 3 ? params.name : "",
+            show: true,
+            formatter: (params: { data: { isAreaHub?: boolean; value?: number }; name: string }) => {
+              if (params.data.isAreaHub) {
+                return params.name;
+              }
+              if (selectedArea !== "全エリア" && (params.data.value ?? 0) >= 4) {
+                return params.name;
+              }
+              return "";
+            },
             position: "right",
             color: "#1f2937",
             fontSize: 10,
-            backgroundColor: "rgba(255,255,255,0.65)",
+            backgroundColor: "rgba(255,255,255,0.72)",
             borderRadius: 4,
             padding: [1, 3],
           },
@@ -478,13 +622,13 @@ export function DashboardApp({ data }: DashboardAppProps) {
               show: true,
             },
             lineStyle: {
-              opacity: 0.94,
+              opacity: 0.95,
             },
           },
         },
       ],
     };
-  }, [filteredLines, selectedArea]);
+  }, [data.flows.areaSummaries, data.flows.intertieSeries, filteredLines, selectedArea]);
 
   const interAreaFlowOption = useMemo(() => {
     const baseRows = data.flows.interAreaFlows ?? [];
@@ -773,7 +917,7 @@ export function DashboardApp({ data }: DashboardAppProps) {
         </section>
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Panel title="エリアネットワーク潮流（日本地図近似）" className="lg:col-span-2">
+          <Panel title="エリアネットワーク潮流（連系線＋地域内送電線）" className="lg:col-span-2">
             <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
           </Panel>
           <Panel title="エリア間連系潮流（実績）">
@@ -850,17 +994,55 @@ function parseDirection(
   target: string;
 } | null {
   const normalized = rawDirection.replace(/\s+/g, " ").trim();
-  const delimiter = normalized.includes("→") ? "→" : normalized.includes("->") ? "->" : null;
-  if (!delimiter) {
-    return null;
-  }
-
-  const parts = normalized.split(delimiter).map((part) => part.trim());
+  const parts = normalized.split(/\s*(?:→|⇒|⇢|->|＞)\s*/).map((part) => part.trim());
   if (parts.length < 2 || !parts[0] || !parts[1]) {
     return null;
   }
-
   return { source: parts[0], target: parts[1] };
+}
+
+function buildAreaNodeId(area: string): string {
+  return `area::${area.trim()}`;
+}
+
+function buildStationNodeId(area: string, station: string): string {
+  return `station::${area.trim()}::${station.trim()}`;
+}
+
+function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<string, { x: number; y: number }> {
+  const positions = new Map<string, { x: number; y: number }>();
+
+  stationsByArea.forEach((stations, area) => {
+    const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
+    const sorted = Array.from(stations).sort((a, b) => a.localeCompare(b, "ja-JP"));
+    const ringCapacity = 18;
+    const phase = ((hashSeed(area) % 360) * Math.PI) / 180;
+
+    sorted.forEach((station, index) => {
+      const ring = Math.floor(index / ringCapacity);
+      const idxInRing = index % ringCapacity;
+      const ringCount = Math.min(ringCapacity, sorted.length - ring * ringCapacity);
+      const jitter = ((hashSeed(`${area}-${station}`) % 9) - 4) * 0.8;
+      const angle = phase + (Math.PI * 2 * idxInRing) / Math.max(ringCount, 1);
+      const radiusX = 34 + ring * 18;
+      const radiusY = 22 + ring * 14;
+
+      positions.set(buildStationNodeId(area, station), {
+        x: clamp(
+          anchor.x + Math.cos(angle) * (radiusX + jitter),
+          MAP_VIEWBOX.padding,
+          MAP_VIEWBOX.width - MAP_VIEWBOX.padding,
+        ),
+        y: clamp(
+          anchor.y + Math.sin(angle) * (radiusY + jitter * 0.7),
+          MAP_VIEWBOX.padding,
+          MAP_VIEWBOX.height - MAP_VIEWBOX.padding,
+        ),
+      });
+    });
+  });
+
+  return positions;
 }
 
 function compareAreaOrder(a: string, b: string): number {
@@ -964,8 +1146,8 @@ function buildJapanGuideGraphics(areas: string[]): Array<Record<string, unknown>
     z: 2,
     style: {
       x: 16,
-      y: 42,
-      text: "日本地図の位置関係を近似した配置（厳密座標ではありません）",
+      y: 30,
+      text: "連系線(エリア間)と地域内送電線を同一グラフで表示",
       fill: "#475569",
       font: "12px sans-serif",
     },
@@ -973,16 +1155,6 @@ function buildJapanGuideGraphics(areas: string[]): Array<Record<string, unknown>
   });
 
   return graphics;
-}
-
-function getNodeOffset(seedText: string, maxRadius: number): { dx: number; dy: number } {
-  const hash = hashSeed(seedText);
-  const angle = ((hash % 360) * Math.PI) / 180;
-  const radius = 8 + ((hash >> 8) % Math.max(12, Math.floor(maxRadius)));
-  return {
-    dx: Math.cos(angle) * radius,
-    dy: Math.sin(angle) * radius * 0.74,
-  };
 }
 
 function hashSeed(input: string): number {

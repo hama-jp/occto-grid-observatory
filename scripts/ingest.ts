@@ -831,7 +831,7 @@ function buildDashboardData(args: {
       areaSummaries,
       hourlyAbsByArea,
       hourlyAbsStats,
-      lineSeries: lineSeries.sort((a, b) => b.peakAbsMw - a.peakAbsMw).slice(0, 200),
+      lineSeries: lineSeries.sort((a, b) => b.peakAbsMw - a.peakAbsMw),
       intertieSeries,
       interAreaFlows,
     },
