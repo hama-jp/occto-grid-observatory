@@ -61,6 +61,275 @@ const MAP_VIEWBOX = {
   padding: 30,
 };
 
+type GeoHint = {
+  keyword: string;
+  lat: number;
+  lon: number;
+};
+
+const JAPAN_GEO_BOUNDS = {
+  latMin: 24.0,
+  latMax: 45.8,
+  lonMin: 122.8,
+  lonMax: 146.2,
+};
+
+const STATION_GEO_HINTS_BY_AREA: Record<string, GeoHint[]> = {
+  北海道: [
+    { keyword: "札幌", lat: 43.0618, lon: 141.3545 },
+    { keyword: "旭川", lat: 43.7706, lon: 142.365 },
+    { keyword: "函館", lat: 41.7687, lon: 140.7288 },
+    { keyword: "室蘭", lat: 42.3152, lon: 140.9736 },
+    { keyword: "苫小牧", lat: 42.6342, lon: 141.603 },
+    { keyword: "釧路", lat: 42.9849, lon: 144.381 },
+    { keyword: "滝川", lat: 43.5578, lon: 141.906 },
+    { keyword: "名寄", lat: 44.3552, lon: 142.457 },
+    { keyword: "小樽", lat: 43.1907, lon: 140.994 },
+    { keyword: "江別", lat: 43.103, lon: 141.536 },
+    { keyword: "当別", lat: 43.216, lon: 141.517 },
+    { keyword: "芽室", lat: 42.9102, lon: 143.0512 },
+    { keyword: "音更", lat: 42.9913, lon: 143.2 },
+    { keyword: "七飯", lat: 41.886, lon: 140.6886 },
+    { keyword: "新得", lat: 43.0772, lon: 142.8382 },
+    { keyword: "追分", lat: 42.879, lon: 141.816 },
+    { keyword: "双葉", lat: 42.64, lon: 141.7 },
+  ],
+  東北: [
+    { keyword: "青森", lat: 40.8222, lon: 140.7474 },
+    { keyword: "秋田", lat: 39.7186, lon: 140.1024 },
+    { keyword: "岩手", lat: 39.7036, lon: 141.1527 },
+    { keyword: "宮城", lat: 38.2688, lon: 140.8721 },
+    { keyword: "仙台", lat: 38.2688, lon: 140.8721 },
+    { keyword: "福島", lat: 37.7608, lon: 140.4747 },
+    { keyword: "いわき", lat: 37.0505, lon: 140.8877 },
+    { keyword: "石巻", lat: 38.4343, lon: 141.3021 },
+    { keyword: "名取", lat: 38.1742, lon: 140.8912 },
+    { keyword: "須賀川", lat: 37.2861, lon: 140.3726 },
+    { keyword: "山形", lat: 38.2554, lon: 140.3396 },
+    { keyword: "米沢", lat: 37.9222, lon: 140.1165 },
+    { keyword: "新庄", lat: 38.759, lon: 140.3008 },
+    { keyword: "新潟", lat: 37.9162, lon: 139.0364 },
+    { keyword: "上越", lat: 37.1486, lon: 138.2364 },
+    { keyword: "中越", lat: 37.4465, lon: 138.8514 },
+    { keyword: "信濃川", lat: 37.4465, lon: 138.8514 },
+    { keyword: "能代", lat: 40.2039, lon: 140.0276 },
+    { keyword: "羽後", lat: 39.2286, lon: 140.4128 },
+    { keyword: "越後", lat: 37.9162, lon: 139.0364 },
+    { keyword: "水沢", lat: 39.1393, lon: 141.1393 },
+    { keyword: "上北", lat: 40.6122, lon: 141.2056 },
+    { keyword: "雫石", lat: 39.6968, lon: 140.9756 },
+  ],
+  東京: [
+    { keyword: "東京", lat: 35.6764, lon: 139.65 },
+    { keyword: "上野", lat: 35.7138, lon: 139.777 },
+    { keyword: "新宿", lat: 35.6938, lon: 139.7036 },
+    { keyword: "豊島", lat: 35.731, lon: 139.716 },
+    { keyword: "永代橋", lat: 35.6748, lon: 139.7905 },
+    { keyword: "江東", lat: 35.6738, lon: 139.8171 },
+    { keyword: "高輪", lat: 35.638, lon: 139.7365 },
+    { keyword: "京浜", lat: 35.53, lon: 139.703 },
+    { keyword: "川崎", lat: 35.5308, lon: 139.703 },
+    { keyword: "世田谷", lat: 35.6464, lon: 139.6532 },
+    { keyword: "練馬", lat: 35.7356, lon: 139.6517 },
+    { keyword: "港北", lat: 35.518, lon: 139.6346 },
+    { keyword: "荏田", lat: 35.5452, lon: 139.5533 },
+    { keyword: "多摩", lat: 35.6369, lon: 139.4468 },
+    { keyword: "西東京", lat: 35.7257, lon: 139.5387 },
+    { keyword: "房総", lat: 35.34, lon: 140.2 },
+    { keyword: "木更津", lat: 35.3812, lon: 139.9168 },
+    { keyword: "千葉", lat: 35.6074, lon: 140.1065 },
+    { keyword: "印西", lat: 35.8329, lon: 140.1458 },
+    { keyword: "葛南", lat: 35.6946, lon: 139.9824 },
+    { keyword: "野田", lat: 35.9546, lon: 139.8741 },
+    { keyword: "古河", lat: 36.1786, lon: 139.7557 },
+    { keyword: "筑波", lat: 36.0824, lon: 140.1118 },
+    { keyword: "鹿島", lat: 35.9659, lon: 140.6448 },
+    { keyword: "那珂", lat: 36.4575, lon: 140.4866 },
+    { keyword: "栃木", lat: 36.381, lon: 139.73 },
+    { keyword: "今市", lat: 36.72, lon: 139.68 },
+    { keyword: "群馬", lat: 36.39, lon: 139.06 },
+    { keyword: "榛名", lat: 36.47, lon: 138.96 },
+    { keyword: "坂戸", lat: 35.9576, lon: 139.3974 },
+    { keyword: "狭山", lat: 35.8569, lon: 139.4122 },
+    { keyword: "所沢", lat: 35.7997, lon: 139.4686 },
+    { keyword: "熊谷", lat: 36.1473, lon: 139.3886 },
+    { keyword: "上尾", lat: 35.9719, lon: 139.593 },
+    { keyword: "与野", lat: 35.8846, lon: 139.6334 },
+    { keyword: "富士", lat: 35.1613, lon: 138.6763 },
+    { keyword: "秩父", lat: 35.9917, lon: 139.0858 },
+    { keyword: "飯能", lat: 35.856, lon: 139.327 },
+    { keyword: "秦野", lat: 35.3722, lon: 139.2239 },
+    { keyword: "岡部", lat: 36.1324, lon: 139.281 },
+    { keyword: "横須賀", lat: 35.281, lon: 139.672 },
+    { keyword: "信濃", lat: 36.4, lon: 138.19 },
+    { keyword: "福島", lat: 37.7608, lon: 140.4747 },
+    { keyword: "いわき", lat: 37.0505, lon: 140.8877 },
+  ],
+  中部: [
+    { keyword: "名古屋", lat: 35.1815, lon: 136.9066 },
+    { keyword: "三重", lat: 34.7303, lon: 136.5086 },
+    { keyword: "伊勢", lat: 34.4876, lon: 136.7091 },
+    { keyword: "鈴鹿", lat: 34.8823, lon: 136.5847 },
+    { keyword: "岐阜", lat: 35.4233, lon: 136.7606 },
+    { keyword: "犬山", lat: 35.3786, lon: 136.9444 },
+    { keyword: "瀬戸", lat: 35.2238, lon: 137.0842 },
+    { keyword: "豊田", lat: 35.0822, lon: 137.1563 },
+    { keyword: "碧南", lat: 34.8846, lon: 136.9932 },
+    { keyword: "幸田", lat: 34.8649, lon: 137.1657 },
+    { keyword: "三河", lat: 34.96, lon: 137.15 },
+    { keyword: "東海", lat: 35.02, lon: 136.89 },
+    { keyword: "知多", lat: 34.9987, lon: 136.8619 },
+    { keyword: "川越", lat: 35.0135, lon: 136.6723 },
+    { keyword: "静岡", lat: 34.9756, lon: 138.3828 },
+    { keyword: "清水", lat: 35.0157, lon: 138.4896 },
+    { keyword: "浜岡", lat: 34.6235, lon: 138.1305 },
+    { keyword: "駿河", lat: 35.0, lon: 138.4 },
+    { keyword: "遠江", lat: 34.75, lon: 137.72 },
+    { keyword: "信濃", lat: 36.4, lon: 138.19 },
+    { keyword: "南信", lat: 35.65, lon: 137.85 },
+    { keyword: "中信", lat: 36.23, lon: 137.97 },
+    { keyword: "北信", lat: 36.65, lon: 138.18 },
+    { keyword: "東信", lat: 36.4, lon: 138.25 },
+    { keyword: "西濃", lat: 35.37, lon: 136.61 },
+    { keyword: "中濃", lat: 35.53, lon: 136.96 },
+    { keyword: "飛騨", lat: 36.24, lon: 137.19 },
+    { keyword: "尾鷲", lat: 34.07, lon: 136.19 },
+    { keyword: "高根", lat: 35.95, lon: 137.53 },
+    { keyword: "佐久", lat: 36.24, lon: 138.48 },
+    { keyword: "佐久間", lat: 34.96, lon: 137.81 },
+    { keyword: "福光", lat: 36.56, lon: 136.88 },
+  ],
+  北陸: [
+    { keyword: "富山", lat: 36.6953, lon: 137.2113 },
+    { keyword: "福井", lat: 36.0641, lon: 136.2196 },
+    { keyword: "敦賀", lat: 35.6452, lon: 136.0552 },
+    { keyword: "加賀", lat: 36.3022, lon: 136.3148 },
+    { keyword: "金津", lat: 36.2304, lon: 136.2298 },
+    { keyword: "越前", lat: 35.9038, lon: 136.1681 },
+    { keyword: "能登", lat: 37.2825, lon: 137.1482 },
+    { keyword: "福光", lat: 36.56, lon: 136.88 },
+    { keyword: "城端", lat: 36.5698, lon: 136.8894 },
+    { keyword: "中能登", lat: 36.989, lon: 136.9136 },
+    { keyword: "南条", lat: 35.8412, lon: 136.1923 },
+  ],
+  関西: [
+    { keyword: "大阪", lat: 34.6937, lon: 135.5023 },
+    { keyword: "淀川", lat: 34.74, lon: 135.5 },
+    { keyword: "枚方", lat: 34.8135, lon: 135.6492 },
+    { keyword: "京都", lat: 35.0116, lon: 135.7681 },
+    { keyword: "京北", lat: 35.2, lon: 135.62 },
+    { keyword: "神戸", lat: 34.6901, lon: 135.1956 },
+    { keyword: "姫路", lat: 34.8151, lon: 134.6853 },
+    { keyword: "加古川", lat: 34.7569, lon: 134.8417 },
+    { keyword: "播磨", lat: 34.78, lon: 134.65 },
+    { keyword: "山崎", lat: 35.0057, lon: 134.5469 },
+    { keyword: "宝塚", lat: 34.8089, lon: 135.3461 },
+    { keyword: "伊丹", lat: 34.7844, lon: 135.4009 },
+    { keyword: "北摂", lat: 34.89, lon: 135.5 },
+    { keyword: "能勢", lat: 34.9722, lon: 135.4249 },
+    { keyword: "生駒", lat: 34.6937, lon: 135.7007 },
+    { keyword: "信貴", lat: 34.62, lon: 135.67 },
+    { keyword: "金剛", lat: 34.46, lon: 135.59 },
+    { keyword: "紀北", lat: 34.23, lon: 135.23 },
+    { keyword: "紀の川", lat: 34.23, lon: 135.37 },
+    { keyword: "泉南", lat: 34.3654, lon: 135.2882 },
+    { keyword: "東大阪", lat: 34.6796, lon: 135.6008 },
+    { keyword: "西大阪", lat: 34.67, lon: 135.45 },
+    { keyword: "栗東", lat: 35.0227, lon: 135.9898 },
+    { keyword: "湖東", lat: 35.15, lon: 136.1 },
+    { keyword: "湖南", lat: 34.98, lon: 136.03 },
+    { keyword: "甲賀", lat: 34.9669, lon: 136.1676 },
+    { keyword: "東近江", lat: 35.1125, lon: 136.2078 },
+    { keyword: "嶺南", lat: 35.56, lon: 135.95 },
+    { keyword: "葛城", lat: 34.49, lon: 135.74 },
+    { keyword: "和泉", lat: 34.5, lon: 135.43 },
+    { keyword: "大河内", lat: 34.95, lon: 134.75 },
+  ],
+  中国: [
+    { keyword: "岡山", lat: 34.6551, lon: 133.9195 },
+    { keyword: "倉敷", lat: 34.5858, lon: 133.7722 },
+    { keyword: "井原", lat: 34.5975, lon: 133.4631 },
+    { keyword: "笠岡", lat: 34.5038, lon: 133.5075 },
+    { keyword: "尾道", lat: 34.4089, lon: 133.2049 },
+    { keyword: "広島", lat: 34.3853, lon: 132.4553 },
+    { keyword: "黒瀬", lat: 34.4027, lon: 132.7175 },
+    { keyword: "山口", lat: 34.1785, lon: 131.4737 },
+    { keyword: "徳山", lat: 34.0558, lon: 131.8061 },
+    { keyword: "岩国", lat: 34.167, lon: 132.2249 },
+    { keyword: "松江", lat: 35.4681, lon: 133.0484 },
+    { keyword: "島根", lat: 35.4681, lon: 133.0484 },
+    { keyword: "鳥取", lat: 35.5011, lon: 134.2351 },
+    { keyword: "智頭", lat: 35.26, lon: 134.2264 },
+    { keyword: "日野", lat: 35.16, lon: 133.44 },
+    { keyword: "東山口", lat: 34.12, lon: 131.67 },
+    { keyword: "作木", lat: 34.799, lon: 132.947 },
+  ],
+  四国: [
+    { keyword: "高松", lat: 34.3428, lon: 134.0466 },
+    { keyword: "讃岐", lat: 34.32, lon: 134.17 },
+    { keyword: "香川", lat: 34.34, lon: 134.05 },
+    { keyword: "阿波", lat: 34.066, lon: 134.556 },
+    { keyword: "鳴門", lat: 34.1739, lon: 134.6085 },
+    { keyword: "国府", lat: 34.0733, lon: 134.5207 },
+    { keyword: "松山", lat: 33.8392, lon: 132.7657 },
+    { keyword: "東予", lat: 33.92, lon: 133.18 },
+    { keyword: "西条", lat: 33.92, lon: 133.18 },
+    { keyword: "川内", lat: 33.79, lon: 132.95 },
+    { keyword: "井川", lat: 33.96, lon: 133.8 },
+    { keyword: "三島", lat: 33.98, lon: 133.55 },
+    { keyword: "大洲", lat: 33.50, lon: 132.54 },
+    { keyword: "高知", lat: 33.5597, lon: 133.5311 },
+    { keyword: "本川", lat: 33.78, lon: 133.22 },
+    { keyword: "阿南", lat: 33.9214, lon: 134.6597 },
+    { keyword: "広見", lat: 33.23, lon: 132.58 },
+  ],
+  九州: [
+    { keyword: "福岡", lat: 33.5902, lon: 130.4017 },
+    { keyword: "北九州", lat: 33.8834, lon: 130.8751 },
+    { keyword: "門司", lat: 33.94, lon: 130.96 },
+    { keyword: "筑豊", lat: 33.65, lon: 130.73 },
+    { keyword: "古賀", lat: 33.7296, lon: 130.4706 },
+    { keyword: "鳥栖", lat: 33.3778, lon: 130.5066 },
+    { keyword: "佐賀", lat: 33.2635, lon: 130.3009 },
+    { keyword: "唐津", lat: 33.4425, lon: 129.968 },
+    { keyword: "武雄", lat: 33.1937, lon: 130.0212 },
+    { keyword: "長崎", lat: 32.7503, lon: 129.8777 },
+    { keyword: "諫早", lat: 32.8442, lon: 130.0488 },
+    { keyword: "佐世保", lat: 33.1799, lon: 129.7154 },
+    { keyword: "熊本", lat: 32.8031, lon: 130.7079 },
+    { keyword: "八代", lat: 32.5092, lon: 130.6018 },
+    { keyword: "人吉", lat: 32.219, lon: 130.7543 },
+    { keyword: "大分", lat: 33.2396, lon: 131.6093 },
+    { keyword: "日田", lat: 33.3213, lon: 130.9409 },
+    { keyword: "豊前", lat: 33.6117, lon: 131.1304 },
+    { keyword: "宮崎", lat: 31.9111, lon: 131.4239 },
+    { keyword: "都城", lat: 31.7196, lon: 131.0616 },
+    { keyword: "鹿児島", lat: 31.5966, lon: 130.5571 },
+    { keyword: "霧島", lat: 31.7411, lon: 130.7639 },
+    { keyword: "久留米", lat: 33.3193, lon: 130.508 },
+    { keyword: "苅田", lat: 33.7769, lon: 130.9804 },
+    { keyword: "伊都", lat: 33.58, lon: 130.17 },
+    { keyword: "槻田", lat: 33.83, lon: 130.85 },
+    { keyword: "脊振", lat: 33.44, lon: 130.37 },
+    { keyword: "日向", lat: 32.422, lon: 131.627 },
+    { keyword: "一ツ瀬", lat: 32.2, lon: 131.52 },
+    { keyword: "大隅", lat: 31.45, lon: 130.98 },
+    { keyword: "薩", lat: 31.8, lon: 130.3 },
+  ],
+  沖縄: [
+    { keyword: "那覇", lat: 26.2124, lon: 127.6792 },
+    { keyword: "西原", lat: 26.225, lon: 127.755 },
+    { keyword: "牧港", lat: 26.257, lon: 127.721 },
+    { keyword: "友寄", lat: 26.19, lon: 127.74 },
+    { keyword: "石川", lat: 26.422, lon: 127.822 },
+    { keyword: "金武", lat: 26.4569, lon: 127.9261 },
+    { keyword: "具志川", lat: 26.36, lon: 127.87 },
+    { keyword: "渡口", lat: 26.36, lon: 127.77 },
+    { keyword: "栄野比", lat: 26.36, lon: 127.82 },
+    { keyword: "吉の浦", lat: 26.29, lon: 127.75 },
+  ],
+};
+
 export function DashboardApp({ data }: DashboardAppProps) {
   const areas = useMemo(() => {
     const set = new Set<string>();
@@ -1025,38 +1294,116 @@ function buildStationNodeId(area: string, station: string): string {
 
 function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<string, { x: number; y: number }> {
   const positions = new Map<string, { x: number; y: number }>();
+  const occupiedCells = new Set<string>();
 
   stationsByArea.forEach((stations, area) => {
     const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
     const sorted = Array.from(stations).sort((a, b) => a.localeCompare(b, "ja-JP"));
-    const ringCapacity = 18;
-    const phase = ((hashSeed(area) % 360) * Math.PI) / 180;
 
     sorted.forEach((station, index) => {
-      const ring = Math.floor(index / ringCapacity);
-      const idxInRing = index % ringCapacity;
-      const ringCount = Math.min(ringCapacity, sorted.length - ring * ringCapacity);
-      const jitter = ((hashSeed(`${area}-${station}`) % 9) - 4) * 0.8;
-      const angle = phase + (Math.PI * 2 * idxInRing) / Math.max(ringCount, 1);
-      const radiusX = 34 + ring * 18;
-      const radiusY = 22 + ring * 14;
-
-      positions.set(buildStationNodeId(area, station), {
-        x: clamp(
-          anchor.x + Math.cos(angle) * (radiusX + jitter),
-          MAP_VIEWBOX.padding,
-          MAP_VIEWBOX.width - MAP_VIEWBOX.padding,
-        ),
-        y: clamp(
-          anchor.y + Math.sin(angle) * (radiusY + jitter * 0.7),
-          MAP_VIEWBOX.padding,
-          MAP_VIEWBOX.height - MAP_VIEWBOX.padding,
-        ),
-      });
+      const seed = `${area}-${station}-${index}`;
+      const hinted = resolveStationGeoBase(area, station);
+      const base = hinted ?? {
+        x: anchor.x + ((hashSeed(seed) % 13) - 6),
+        y: anchor.y + (((hashSeed(seed + "-y") % 13) - 6) * 0.85),
+      };
+      const placed = placePointAvoidingOverlap(base, seed, occupiedCells);
+      positions.set(buildStationNodeId(area, station), placed);
     });
   });
 
   return positions;
+}
+
+function resolveStationGeoBase(area: string, station: string): { x: number; y: number } | null {
+  const normalized = normalizeStationName(station);
+  const hints = STATION_GEO_HINTS_BY_AREA[area] ?? [];
+  let matched: GeoHint | null = null;
+  for (const hint of hints) {
+    if (!normalized.includes(hint.keyword)) {
+      continue;
+    }
+    if (!matched || hint.keyword.length > matched.keyword.length) {
+      matched = hint;
+    }
+  }
+  if (!matched) {
+    return null;
+  }
+
+  const point = geoToCanvas(matched.lat, matched.lon);
+  const directionalNudge = getDirectionalNudge(normalized);
+  return {
+    x: clamp(point.x + directionalNudge.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+    y: clamp(point.y + directionalNudge.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+  };
+}
+
+function normalizeStationName(station: string): string {
+  return station
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/（[^）]*）/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/変電所|開閉所|変換所|発電所|火力|幹線|連系線|SS|ss|SWS|sws|CS|cs|PS|ps/g, "");
+}
+
+function getDirectionalNudge(station: string): { dx: number; dy: number } {
+  let dx = 0;
+  let dy = 0;
+  if (station.includes("東")) {
+    dx += 9;
+  }
+  if (station.includes("西")) {
+    dx -= 9;
+  }
+  if (station.includes("北")) {
+    dy -= 9;
+  }
+  if (station.includes("南")) {
+    dy += 9;
+  }
+  if (station.includes("新")) {
+    dx += 3;
+    dy -= 3;
+  }
+  return { dx, dy };
+}
+
+function geoToCanvas(lat: number, lon: number): { x: number; y: number } {
+  const xRatio = (lon - JAPAN_GEO_BOUNDS.lonMin) / (JAPAN_GEO_BOUNDS.lonMax - JAPAN_GEO_BOUNDS.lonMin);
+  const yRatio = (JAPAN_GEO_BOUNDS.latMax - lat) / (JAPAN_GEO_BOUNDS.latMax - JAPAN_GEO_BOUNDS.latMin);
+  return {
+    x: MAP_VIEWBOX.padding + xRatio * (MAP_VIEWBOX.width - MAP_VIEWBOX.padding * 2),
+    y: MAP_VIEWBOX.padding + yRatio * (MAP_VIEWBOX.height - MAP_VIEWBOX.padding * 2),
+  };
+}
+
+function placePointAvoidingOverlap(
+  base: { x: number; y: number },
+  seedText: string,
+  occupiedCells: Set<string>,
+): { x: number; y: number } {
+  const cellSize = 7;
+  const maxTry = 42;
+  const hash = hashSeed(seedText);
+
+  for (let attempt = 0; attempt < maxTry; attempt += 1) {
+    const radius = attempt === 0 ? 0 : 3 + Math.floor((attempt - 1) / 6) * 2;
+    const angle = ((hash + attempt * 53) % 360) * (Math.PI / 180);
+    const x = clamp(base.x + Math.cos(angle) * radius, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding);
+    const y = clamp(base.y + Math.sin(angle) * radius, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding);
+    const key = `${Math.round(x / cellSize)}:${Math.round(y / cellSize)}`;
+    if (!occupiedCells.has(key)) {
+      occupiedCells.add(key);
+      return { x, y };
+    }
+  }
+
+  return {
+    x: clamp(base.x, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+    y: clamp(base.y, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+  };
 }
 
 function compareAreaOrder(a: string, b: string): number {
