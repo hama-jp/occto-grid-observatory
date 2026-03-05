@@ -683,6 +683,8 @@ export function DashboardApp({ data }: DashboardAppProps) {
       plantName?: string;
       dailyKwh?: number;
       avgOutputMw?: number;
+      converterRoute?: boolean;
+      converterPair?: boolean;
     };
 
     const scopedInterties = (data.flows.intertieSeries ?? []).filter((row) =>
@@ -784,6 +786,10 @@ export function DashboardApp({ data }: DashboardAppProps) {
 
       const flowSource = line.avgMw >= 0 ? sourceStationId : targetStationId;
       const flowTarget = line.avgMw >= 0 ? targetStationId : sourceStationId;
+      const sourceStationName = stationNameFromNodeId(sourceStationId);
+      const targetStationName = stationNameFromNodeId(targetStationId);
+      const sourceIsConverter = isConverterStationName(sourceStationName);
+      const targetIsConverter = isConverterStationName(targetStationName);
 
       links.push({
         kind: "intertie",
@@ -795,8 +801,10 @@ export function DashboardApp({ data }: DashboardAppProps) {
         peakAbsMw: line.peakAbsMw,
         sourceArea: line.sourceArea,
         targetArea: line.targetArea,
-        sourceStation: stationNameFromNodeId(sourceStationId),
-        targetStation: stationNameFromNodeId(targetStationId),
+        sourceStation: sourceStationName,
+        targetStation: targetStationName,
+        converterRoute: sourceIsConverter || targetIsConverter,
+        converterPair: sourceIsConverter && targetIsConverter,
       });
     });
 
@@ -833,13 +841,16 @@ export function DashboardApp({ data }: DashboardAppProps) {
             area,
             category: categoryIndex.get(area) ?? 0,
             value: degree,
-            nodeType: "ss",
+            nodeType: isConverterStationName(station) ? "converter" : "ss",
             shouldLabel: stationLabelIds.has(stationNodeId),
             x: position.x,
             y: position.y,
-            symbolSize: 8,
+            symbolSize: isConverterStationName(station) ? 10 : 8,
+            symbol: isConverterStationName(station) ? "diamond" : "circle",
             itemStyle: {
-              color: FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default,
+              color: isConverterStationName(station)
+                ? "#0f766e"
+                : (FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default),
               borderColor: "#ffffff",
               borderWidth: 1,
             },
@@ -976,13 +987,16 @@ export function DashboardApp({ data }: DashboardAppProps) {
 
       if (line.kind === "intertie") {
         const ratio = line.absAvgMw / maxAbsIntertie;
+        const baseColor = line.value >= 0 ? "#ef4444" : "#1d4ed8";
+        const converterColor = line.value >= 0 ? "#f97316" : "#0891b2";
         return {
           ...line,
           lineStyle: {
-            width: 2.8 + ratio * 4.8,
-            opacity: 0.86,
-            curveness: 0.12,
-            color: line.value >= 0 ? "#ef4444" : "#1d4ed8",
+            width: (line.converterRoute ? 3.4 : 2.8) + ratio * (line.converterRoute ? 5.4 : 4.8),
+            opacity: line.converterRoute ? 0.94 : 0.86,
+            curveness: line.converterRoute ? 0.16 : 0.12,
+            type: line.converterRoute ? "dashed" : "solid",
+            color: line.converterRoute ? converterColor : baseColor,
           },
           z: 4,
         };
@@ -1011,7 +1025,28 @@ export function DashboardApp({ data }: DashboardAppProps) {
       }
     });
     const animatedFlowLines = renderedLinks
-      .filter((line) => line.kind !== "plant")
+      .filter((line) => line.kind !== "plant" && !line.converterRoute)
+      .map((line) => {
+        const from = nodePointById.get(String(line.source));
+        const to = nodePointById.get(String(line.target));
+        if (!from || !to) {
+          return null;
+        }
+        return {
+          coords: [
+            [from.x, from.y],
+            [to.x, to.y],
+          ],
+          lineStyle: {
+            color: line.lineStyle.color,
+            width: 0,
+            opacity: 0,
+          },
+        };
+      })
+      .filter((item) => item !== null);
+    const animatedConverterLines = renderedLinks
+      .filter((line) => line.kind === "intertie" && line.converterRoute)
       .map((line) => {
         const from = nodePointById.get(String(line.source));
         const to = nodePointById.get(String(line.target));
@@ -1055,10 +1090,12 @@ export function DashboardApp({ data }: DashboardAppProps) {
             targetArea?: string;
             sourceStation?: string;
             targetStation?: string;
-            nodeType?: "ss" | "power";
+            nodeType?: "ss" | "power" | "converter";
             dailyKwh?: number;
             maxOutputManKw?: number;
             avgOutputMw?: number;
+            converterRoute?: boolean;
+            converterPair?: boolean;
           };
         }) => {
           if (params.dataType === "edge") {
@@ -1072,7 +1109,9 @@ export function DashboardApp({ data }: DashboardAppProps) {
             if (params.data.kind === "intertie") {
               return `${params.data.intertieName}<br/>区分: 連系線<br/>接続: ${params.data.sourceArea} ⇄ ${
                 params.data.targetArea
-              }<br/>接続SS: ${params.data.sourceStation} ⇄ ${params.data.targetStation}<br/>平均潮流: ${decimalFmt.format(
+              }<br/>接続SS: ${params.data.sourceStation} ⇄ ${params.data.targetStation}<br/>変換所連系: ${
+                params.data.converterPair ? "変換所-変換所" : params.data.converterRoute ? "含む" : "なし"
+              }<br/>平均潮流: ${decimalFmt.format(
                 params.data.value,
               )} MW<br/>最大|潮流|: ${numberFmt.format(
                 params.data.peakAbsMw ?? 0,
@@ -1093,6 +1132,11 @@ export function DashboardApp({ data }: DashboardAppProps) {
             )} MW<br/>最大出力: ${decimalFmt.format(params.data.maxOutputManKw ?? 0)} 万kW<br/>日量: ${numberFmt.format(
               Math.round(params.data.dailyKwh ?? 0),
             )} kWh`;
+          }
+          if (params.data.nodeType === "converter") {
+            return `${params.data.area} | ${params.name}<br/>区分: 変換所<br/>接続本数: ${numberFmt.format(
+              params.data.value,
+            )} 本`;
           }
           return `${params.data.area ?? "不明"} | ${params.name}<br/>接続本数: ${numberFmt.format(
             params.data.value,
@@ -1132,7 +1176,7 @@ export function DashboardApp({ data }: DashboardAppProps) {
           label: {
             show: true,
             formatter: (params: {
-              data: { nodeType?: "ss" | "power"; shouldLabel?: boolean; value?: number };
+              data: { nodeType?: "ss" | "power" | "converter"; shouldLabel?: boolean; value?: number };
               name: string;
             }) => {
               if (params.data.shouldLabel) {
@@ -1174,6 +1218,26 @@ export function DashboardApp({ data }: DashboardAppProps) {
             symbol: "arrow",
             symbolSize: 6,
             color: "rgba(15,23,42,0.9)",
+          },
+          lineStyle: {
+            width: 0,
+            opacity: 0,
+          },
+        },
+        {
+          type: "lines",
+          coordinateSystem: "none",
+          polyline: false,
+          silent: true,
+          z: 8,
+          data: animatedConverterLines,
+          effect: {
+            show: true,
+            constantSpeed: 20,
+            trailLength: 0.24,
+            symbol: "arrow",
+            symbolSize: 7,
+            color: "#0f766e",
           },
           lineStyle: {
             width: 0,
@@ -1738,6 +1802,21 @@ function isLineLikeNodeName(name: string): boolean {
     return true;
   }
   if (normalized.endsWith("線") && !/(変電所|開閉所|変換所|発電所|SS|ss|SWS|sws|CS|cs|PS|ps|T)$/.test(normalized)) {
+    return true;
+  }
+  return false;
+}
+
+function isConverterStationName(name: string): boolean {
+  const normalized = name
+    .trim()
+    .normalize("NFKC")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+  if (normalized.includes("変換所") || normalized.includes("変換設備")) {
+    return true;
+  }
+  if (/cs$/.test(normalized)) {
     return true;
   }
   return false;
