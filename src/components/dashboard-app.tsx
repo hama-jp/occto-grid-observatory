@@ -402,6 +402,13 @@ export function DashboardApp({ data }: DashboardAppProps) {
     const areaCategories = Array.from(visibleAreas).sort(compareAreaOrder);
     const categoryIndex = new Map(areaCategories.map((area, index) => [area, index]));
     const stationPositions = buildStationLayout(stationsByArea);
+    const stationLabelIds = new Set(
+      Array.from(nodeDegree.entries())
+        .filter(([nodeId, degree]) => nodeId.startsWith("station::") && degree >= (selectedArea === "全エリア" ? 4 : 2))
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, selectedArea === "全エリア" ? 52 : 96)
+        .map(([nodeId]) => nodeId),
+    );
 
     const nodes: Array<Record<string, unknown>> = [];
     areaCategories.forEach((area) => {
@@ -445,6 +452,7 @@ export function DashboardApp({ data }: DashboardAppProps) {
             category: categoryIndex.get(area) ?? 0,
             value: degree,
             isAreaHub: false,
+            shouldLabel: stationLabelIds.has(stationNodeId),
             x: position.x,
             y: position.y,
             symbolSize: 6.5 + Math.min(9, degree * 1.4),
@@ -519,7 +527,7 @@ export function DashboardApp({ data }: DashboardAppProps) {
       };
     });
 
-    const guideGraphics = buildJapanGuideGraphics(areaCategories);
+    const guideGraphics = buildJapanGuideGraphics();
 
     return {
       animationDurationUpdate: 360,
@@ -600,11 +608,14 @@ export function DashboardApp({ data }: DashboardAppProps) {
           },
           label: {
             show: true,
-            formatter: (params: { data: { isAreaHub?: boolean; value?: number }; name: string }) => {
+            formatter: (params: {
+              data: { isAreaHub?: boolean; shouldLabel?: boolean; value?: number };
+              name: string;
+            }) => {
               if (params.data.isAreaHub) {
                 return params.name;
               }
-              if (selectedArea !== "全エリア" && (params.data.value ?? 0) >= 4) {
+              if (params.data.shouldLabel) {
                 return params.name;
               }
               return "";
@@ -615,6 +626,9 @@ export function DashboardApp({ data }: DashboardAppProps) {
             backgroundColor: "rgba(255,255,255,0.72)",
             borderRadius: 4,
             padding: [1, 3],
+          },
+          labelLayout: {
+            hideOverlap: true,
           },
           emphasis: {
             focus: "adjacency",
@@ -1060,101 +1074,8 @@ function compareAreaOrder(a: string, b: string): number {
   return aIndex - bIndex;
 }
 
-function buildJapanGuideGraphics(areas: string[]): Array<Record<string, unknown>> {
-  const visibleAreaSet = new Set(areas);
-  const graphics: Array<Record<string, unknown>> = [];
-
-  const corridorPoints = MAP_CORRIDOR_ORDER.filter((area) => visibleAreaSet.has(area)).map((area) => {
-    const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
-    return [anchor.x, anchor.y];
-  });
-
-  if (corridorPoints.length >= 2) {
-    graphics.push({
-      type: "polyline",
-      z: 0,
-      shape: { points: corridorPoints },
-      style: { stroke: "rgba(96,165,250,0.35)", lineWidth: 26, lineCap: "round", lineJoin: "round" },
-      silent: true,
-    });
-    graphics.push({
-      type: "polyline",
-      z: 1,
-      shape: { points: corridorPoints },
-      style: { stroke: "rgba(255,255,255,0.9)", lineWidth: 14, lineCap: "round", lineJoin: "round" },
-      silent: true,
-    });
-  }
-
-  const branchPairs: Array<[string, string]> = [
-    ["北陸", "中部"],
-    ["四国", "関西"],
-    ["四国", "中国"],
-  ];
-  branchPairs.forEach(([from, to]) => {
-    if (!visibleAreaSet.has(from) || !visibleAreaSet.has(to)) {
-      return;
-    }
-    const fromAnchor = AREA_ANCHORS[from] ?? AREA_ANCHORS.default;
-    const toAnchor = AREA_ANCHORS[to] ?? AREA_ANCHORS.default;
-    graphics.push({
-      type: "line",
-      z: 0,
-      shape: { x1: fromAnchor.x, y1: fromAnchor.y, x2: toAnchor.x, y2: toAnchor.y },
-      style: { stroke: "rgba(96,165,250,0.28)", lineWidth: 18, lineCap: "round" },
-      silent: true,
-    });
-    graphics.push({
-      type: "line",
-      z: 1,
-      shape: { x1: fromAnchor.x, y1: fromAnchor.y, x2: toAnchor.x, y2: toAnchor.y },
-      style: { stroke: "rgba(255,255,255,0.9)", lineWidth: 9, lineCap: "round" },
-      silent: true,
-    });
-  });
-
-  areas.forEach((area) => {
-    const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
-    graphics.push(
-      {
-        type: "circle",
-        z: 2,
-        shape: { cx: anchor.x, cy: anchor.y, r: 6 },
-        style: { fill: FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default, stroke: "#ffffff", lineWidth: 2 },
-        silent: true,
-      },
-      {
-        type: "text",
-        z: 2,
-        style: {
-          x: anchor.x + 10,
-          y: anchor.y - 10,
-          text: area,
-          fill: "#1e293b",
-          font: "12px sans-serif",
-          textBackgroundColor: "rgba(255,255,255,0.75)",
-          padding: [2, 4],
-          borderRadius: 4,
-        },
-        silent: true,
-      },
-    );
-  });
-
-  graphics.push({
-    type: "text",
-    z: 2,
-    style: {
-      x: 16,
-      y: 30,
-      text: "連系線(エリア間)と地域内送電線を同一グラフで表示",
-      fill: "#475569",
-      font: "12px sans-serif",
-    },
-    silent: true,
-  });
-
-  return graphics;
+function buildJapanGuideGraphics(): Array<Record<string, unknown>> {
+  return [];
 }
 
 function hashSeed(input: string): number {
