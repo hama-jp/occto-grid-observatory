@@ -543,8 +543,10 @@ export function DashboardApp({ data }: DashboardAppProps) {
         {
           type: "scroll",
           orient: "vertical",
-          left: "4%",
+          left: 0,
           top: "middle",
+          width: "24%",
+          align: "left",
           itemGap: 8,
           textStyle: { color: "#264653" },
           data: leftLegend,
@@ -552,8 +554,10 @@ export function DashboardApp({ data }: DashboardAppProps) {
         {
           type: "scroll",
           orient: "vertical",
-          right: "4%",
+          right: 0,
           top: "middle",
+          width: "24%",
+          align: "left",
           itemGap: 8,
           textStyle: { color: "#264653" },
           data: rightLegend,
@@ -563,7 +567,7 @@ export function DashboardApp({ data }: DashboardAppProps) {
         {
           name: "発電方式",
           type: "pie",
-          radius: ["42%", "68%"],
+          radius: ["40%", "60%"],
           center: ["50%", "50%"],
           avoidLabelOverlap: true,
           label: {
