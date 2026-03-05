@@ -80,6 +80,12 @@ type GeoHint = {
   lon: number;
 };
 
+type CanvasOffsetHint = {
+  keyword: string;
+  dx: number;
+  dy: number;
+};
+
 const JAPAN_GEO_BOUNDS = {
   latMin: 24.0,
   latMax: 45.8,
@@ -342,6 +348,13 @@ const STATION_GEO_HINTS_BY_AREA: Record<string, GeoHint[]> = {
     { keyword: "渡口", lat: 26.36, lon: 127.77 },
     { keyword: "栄野比", lat: 26.36, lon: 127.82 },
     { keyword: "吉の浦", lat: 26.29, lon: 127.75 },
+  ],
+};
+
+const STATION_CANVAS_OFFSETS_BY_AREA: Record<string, CanvasOffsetHint[]> = {
+  四国: [
+    { keyword: "麻", dx: 26, dy: -16 },
+    { keyword: "新改", dx: 30, dy: 30 },
   ],
 };
 
@@ -1749,6 +1762,10 @@ function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<strin
 
 function resolveStationGeoBase(area: string, station: string): { x: number; y: number } | null {
   const normalized = normalizeStationName(station);
+  const override = resolveStationCanvasOverride(area, normalized);
+  if (override) {
+    return override;
+  }
   const hints = STATION_GEO_HINTS_BY_AREA[area] ?? [];
   let matched: GeoHint | null = null;
   for (const hint of hints) {
@@ -1768,6 +1785,19 @@ function resolveStationGeoBase(area: string, station: string): { x: number; y: n
   return {
     x: clamp(point.x + directionalNudge.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
     y: clamp(point.y + directionalNudge.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+  };
+}
+
+function resolveStationCanvasOverride(area: string, normalizedStation: string): { x: number; y: number } | null {
+  const hints = STATION_CANVAS_OFFSETS_BY_AREA[area] ?? [];
+  const matched = hints.find((hint) => normalizedStation.includes(hint.keyword));
+  if (!matched) {
+    return null;
+  }
+  const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
+  return {
+    x: clamp(anchor.x + matched.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+    y: clamp(anchor.y + matched.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
   };
 }
 
