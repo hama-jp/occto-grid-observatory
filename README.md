@@ -16,11 +16,18 @@ npx playwright install chromium
 
 ## データ取り込み
 ```bash
-# 既定: JSTの前日
+# daily: 既定でJST前日を更新（force=true相当）
 npm run ingest
 
-# 日付指定
-npm run ingest -- --date=2026-03-04
+# now: 当日（または指定日）を更新
+npm run ingest -- --mode=now
+npm run ingest -- --mode=now --date=2026-03-05
+
+# backfill: 過去日付を範囲取得（既存JSONは既定でskip）
+npm run ingest -- --mode=backfill --from=2026-02-20 --to=2026-02-29
+
+# 既存JSONがあっても上書きしたい場合
+npm run ingest -- --mode=backfill --from=2026-02-20 --to=2026-02-29 --force=true
 ```
 
 出力:
@@ -33,11 +40,7 @@ npm run ingest -- --date=2026-03-04
 npm run dev
 ```
 
-ブラウザで `http://localhost:3000` を開くと、`/api/dashboard` から最新正規化データを読んで表示します。
-
-## API
-- `GET /api/dashboard` : `dashboard-latest.json`
-- `GET /api/dashboard?date=YYYY-MM-DD` : 指定日のJSON
+ブラウザで `http://localhost:3000` を開くと、`data/normalized/dashboard-latest.json` を読み込んで表示します。
 
 ## 運用フロー（Linear + GitHub）
 - [LINEAR_GITHUB_WORKFLOW.md](docs/LINEAR_GITHUB_WORKFLOW.md)
@@ -54,8 +57,21 @@ PR / push 時に以下を実行:
 - ワークフロー: [data-refresh.yml](.github/workflows/data-refresh.yml)
 - 定時実行: 毎日 **16:10 JST**（= **07:10 UTC**）
 - 処理内容:
-  1. `npm run ingest`
+  1. schedule時は `npm run ingest -- --mode=daily --force=true`
   2. `data/normalized` に差分があれば自動コミット＆push
+  3. `main` へのpushをトリガーに Pages デプロイが走る
 - 手動実行:
   - Actions 画面の `Data Refresh` から `workflow_dispatch` を実行
-  - `date` 入力（`YYYY-MM-DD`）で対象日を明示指定可能
+  - `mode`:
+    - `now`: 当日/指定日の都度更新
+    - `daily`: 前日分更新
+    - `backfill`: `from/to` 範囲を一括取得
+  - `force=true` で既存JSONを上書き更新
+
+## GitHub Pages 公開
+- ワークフロー: [deploy-pages.yml](.github/workflows/deploy-pages.yml)
+- 初回設定:
+  1. GitHubリポジトリの `Settings > Pages` を開く
+  2. `Build and deployment` の `Source` を `GitHub Actions` にする
+- URL:
+  - `https://hama-jp.github.io/occto-grid-observatory/`

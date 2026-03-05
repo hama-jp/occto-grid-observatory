@@ -3,10 +3,32 @@ name: Data Refresh
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "now"
+        type: choice
+        options:
+          - now
+          - daily
+          - backfill
       date:
-        description: "Target date (YYYY-MM-DD). Leave blank to use default behavior."
+        description: "Target date (YYYY-MM-DD). Used mainly with mode=now or mode=daily."
         required: false
         type: string
+      from:
+        description: "Backfill start date (YYYY-MM-DD). Used with mode=backfill."
+        required: false
+        type: string
+      to:
+        description: "Backfill end date (YYYY-MM-DD). Used with mode=backfill."
+        required: false
+        type: string
+      force:
+        description: "Force refresh even if normalized file already exists."
+        required: false
+        default: false
+        type: boolean
   schedule:
     # 16:10 JST (07:10 UTC) every day
     - cron: "10 7 * * *"
@@ -42,12 +64,29 @@ jobs:
       - name: Run ingestion
         shell: bash
         run: |
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            echo "Manual run with date=${{ github.event.inputs.date }}"
-            npm run ingest -- --date="${{ github.event.inputs.date }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "Scheduled daily refresh"
+            npm run ingest -- --mode=daily --force=true
           else
-            echo "Scheduled/default run"
-            npm run ingest
+            MODE="${{ github.event.inputs.mode }}"
+            DATE="${{ github.event.inputs.date }}"
+            FROM="${{ github.event.inputs.from }}"
+            TO="${{ github.event.inputs.to }}"
+            FORCE="${{ github.event.inputs.force }}"
+
+            CMD=("npm" "run" "ingest" "--" "--mode=${MODE}" "--force=${FORCE}")
+            if [ -n "${DATE}" ]; then
+              CMD+=("--date=${DATE}")
+            fi
+            if [ -n "${FROM}" ]; then
+              CMD+=("--from=${FROM}")
+            fi
+            if [ -n "${TO}" ]; then
+              CMD+=("--to=${TO}")
+            fi
+
+            echo "Manual run command: ${CMD[*]}"
+            "${CMD[@]}"
           fi
 
       - name: Commit normalized data if changed

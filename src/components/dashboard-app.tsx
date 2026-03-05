@@ -224,6 +224,149 @@ export function DashboardApp({ data }: DashboardAppProps) {
     };
   }, [data.meta.slotLabels.flow, filteredLines]);
 
+  const flowNetworkOption = useMemo(() => {
+    const ranked = [...filteredLines]
+      .filter((line) => parseDirection(line.positiveDirection) !== null)
+      .sort((a, b) => Math.abs(b.avgMw) - Math.abs(a.avgMw));
+    const targetEdgeCount = selectedArea === "全エリア" ? 120 : 180;
+    const targetLines = ranked.slice(0, targetEdgeCount);
+
+    const nodeArea = new Map<string, string>();
+    const nodeDegree = new Map<string, number>();
+    const linkRows: Array<{
+      source: string;
+      target: string;
+      value: number;
+      absAvgMw: number;
+      area: string;
+      lineName: string;
+      voltageKv: string;
+      positiveDirection: string;
+      peakAbsMw: number;
+    }> = [];
+
+    targetLines.forEach((line) => {
+      const direction = parseDirection(line.positiveDirection);
+      if (!direction) {
+        return;
+      }
+      const source = line.avgMw >= 0 ? direction.source : direction.target;
+      const target = line.avgMw >= 0 ? direction.target : direction.source;
+      const absAvgMw = Math.abs(line.avgMw);
+
+      nodeArea.set(source, nodeArea.get(source) ?? line.area);
+      nodeArea.set(target, nodeArea.get(target) ?? line.area);
+      nodeDegree.set(source, (nodeDegree.get(source) ?? 0) + 1);
+      nodeDegree.set(target, (nodeDegree.get(target) ?? 0) + 1);
+
+      linkRows.push({
+        source,
+        target,
+        value: line.avgMw,
+        absAvgMw,
+        area: line.area,
+        lineName: line.lineName,
+        voltageKv: line.voltageKv,
+        positiveDirection: line.positiveDirection,
+        peakAbsMw: line.peakAbsMw,
+      });
+    });
+
+    const maxAbsFlow = Math.max(...linkRows.map((line) => line.absAvgMw), 0);
+    const areaCategories = Array.from(new Set(Array.from(nodeArea.values()))).sort();
+    const categoryIndex = new Map(areaCategories.map((area, index) => [area, index]));
+
+    const nodes = Array.from(nodeArea.entries()).map(([name, area]) => {
+      const degree = nodeDegree.get(name) ?? 0;
+      return {
+        id: name,
+        name,
+        category: categoryIndex.get(area) ?? 0,
+        value: degree,
+        symbolSize: 16 + Math.min(16, degree * 2.2),
+      };
+    });
+
+    const links = linkRows.map((line) => {
+      const ratio = maxAbsFlow > 0 ? line.absAvgMw / maxAbsFlow : 0;
+      return {
+        ...line,
+        lineStyle: {
+          width: 1.4 + ratio * 5.6,
+          opacity: 0.76,
+          color: line.value >= 0 ? "#ef8354" : "#1d3557",
+        },
+      };
+    });
+
+    return {
+      tooltip: {
+        trigger: "item",
+        confine: true,
+        formatter: (params: {
+          dataType: "node" | "edge";
+          name: string;
+          data: {
+            value: number;
+            area: string;
+            lineName: string;
+            voltageKv: string;
+            positiveDirection: string;
+            peakAbsMw: number;
+          };
+        }) => {
+          if (params.dataType === "edge") {
+            return `${params.data.area} | ${params.data.lineName}<br/>定義方向: ${
+              params.data.positiveDirection
+            }<br/>平均潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
+              params.data.peakAbsMw,
+            )} MW<br/>電圧: ${params.data.voltageKv}`;
+          }
+          return `${params.name}<br/>接続本数: ${numberFmt.format(params.data.value)} 本`;
+        },
+      },
+      legend: [
+        {
+          type: "scroll",
+          top: 8,
+          data: areaCategories,
+          textStyle: { color: "#334155" },
+        },
+      ],
+      series: [
+        {
+          type: "graph",
+          layout: "force",
+          roam: true,
+          draggable: true,
+          data: nodes,
+          links,
+          categories: areaCategories.map((name) => ({ name })),
+          force: {
+            repulsion: 270,
+            edgeLength: [70, 190],
+            gravity: 0.08,
+          },
+          edgeSymbol: ["none", "arrow"],
+          edgeSymbolSize: [4, 10],
+          lineStyle: {
+            curveness: 0.16,
+            opacity: 0.76,
+          },
+          label: {
+            show: true,
+            position: "right",
+            color: "#1f2937",
+            fontSize: 11,
+          },
+          emphasis: {
+            focus: "adjacency",
+          },
+        },
+      ],
+    };
+  }, [filteredLines, selectedArea]);
+
   const syncLineOption = useMemo(() => {
     const generationSeries = data.generation.hourlyTotalByArea.map((point) =>
       selectedArea === "全エリア"
@@ -375,6 +518,12 @@ export function DashboardApp({ data }: DashboardAppProps) {
           </Panel>
         </section>
 
+        <section className="grid grid-cols-1 gap-4">
+          <Panel title="エリアネットワーク潮流（平均値ベース）">
+            <ReactECharts option={flowNetworkOption} style={{ height: 540 }} />
+          </Panel>
+        </section>
+
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Panel title="主要線路の潮流ヒートマップ" className="lg:col-span-2">
             <ReactECharts option={flowHeatmapOption} style={{ height: 420 }} />
@@ -447,4 +596,24 @@ function average(values: number[]): number {
     return 0;
   }
   return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function parseDirection(
+  rawDirection: string,
+): {
+  source: string;
+  target: string;
+} | null {
+  const normalized = rawDirection.replace(/\s+/g, " ").trim();
+  const delimiter = normalized.includes("→") ? "→" : normalized.includes("->") ? "->" : null;
+  if (!delimiter) {
+    return null;
+  }
+
+  const parts = normalized.split(delimiter).map((part) => part.trim());
+  if (parts.length < 2 || !parts[0] || !parts[1]) {
+    return null;
+  }
+
+  return { source: parts[0], target: parts[1] };
 }

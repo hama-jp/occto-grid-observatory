@@ -32,7 +32,9 @@ const FLOW_AREAS = [
 ] as const;
 
 type CliArgs = {
-  targetDate: string;
+  mode: "daily" | "now" | "backfill";
+  targetDates: string[];
+  force: boolean;
 };
 
 type DownloadResult = {
@@ -42,56 +44,147 @@ type DownloadResult = {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  const dateStamp = args.targetDate.replaceAll("/", "");
-  const rawDir = path.join(process.cwd(), "data", "raw", dateStamp);
   const normalizedDir = path.join(process.cwd(), "data", "normalized");
-
-  await fs.mkdir(rawDir, { recursive: true });
   await fs.mkdir(normalizedDir, { recursive: true });
 
-  console.log(`[ingest] target date: ${args.targetDate}`);
-  const downloadResult = await downloadCsvFiles(args.targetDate, rawDir);
+  console.log(`[ingest] mode=${args.mode}, force=${String(args.force)}`);
+  console.log(`[ingest] dates=${args.targetDates.join(", ")}`);
 
-  const generationRows = await parseGenerationCsv(downloadResult.generationCsv);
-  const flowRows = await parseFlowCsv(downloadResult.flowCsvByArea);
+  let latestPayload = "";
+  let latestDate = "";
+  let updatedCount = 0;
+  let skippedCount = 0;
 
-  const dashboard = buildDashboardData({
-    targetDate: args.targetDate,
-    generationRows,
-    flowRows,
-    generationCsvName: path.basename(downloadResult.generationCsv),
-    flowCsvName: downloadResult.flowCsvByArea.map((file) => path.basename(file)).join(","),
-  });
+  for (let i = 0; i < args.targetDates.length; i += 1) {
+    const targetDate = args.targetDates[i];
+    const dateStamp = targetDate.replaceAll("/", "");
+    const rawDir = path.join(process.cwd(), "data", "raw", dateStamp);
+    const datedOutputPath = path.join(normalizedDir, `dashboard-${dateStamp}.json`);
 
-  const datedOutputPath = path.join(normalizedDir, `dashboard-${dateStamp}.json`);
-  const latestOutputPath = path.join(normalizedDir, "dashboard-latest.json");
-  const payload = JSON.stringify(dashboard, null, 2);
+    if (!args.force && (await fileExists(datedOutputPath))) {
+      skippedCount += 1;
+      console.log(`[ingest] skip existing: ${datedOutputPath}`);
+      continue;
+    }
 
-  await fs.writeFile(datedOutputPath, payload, "utf-8");
-  await fs.writeFile(latestOutputPath, payload, "utf-8");
+    await fs.mkdir(rawDir, { recursive: true });
+    const downloadResult = await downloadCsvFiles(targetDate, rawDir);
+    const generationRows = await parseGenerationCsv(downloadResult.generationCsv);
+    const flowRows = await parseFlowCsv(downloadResult.flowCsvByArea);
 
-  console.log(`[ingest] generated rows: generation=${generationRows.length}, flow=${flowRows.length}`);
-  console.log(`[ingest] wrote ${datedOutputPath}`);
-  console.log(`[ingest] wrote ${latestOutputPath}`);
+    const dashboard = buildDashboardData({
+      targetDate,
+      generationRows,
+      flowRows,
+      generationCsvName: path.basename(downloadResult.generationCsv),
+      flowCsvName: downloadResult.flowCsvByArea.map((file) => path.basename(file)).join(","),
+    });
+
+    const payload = JSON.stringify(dashboard, null, 2);
+    await fs.writeFile(datedOutputPath, payload, "utf-8");
+
+    latestPayload = payload;
+    latestDate = targetDate;
+    updatedCount += 1;
+
+    console.log(
+      `[ingest] generated ${targetDate}: generation=${generationRows.length}, flow=${flowRows.length}`,
+    );
+    console.log(`[ingest] wrote ${datedOutputPath}`);
+
+    if (i < args.targetDates.length - 1) {
+      await sleep(3000);
+    }
+  }
+
+  if (latestPayload) {
+    const latestOutputPath = path.join(normalizedDir, "dashboard-latest.json");
+    await fs.writeFile(latestOutputPath, latestPayload, "utf-8");
+    console.log(`[ingest] wrote ${latestOutputPath} (from ${latestDate})`);
+  } else {
+    console.log("[ingest] no new data generated");
+  }
+
+  console.log(`[ingest] summary: updated=${updatedCount}, skipped=${skippedCount}`);
 }
 
 function parseArgs(args: string[]): CliArgs {
-  const dateArg = args.find((arg) => arg.startsWith("--date="));
-  const rawDate = dateArg ? dateArg.split("=")[1] : defaultTargetDateJst();
+  const options = new Map<string, string>();
+  const flags = new Set<string>();
 
-  if (!rawDate) {
-    throw new Error("`--date` is invalid. Use YYYY-MM-DD or YYYY/MM/DD.");
+  for (const arg of args) {
+    if (!arg.startsWith("--")) {
+      continue;
+    }
+    const body = arg.slice(2);
+    const eq = body.indexOf("=");
+    if (eq >= 0) {
+      const key = body.slice(0, eq);
+      const value = body.slice(eq + 1);
+      options.set(key, value);
+    } else {
+      flags.add(body);
+    }
   }
 
-  const normalized = normalizeDate(rawDate);
-  if (!normalized) {
-    throw new Error("`--date` is invalid. Use YYYY-MM-DD or YYYY/MM/DD.");
+  const modeRaw = options.get("mode") ?? "daily";
+  if (modeRaw !== "daily" && modeRaw !== "now" && modeRaw !== "backfill") {
+    throw new Error("`--mode` must be one of: daily | now | backfill.");
   }
 
-  return { targetDate: normalized };
+  let targetDates: string[] = [];
+  if (modeRaw === "daily") {
+    const dateInput = options.get("date");
+    const date = normalizeDate(dateInput ?? defaultYesterdayJst());
+    if (!date) {
+      throw new Error("`--date` is invalid. Use YYYY-MM-DD or YYYY/MM/DD.");
+    }
+    targetDates = [date];
+  }
+
+  if (modeRaw === "now") {
+    const dateInput = options.get("date");
+    const date = normalizeDate(dateInput ?? defaultTodayJst());
+    if (!date) {
+      throw new Error("`--date` is invalid. Use YYYY-MM-DD or YYYY/MM/DD.");
+    }
+    targetDates = [date];
+  }
+
+  if (modeRaw === "backfill") {
+    const from = normalizeDate(options.get("from") ?? "");
+    const to = normalizeDate(options.get("to") ?? "");
+    if (!from || !to) {
+      throw new Error("`--mode=backfill` requires both `--from` and `--to`.");
+    }
+    targetDates = enumerateDateRange(from, to);
+    if (targetDates.length === 0) {
+      throw new Error("`--from` must be earlier than or equal to `--to`.");
+    }
+  }
+
+  const defaultForce = modeRaw === "backfill" ? false : true;
+  const force = parseBooleanOption(options.get("force"), flags, defaultForce);
+
+  return {
+    mode: modeRaw,
+    targetDates,
+    force,
+  };
 }
 
-function defaultTargetDateJst(): string {
+function defaultTodayJst(): string {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60_000;
+  const jstNow = new Date(utc + 9 * 60 * 60_000);
+
+  const yyyy = String(jstNow.getUTCFullYear());
+  const mm = String(jstNow.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(jstNow.getUTCDate()).padStart(2, "0");
+  return `${yyyy}/${mm}/${dd}`;
+}
+
+function defaultYesterdayJst(): string {
   const now = new Date();
   const utc = now.getTime() + now.getTimezoneOffset() * 60_000;
   const jstNow = new Date(utc + 9 * 60 * 60_000);
@@ -117,6 +210,76 @@ function normalizeDate(input: string): string | null {
   }
 
   return `${y}/${m}/${d}`;
+}
+
+function enumerateDateRange(from: string, to: string): string[] {
+  const start = toUtcDate(from);
+  const end = toUtcDate(to);
+  if (!start || !end || start.getTime() > end.getTime()) {
+    return [];
+  }
+
+  const dates: string[] = [];
+  const current = new Date(start.getTime());
+  while (current.getTime() <= end.getTime()) {
+    dates.push(formatUtcDate(current));
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+function toUtcDate(normalized: string): Date | null {
+  const matched = normalized.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+  if (!matched) {
+    return null;
+  }
+  const [, y, m, d] = matched;
+  return new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
+}
+
+function formatUtcDate(date: Date): string {
+  const yyyy = String(date.getUTCFullYear());
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  return `${yyyy}/${mm}/${dd}`;
+}
+
+function parseBooleanOption(
+  value: string | undefined,
+  flags: ReadonlySet<string>,
+  defaultValue: boolean,
+): boolean {
+  if (flags.has("force")) {
+    return true;
+  }
+  if (flags.has("no-force")) {
+    return false;
+  }
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  const lowered = value.toLowerCase();
+  if (lowered === "true" || lowered === "1") {
+    return true;
+  }
+  if (lowered === "false" || lowered === "0") {
+    return false;
+  }
+  throw new Error("`--force` must be true/false.");
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function downloadCsvFiles(targetDate: string, rawDir: string): Promise<DownloadResult> {
