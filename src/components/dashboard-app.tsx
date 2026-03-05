@@ -352,6 +352,7 @@ const STATION_GEO_HINTS_BY_AREA: Record<string, GeoHint[]> = {
 };
 
 const STATION_CANVAS_OFFSETS_BY_AREA: Record<string, CanvasOffsetHint[]> = {
+  中国: [{ keyword: "山陰", dx: -8, dy: -46 }],
   四国: [
     { keyword: "麻", dx: 26, dy: -16 },
     { keyword: "新改", dx: 30, dy: 30 },
@@ -1762,6 +1763,10 @@ function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<strin
 
 function resolveStationGeoBase(area: string, station: string): { x: number; y: number } | null {
   const normalized = normalizeStationName(station);
+  const globalOverride = resolveGlobalStationGeoBase(normalized);
+  if (globalOverride) {
+    return globalOverride;
+  }
   const override = resolveStationCanvasOverride(area, normalized);
   if (override) {
     return override;
@@ -1801,6 +1806,17 @@ function resolveStationCanvasOverride(area: string, normalizedStation: string): 
   };
 }
 
+function resolveGlobalStationGeoBase(normalizedStation: string): { x: number; y: number } | null {
+  if (!normalizedStation.includes("山陰")) {
+    return null;
+  }
+  const saninPoint = geoToCanvas(35.4681, 133.0484);
+  return {
+    x: clamp(saninPoint.x, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+    y: clamp(saninPoint.y, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+  };
+}
+
 function normalizeStationName(station: string): string {
   return station
     .trim()
@@ -1828,6 +1844,9 @@ function isLineLikeNodeName(name: string): boolean {
     .replace(/\s+/g, "")
     .replace(/（[^）]*）/g, "")
     .replace(/\([^)]*\)/g, "");
+  if (normalized.includes("幹線") && !/(変電所|開閉所|変換所|発電所|SS|ss|SWS|sws|CS|cs|PS|ps)/.test(normalized)) {
+    return true;
+  }
   if (/(^|[^A-Za-z0-9])(幹線|連系線|フェンス|火力線|支線)$/.test(normalized)) {
     return true;
   }
