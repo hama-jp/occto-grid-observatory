@@ -591,31 +591,35 @@ export function DashboardApp({ data }: DashboardAppProps) {
   }, [data.generation.sourceTotals, sourceDonutArea, sourceTotalsByArea]);
 
   const areaTotalsOption = useMemo(
-    () => ({
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-      grid: { top: 18, left: 74, right: 18, bottom: 30 },
-      xAxis: {
-        type: "value",
-        axisLabel: { formatter: (v: number) => `${Math.round(v / 1_000_000)}M` },
-      },
-      yAxis: {
-        type: "category",
-        data: data.generation.areaTotals.map((item) => item.area),
-        axisLabel: { color: "#4a5568" },
-      },
-      series: [
-        {
-          type: "bar",
-          data: data.generation.areaTotals.map((item, idx) => ({
-            value: item.totalKwh,
-            itemStyle: {
-              color: idx % 2 === 0 ? "#2a9d8f" : "#1d3557",
-              borderRadius: [0, 6, 6, 0],
-            },
-          })),
+    () => {
+      const sortedAreaTotals = [...data.generation.areaTotals].sort((a, b) => b.totalKwh - a.totalKwh);
+      return {
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+        grid: { top: 18, left: 74, right: 18, bottom: 30 },
+        xAxis: {
+          type: "value",
+          axisLabel: { formatter: (v: number) => `${Math.round(v / 1_000_000)}M` },
         },
-      ],
-    }),
+        yAxis: {
+          type: "category",
+          inverse: true,
+          data: sortedAreaTotals.map((item) => item.area),
+          axisLabel: { color: "#4a5568" },
+        },
+        series: [
+          {
+            type: "bar",
+            data: sortedAreaTotals.map((item, idx) => ({
+              value: item.totalKwh,
+              itemStyle: {
+                color: idx % 2 === 0 ? "#2a9d8f" : "#1d3557",
+                borderRadius: [0, 6, 6, 0],
+              },
+            })),
+          },
+        ],
+      };
+    },
     [data.generation.areaTotals],
   );
 
