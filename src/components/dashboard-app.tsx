@@ -281,6 +281,7 @@ const STATION_GEO_HINTS_BY_AREA: Record<string, GeoHint[]> = {
     { keyword: "高松", lat: 34.3428, lon: 134.0466 },
     { keyword: "讃岐", lat: 34.32, lon: 134.17 },
     { keyword: "香川", lat: 34.34, lon: 134.05 },
+    { keyword: "麻", lat: 34.17, lon: 134.12 },
     { keyword: "阿波", lat: 34.066, lon: 134.556 },
     { keyword: "鳴門", lat: 34.1739, lon: 134.6085 },
     { keyword: "国府", lat: 34.0733, lon: 134.5207 },
@@ -289,6 +290,7 @@ const STATION_GEO_HINTS_BY_AREA: Record<string, GeoHint[]> = {
     { keyword: "西条", lat: 33.92, lon: 133.18 },
     { keyword: "川内", lat: 33.79, lon: 132.95 },
     { keyword: "井川", lat: 33.96, lon: 133.8 },
+    { keyword: "新改", lat: 33.61, lon: 133.75 },
     { keyword: "三島", lat: 33.98, lon: 133.55 },
     { keyword: "大洲", lat: 33.50, lon: 132.54 },
     { keyword: "高知", lat: 33.5597, lon: 133.5311 },
@@ -717,7 +719,12 @@ export function DashboardApp({ data }: DashboardAppProps) {
 
       const sourceName = line.avgMw >= 0 ? direction.source : direction.target;
       const targetName = line.avgMw >= 0 ? direction.target : direction.source;
-      if (isPseudoAreaNodeName(sourceName) || isPseudoAreaNodeName(targetName)) {
+      if (
+        isPseudoAreaNodeName(sourceName) ||
+        isPseudoAreaNodeName(targetName) ||
+        isLineLikeNodeName(sourceName) ||
+        isLineLikeNodeName(targetName)
+      ) {
         return;
       }
       const source = buildStationNodeId(line.area, sourceName);
@@ -1577,7 +1584,9 @@ function pickIntertieStationNodeId(args: {
     return null;
   }
 
-  const stations = Array.from(stationSet).filter((station) => !isPseudoAreaNodeName(station));
+  const stations = Array.from(stationSet).filter(
+    (station) => !isPseudoAreaNodeName(station) && !isLineLikeNodeName(station),
+  );
   if (stations.length === 0) {
     return null;
   }
@@ -1716,6 +1725,22 @@ function isPseudoAreaNodeName(name: string): boolean {
     .replace(/\([^)]*\)/g, "")
     .replace(/エリア/g, "");
   return FLOW_AREA_NAME_SET.has(normalized);
+}
+
+function isLineLikeNodeName(name: string): boolean {
+  const normalized = name
+    .trim()
+    .replace(/[!！?？]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/（[^）]*）/g, "")
+    .replace(/\([^)]*\)/g, "");
+  if (/(^|[^A-Za-z0-9])(幹線|連系線|フェンス|火力線|支線)$/.test(normalized)) {
+    return true;
+  }
+  if (normalized.endsWith("線") && !/(変電所|開閉所|変換所|発電所|SS|ss|SWS|sws|CS|cs|PS|ps|T)$/.test(normalized)) {
+    return true;
+  }
+  return false;
 }
 
 function getDirectionalNudge(station: string): { dx: number; dy: number } {
