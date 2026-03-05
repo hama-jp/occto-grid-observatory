@@ -421,6 +421,12 @@ export function DashboardApp({ data }: DashboardAppProps) {
   const [selectedArea, setSelectedArea] = useState<string>("全エリア");
   const [generationTrendArea, setGenerationTrendArea] = useState<string>("全エリア");
   const [sourceDonutArea, setSourceDonutArea] = useState<string>("全エリア");
+  const flowSlotLabels = data.meta.slotLabels.flow ?? [];
+  const maxFlowSlotIndex = Math.max(flowSlotLabels.length - 1, 0);
+  const [networkFlowSlotIndex, setNetworkFlowSlotIndex] = useState<number>(maxFlowSlotIndex);
+  const clampedNetworkFlowSlotIndex = clamp(Math.round(networkFlowSlotIndex), 0, maxFlowSlotIndex);
+  const selectedFlowSlotLabel = flowSlotLabels[clampedNetworkFlowSlotIndex] ?? "-";
+  const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
 
   const sourceTotalsByArea = useMemo(() => {
     const byArea: Record<string, Array<{ source: string; totalKwh: number }>> = {};
@@ -740,9 +746,10 @@ export function DashboardApp({ data }: DashboardAppProps) {
         return;
       }
       visibleAreas.add(line.area);
+      const slotMw = line.values[clampedNetworkFlowSlotIndex] ?? line.avgMw ?? 0;
 
-      const sourceName = line.avgMw >= 0 ? direction.source : direction.target;
-      const targetName = line.avgMw >= 0 ? direction.target : direction.source;
+      const sourceName = slotMw >= 0 ? direction.source : direction.target;
+      const targetName = slotMw >= 0 ? direction.target : direction.source;
       if (
         isPseudoAreaNodeName(sourceName) ||
         isPseudoAreaNodeName(targetName) ||
@@ -766,8 +773,8 @@ export function DashboardApp({ data }: DashboardAppProps) {
         kind: "intra",
         source,
         target,
-        value: line.avgMw,
-        absAvgMw: Math.abs(line.avgMw),
+        value: slotMw,
+        absAvgMw: Math.abs(slotMw),
         area: line.area,
         lineName: line.lineName,
         voltageKv: line.voltageKv,
@@ -806,8 +813,9 @@ export function DashboardApp({ data }: DashboardAppProps) {
       nodeDegree.set(sourceStationId, (nodeDegree.get(sourceStationId) ?? 0) + 1);
       nodeDegree.set(targetStationId, (nodeDegree.get(targetStationId) ?? 0) + 1);
 
-      const flowSource = line.avgMw >= 0 ? sourceStationId : targetStationId;
-      const flowTarget = line.avgMw >= 0 ? targetStationId : sourceStationId;
+      const slotMw = line.values[clampedNetworkFlowSlotIndex] ?? line.avgMw ?? 0;
+      const flowSource = slotMw >= 0 ? sourceStationId : targetStationId;
+      const flowTarget = slotMw >= 0 ? targetStationId : sourceStationId;
       const sourceStationName = stationNameFromNodeId(sourceStationId);
       const targetStationName = stationNameFromNodeId(targetStationId);
       const sourceIsConverter = isConverterStationName(sourceStationName);
@@ -817,8 +825,8 @@ export function DashboardApp({ data }: DashboardAppProps) {
         kind: "intertie",
         source: flowSource,
         target: flowTarget,
-        value: line.avgMw,
-        absAvgMw: line.avgAbsMw,
+        value: slotMw,
+        absAvgMw: Math.abs(slotMw),
         intertieName: line.intertieName,
         peakAbsMw: line.peakAbsMw,
         sourceArea: line.sourceArea,
@@ -1133,7 +1141,7 @@ export function DashboardApp({ data }: DashboardAppProps) {
                 params.data.targetArea
               }<br/>接続SS: ${params.data.sourceStation} ⇄ ${params.data.targetStation}<br/>変換所連系: ${
                 params.data.converterPair ? "変換所-変換所" : params.data.converterRoute ? "含む" : "なし"
-              }<br/>平均潮流: ${decimalFmt.format(
+              }<br/>表示時刻: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(
                 params.data.value,
               )} MW<br/>最大|潮流|: ${numberFmt.format(
                 params.data.peakAbsMw ?? 0,
@@ -1142,7 +1150,7 @@ export function DashboardApp({ data }: DashboardAppProps) {
             if (params.data.kind === "intra") {
               return `${params.data.area} | ${params.data.lineName}<br/>区分: 地域内送電線<br/>定義方向: ${
                 params.data.positiveDirection
-              }<br/>平均潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
+              }<br/>表示時刻: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
                 params.data.peakAbsMw ?? 0,
               )} MW<br/>電圧: ${params.data.voltageKv}`;
             }
@@ -1268,7 +1276,15 @@ export function DashboardApp({ data }: DashboardAppProps) {
         },
       ],
     };
-  }, [data.flows.areaSummaries, data.flows.intertieSeries, data.flows.lineSeries, data.generation.topUnits, selectedArea]);
+  }, [
+    data.flows.areaSummaries,
+    data.flows.intertieSeries,
+    data.flows.lineSeries,
+    data.generation.topUnits,
+    clampedNetworkFlowSlotIndex,
+    selectedArea,
+    selectedFlowDateTimeLabel,
+  ]);
 
   const interAreaFlowOption = useMemo(() => {
     const baseRows = data.flows.interAreaFlows ?? [];
@@ -1558,6 +1574,29 @@ export function DashboardApp({ data }: DashboardAppProps) {
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Panel title="エリアネットワーク潮流（連系線＋地域内送電線）" className="lg:col-span-2">
+            <div className="mb-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+                <span>表示日時: {selectedFlowDateTimeLabel}</span>
+                <span>
+                  スロット {flowSlotLabels.length === 0 ? 0 : clampedNetworkFlowSlotIndex + 1} / {flowSlotLabels.length}
+                </span>
+              </div>
+              <input
+                aria-label="ネットワーク潮流の表示時刻"
+                type="range"
+                min={0}
+                max={maxFlowSlotIndex}
+                step={1}
+                value={clampedNetworkFlowSlotIndex}
+                onChange={(event) => setNetworkFlowSlotIndex(Number(event.target.value))}
+                disabled={flowSlotLabels.length === 0}
+                className="w-full accent-teal-600"
+              />
+              <div className="mt-1 flex justify-between text-[11px] text-slate-500">
+                <span>{flowSlotLabels[0] ?? "-"}</span>
+                <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
+              </div>
+            </div>
             <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
           </Panel>
           <Panel title="エリア間連系潮流（実績）">
