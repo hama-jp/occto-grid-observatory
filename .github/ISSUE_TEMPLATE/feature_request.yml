@@ -1,0 +1,37 @@
+name: Feature request
+description: 機能追加の提案
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: linear_id
+    attributes:
+      label: Linear Issue ID
+      description: 例: GRID-456
+      placeholder: GRID-456
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい課題
+      description: 現状の痛みを具体的に
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提案内容
+      description: 仕様案・UI案・API案など
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ条件
+      description: 完了判定条件を箇条書きで
+      placeholder: |
+        - [ ] 条件1
+        - [ ] 条件2
+    validations:
+      required: true

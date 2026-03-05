@@ -1,0 +1,39 @@
+name: Bug report
+description: 不具合の報告
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: input
+    id: linear_id
+    attributes:
+      label: Linear Issue ID
+      description: 例: GRID-123
+      placeholder: GRID-123
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 何が起きたかを簡潔に書いてください
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 1. 2. 3. 形式で記載
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する結果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の結果
+    validations:
+      required: true
