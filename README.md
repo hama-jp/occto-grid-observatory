@@ -1,6 +1,6 @@
 # OCCTO Grid Observatory
 
-地内基幹送電線の潮流実績（OCCTO NET3）と、ユニット別発電実績（公開システム）を統合して可視化する Next.js ダッシュボードです。
+地内基幹送電線の潮流実績（OCCTO NET3）、地域間連系線の潮流実績、ユニット別発電実績（公開システム）を統合して可視化する Next.js ダッシュボードです。
 
 ## 技術スタック
 - Next.js 16 / React 19 / TypeScript
@@ -32,6 +32,9 @@ npm run ingest -- --mode=backfill --from=2026-02-20 --to=2026-02-29 --force=true
 
 出力:
 - `data/raw/YYYYMMDD/*.csv`
+  - `generation-YYYYMMDD.csv`
+  - `flow-YYYYMMDD-<area>.csv`
+  - `intertie-YYYYMMDD-<連系線>.csv`
 - `data/normalized/dashboard-latest.json`
 - `data/normalized/dashboard-YYYYMMDD.json`
 
@@ -58,8 +61,9 @@ PR / push 時に以下を実行:
 - 定時実行: 毎日 **16:10 JST**（= **07:10 UTC**）
 - 処理内容:
   1. schedule時は `npm run ingest -- --mode=daily --force=true`
-  2. `data/normalized` に差分があれば自動コミット＆push
-  3. `main` へのpushをトリガーに Pages デプロイが走る
+  2. 発電実績 + 地内基幹送電線 + 地域間連系線のCSVを取得して正規化
+  3. `data/normalized` に差分があれば自動コミット＆push
+  4. `main` へのpushをトリガーに Pages デプロイが走る
 - 手動実行:
   - Actions 画面の `Data Refresh` から `workflow_dispatch` を実行
   - `mode`:

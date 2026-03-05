@@ -11,6 +11,8 @@ import type {
   GenerationRow,
   HourlyAreaPoint,
   HourlySourcePoint,
+  InterAreaFlow,
+  IntertieSeries,
   LineSeries,
 } from "../src/lib/dashboard-types";
 
@@ -40,6 +42,33 @@ type CliArgs = {
 type DownloadResult = {
   generationCsv: string;
   flowCsvByArea: string[];
+  intertieCsvByLine: string[];
+};
+
+type IntertieFlowRow = {
+  intertieName: string;
+  targetDate: string;
+  time: string;
+  actualMw: number;
+};
+
+type IntertieAreaDefinition = {
+  sourceArea: string;
+  targetArea: string;
+};
+
+const INTERTIE_AREA_MAP: Record<string, IntertieAreaDefinition> = {
+  "北海道・本州間電力連系設備": { sourceArea: "北海道", targetArea: "東北" },
+  相馬双葉幹線: { sourceArea: "東北", targetArea: "東京" },
+  周波数変換設備: { sourceArea: "東京", targetArea: "中部" },
+  三重東近江線: { sourceArea: "中部", targetArea: "関西" },
+  "南福光連系所・南福光変電所の連系設備": { sourceArea: "北陸", targetArea: "関西" },
+  越前嶺南線: { sourceArea: "北陸", targetArea: "関西" },
+  "西播東岡山線・山崎智頭線": { sourceArea: "関西", targetArea: "中国" },
+  阿南紀北直流幹線: { sourceArea: "四国", targetArea: "関西" },
+  本四連系線: { sourceArea: "中国", targetArea: "四国" },
+  関門連系線: { sourceArea: "中国", targetArea: "九州" },
+  北陸フェンス: { sourceArea: "中部", targetArea: "北陸" },
 };
 
 async function main(): Promise<void> {
@@ -71,13 +100,16 @@ async function main(): Promise<void> {
     const downloadResult = await downloadCsvFiles(targetDate, rawDir);
     const generationRows = await parseGenerationCsv(downloadResult.generationCsv);
     const flowRows = await parseFlowCsv(downloadResult.flowCsvByArea);
+    const intertieRows = await parseIntertieCsv(downloadResult.intertieCsvByLine);
 
     const dashboard = buildDashboardData({
       targetDate,
       generationRows,
       flowRows,
+      intertieRows,
       generationCsvName: path.basename(downloadResult.generationCsv),
       flowCsvName: downloadResult.flowCsvByArea.map((file) => path.basename(file)).join(","),
+      intertieCsvName: downloadResult.intertieCsvByLine.map((file) => path.basename(file)).join(","),
     });
 
     const payload = JSON.stringify(dashboard, null, 2);
@@ -88,7 +120,7 @@ async function main(): Promise<void> {
     updatedCount += 1;
 
     console.log(
-      `[ingest] generated ${targetDate}: generation=${generationRows.length}, flow=${flowRows.length}`,
+      `[ingest] generated ${targetDate}: generation=${generationRows.length}, flow=${flowRows.length}, intertie=${intertieRows.length}`,
     );
     console.log(`[ingest] wrote ${datedOutputPath}`);
 
@@ -285,7 +317,8 @@ async function sleep(ms: number): Promise<void> {
 async function downloadCsvFiles(targetDate: string, rawDir: string): Promise<DownloadResult> {
   const generationCsv = await downloadGenerationCsv(targetDate, rawDir);
   const flowCsvByArea = await downloadFlowCsvByArea(targetDate, rawDir);
-  return { generationCsv, flowCsvByArea };
+  const intertieCsvByLine = await downloadIntertieCsvByLine(targetDate, rawDir);
+  return { generationCsv, flowCsvByArea, intertieCsvByLine };
 }
 
 async function downloadGenerationCsv(targetDate: string, rawDir: string): Promise<string> {
@@ -376,8 +409,96 @@ async function downloadFlowCsvForSingleArea(
   }
 }
 
-async function captureDownload(page: Page, trigger: () => Promise<void>): Promise<Download> {
-  const downloadPromise = page.waitForEvent("download", { timeout: 120_000 });
+async function downloadIntertieCsvByLine(targetDate: string, rawDir: string): Promise<string[]> {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ acceptDownloads: true });
+  const page = await context.newPage();
+  const outputFiles: string[] = [];
+
+  try {
+    await page.goto(OCCTO_LOGIN_URL, { waitUntil: "domcontentloaded" });
+    await page.locator("#menu1-1").click();
+
+    const popupPromise = context.waitForEvent("page");
+    await page.locator("#menu1-1-3-1").click();
+    const intertiePage = await popupPromise;
+    await intertiePage.waitForLoadState("domcontentloaded");
+    await intertiePage.waitForSelector("#tgtRkl", { timeout: 60_000 });
+
+    const options = await intertiePage.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLSelectElement>("#tgtRkl option"))
+        .map((option) => ({
+          value: option.value.trim(),
+          label: option.textContent?.trim() ?? "",
+        }))
+        .filter((option) => option.value.length > 0),
+    );
+
+    for (let i = 0; i < options.length; i += 1) {
+      const option = options[i];
+      console.log(`[ingest] downloading intertie csv for ${option.label}`);
+      try {
+        await intertiePage.fill("#spcDay", targetDate);
+        await intertiePage.selectOption("#tgtRkl", option.value);
+        await intertiePage.locator("#searchBtn").click();
+        await intertiePage.waitForLoadState("networkidle").catch(() => {});
+
+        const csvButton = intertiePage.locator("#csvBtn");
+        await intertiePage.waitForTimeout(700);
+        if (!(await csvButton.isEnabled())) {
+          console.log(`[ingest] skip intertie csv (no data): ${option.label}`);
+          continue;
+        }
+
+        const download = await captureDownload(
+          intertiePage,
+          async () => {
+            await csvButton.click();
+            const okButton = intertiePage.locator('.ui-dialog-buttonset button:has-text("OK")').first();
+            await okButton.click({ timeout: 10_000 }).catch(() => {});
+            await intertiePage.locator(".ui-widget-overlay").first().waitFor({ state: "hidden" }).catch(() => {});
+          },
+          30_000,
+        );
+
+        const fileIndex = String(i + 1).padStart(2, "0");
+        const safeLabel = sanitizeFilePart(option.label);
+        const outputPath = path.join(
+          rawDir,
+          `intertie-${targetDate.replaceAll("/", "")}-${fileIndex}-${safeLabel}.csv`,
+        );
+        await download.saveAs(outputPath);
+        outputFiles.push(outputPath);
+        console.log(`[ingest] downloaded intertie csv for ${option.label}`);
+      } catch (error: unknown) {
+        const detail = error instanceof Error ? error.message : String(error);
+        console.warn(`[ingest] skip intertie csv for ${option.label}: ${detail}`);
+
+        const cancelButton = intertiePage
+          .locator('.ui-dialog-buttonset button:has-text("cancel"), .ui-dialog-titlebar-close')
+          .first();
+        if (await cancelButton.isVisible().catch(() => false)) {
+          await cancelButton.click().catch(() => {});
+        }
+        await intertiePage.keyboard.press("Escape").catch(() => {});
+      }
+
+      await intertiePage.waitForTimeout(800);
+    }
+
+    return outputFiles;
+  } finally {
+    await context.close();
+    await browser.close();
+  }
+}
+
+async function captureDownload(
+  page: Page,
+  trigger: () => Promise<void>,
+  timeoutMs = 120_000,
+): Promise<Download> {
+  const downloadPromise = page.waitForEvent("download", { timeout: timeoutMs });
   await trigger();
   return downloadPromise;
 }
@@ -443,6 +564,31 @@ async function parseFlowCsv(filePaths: string[]): Promise<FlowRow[]> {
   return parsed;
 }
 
+async function parseIntertieCsv(filePaths: string[]): Promise<IntertieFlowRow[]> {
+  const parsed: IntertieFlowRow[] = [];
+
+  for (const filePath of filePaths) {
+    const raw = await fs.readFile(filePath);
+    const text = iconv.decode(raw, "cp932");
+    const rows = parse(text, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    }) as Record<string, string>[];
+
+    for (const row of rows) {
+      parsed.push({
+        intertieName: row["連系線"] ?? "",
+        targetDate: row["対象日付"] ?? "",
+        time: row["対象時刻"] ?? "",
+        actualMw: parseNumber(row["潮流実績"]),
+      });
+    }
+  }
+
+  return parsed;
+}
+
 function parseNumber(raw: string | undefined): number {
   if (!raw) {
     return 0;
@@ -457,12 +603,23 @@ function parseNumber(raw: string | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function sanitizeFilePart(value: string): string {
+  const cleaned = value
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return cleaned.length > 0 ? cleaned : "intertie";
+}
+
 function buildDashboardData(args: {
   targetDate: string;
   generationRows: GenerationRow[];
   flowRows: FlowRow[];
+  intertieRows: IntertieFlowRow[];
   generationCsvName: string;
   flowCsvName: string;
+  intertieCsvName: string;
 }): DashboardData {
   const generationSlotCount = args.generationRows[0]?.values.length ?? 48;
   const flowSlotCount = args.flowRows[0]?.values.length ?? 48;
@@ -475,6 +632,7 @@ function buildDashboardData(args: {
   const sourceTotalsMap = new Map<string, number>();
   const hourlyByAreaMap = new Map<string, number[]>();
   const hourlyBySourceMap = new Map<string, number[]>();
+  const hourlyByAreaSourceMap = new Map<string, Map<string, number[]>>();
 
   for (const row of args.generationRows) {
     areaTotalsMap.set(row.area, (areaTotalsMap.get(row.area) ?? 0) + row.dailyKwh);
@@ -482,12 +640,17 @@ function buildDashboardData(args: {
 
     const areaSeries = hourlyByAreaMap.get(row.area) ?? new Array(slotCount).fill(0);
     const sourceSeries = hourlyBySourceMap.get(row.sourceType) ?? new Array(slotCount).fill(0);
+    const areaSourceMap = hourlyByAreaSourceMap.get(row.area) ?? new Map<string, number[]>();
+    const areaSourceSeries = areaSourceMap.get(row.sourceType) ?? new Array(slotCount).fill(0);
     for (let i = 0; i < slotCount; i += 1) {
       areaSeries[i] += row.values[i] ?? 0;
       sourceSeries[i] += row.values[i] ?? 0;
+      areaSourceSeries[i] += row.values[i] ?? 0;
     }
     hourlyByAreaMap.set(row.area, areaSeries);
     hourlyBySourceMap.set(row.sourceType, sourceSeries);
+    areaSourceMap.set(row.sourceType, areaSourceSeries);
+    hourlyByAreaSourceMap.set(row.area, areaSourceMap);
   }
 
   const lineSeries: LineSeries[] = args.flowRows.map((row) => {
@@ -593,16 +756,32 @@ function buildDashboardData(args: {
     return { time, values };
   });
 
+  const hourlyBySourceByArea: Record<string, HourlySourcePoint[]> = {};
+  for (const [area, sourceSeriesMap] of hourlyByAreaSourceMap.entries()) {
+    hourlyBySourceByArea[area] = generationLabels.map((time, idx) => {
+      const values: Record<string, number> = {};
+      for (const [source, series] of sourceSeriesMap.entries()) {
+        values[source] = roundTo(series[idx] ?? 0, 0);
+      }
+      return { time, values };
+    });
+  }
+
   const topUnits = [...args.generationRows]
     .sort((a, b) => b.dailyKwh - a.dailyKwh)
     .slice(0, 60)
-    .map((row) => ({
-      area: row.area,
-      plantName: row.plantName,
-      unitName: row.unitName,
-      sourceType: row.sourceType,
-      dailyKwh: row.dailyKwh,
-    }));
+    .map((row) => {
+      const maxSlotKwh = row.values.reduce((max, value) => Math.max(max, value), 0);
+      const maxOutputManKw = roundTo(maxSlotKwh / 5000, 2);
+      return {
+        area: row.area,
+        plantName: row.plantName,
+        unitName: row.unitName,
+        sourceType: row.sourceType,
+        maxOutputManKw,
+        dailyKwh: row.dailyKwh,
+      };
+    });
 
   const areaBalance: AreaBalance[] = generationAreaTotals.map((generation) => {
     const flow = areaSummaries.find((item) => item.area === generation.area);
@@ -620,6 +799,9 @@ function buildDashboardData(args: {
     };
   });
 
+  const intertieSeries = buildIntertieSeries(args.intertieRows, slotCount);
+  const interAreaFlows = buildInterAreaFlows(intertieSeries);
+
   return {
     meta: {
       targetDate: args.targetDate,
@@ -634,12 +816,14 @@ function buildDashboardData(args: {
       sources: {
         generationCsv: args.generationCsvName,
         flowCsv: args.flowCsvName,
+        intertieCsv: args.intertieCsvName,
       },
     },
     generation: {
       areaTotals: generationAreaTotals,
       sourceTotals: generationSourceTotals,
       hourlyBySource,
+      hourlyBySourceByArea,
       hourlyTotalByArea,
       topUnits,
     },
@@ -648,11 +832,164 @@ function buildDashboardData(args: {
       hourlyAbsByArea,
       hourlyAbsStats,
       lineSeries: lineSeries.sort((a, b) => b.peakAbsMw - a.peakAbsMw).slice(0, 200),
+      intertieSeries,
+      interAreaFlows,
     },
     insights: {
       areaBalance: areaBalance.sort((a, b) => b.stressIndex - a.stressIndex),
     },
   };
+}
+
+function buildIntertieSeries(intertieRows: IntertieFlowRow[], slotCount: number): IntertieSeries[] {
+  const byIntertie = new Map<
+    string,
+    {
+      values5m: number[];
+      counts5m: number[];
+    }
+  >();
+
+  for (const row of intertieRows) {
+    const idx = timeToFiveMinuteIndex(row.time);
+    if (idx === null) {
+      continue;
+    }
+
+    const entry = byIntertie.get(row.intertieName) ?? {
+      values5m: new Array(288).fill(0),
+      counts5m: new Array(288).fill(0),
+    };
+    entry.values5m[idx] += row.actualMw;
+    entry.counts5m[idx] += 1;
+    byIntertie.set(row.intertieName, entry);
+  }
+
+  const series: IntertieSeries[] = [];
+  for (const [intertieName, entry] of byIntertie.entries()) {
+    const values5m = entry.values5m.map((sum, idx) => {
+      const count = entry.counts5m[idx] || 1;
+      return sum / count;
+    });
+    const values30m = aggregateTo30Minute(values5m, slotCount);
+    const avgMw = values5m.reduce((sum, value) => sum + value, 0) / Math.max(values5m.length, 1);
+    const avgAbsMw = values5m.reduce((sum, value) => sum + Math.abs(value), 0) / Math.max(values5m.length, 1);
+    const peakAbsMw = values5m.reduce((max, value) => Math.max(max, Math.abs(value)), 0);
+    const areas = resolveIntertieAreas(intertieName);
+
+    series.push({
+      intertieName,
+      sourceArea: areas.sourceArea,
+      targetArea: areas.targetArea,
+      peakAbsMw: roundTo(peakAbsMw, 1),
+      avgMw: roundTo(avgMw, 1),
+      avgAbsMw: roundTo(avgAbsMw, 1),
+      values: values30m.map((value) => roundTo(value, 1)),
+    });
+  }
+
+  return series.sort((a, b) => b.avgAbsMw - a.avgAbsMw);
+}
+
+function buildInterAreaFlows(intertieSeries: IntertieSeries[]): InterAreaFlow[] {
+  const byPair = new Map<
+    string,
+    {
+      sourceArea: string;
+      targetArea: string;
+      avgMw: number;
+      avgAbsMw: number;
+      peakAbsMw: number;
+      intertieNames: string[];
+    }
+  >();
+
+  for (const line of intertieSeries) {
+    const key = `${line.sourceArea}→${line.targetArea}`;
+    const entry = byPair.get(key) ?? {
+      sourceArea: line.sourceArea,
+      targetArea: line.targetArea,
+      avgMw: 0,
+      avgAbsMw: 0,
+      peakAbsMw: 0,
+      intertieNames: [] as string[],
+    };
+
+    entry.avgMw += line.avgMw;
+    entry.avgAbsMw += line.avgAbsMw;
+    entry.peakAbsMw = Math.max(entry.peakAbsMw, line.peakAbsMw);
+    entry.intertieNames.push(line.intertieName);
+    byPair.set(key, entry);
+  }
+
+  return Array.from(byPair.values())
+    .map((entry) => ({
+      sourceArea: entry.sourceArea,
+      targetArea: entry.targetArea,
+      avgMw: roundTo(entry.avgMw, 1),
+      avgAbsMw: roundTo(entry.avgAbsMw, 1),
+      peakAbsMw: roundTo(entry.peakAbsMw, 1),
+      intertieCount: entry.intertieNames.length,
+      intertieNames: entry.intertieNames,
+    }))
+    .sort((a, b) => b.avgAbsMw - a.avgAbsMw);
+}
+
+function aggregateTo30Minute(values5m: number[], slotCount: number): number[] {
+  const pointsPerSlot = 6;
+  const slots = new Array(slotCount).fill(0);
+  for (let slotIdx = 0; slotIdx < slotCount; slotIdx += 1) {
+    let sum = 0;
+    let count = 0;
+    for (let offset = 0; offset < pointsPerSlot; offset += 1) {
+      const idx = slotIdx * pointsPerSlot + offset;
+      if (idx >= values5m.length) {
+        break;
+      }
+      sum += values5m[idx];
+      count += 1;
+    }
+    slots[slotIdx] = count === 0 ? 0 : sum / count;
+  }
+  return slots;
+}
+
+function timeToFiveMinuteIndex(value: string): number | null {
+  const matched = value.match(/^(\d{2}):(\d{2})$/);
+  if (!matched) {
+    return null;
+  }
+
+  const hh = Number(matched[1]);
+  const mm = Number(matched[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm) || hh < 0 || hh > 24 || mm < 0 || mm > 59) {
+    return null;
+  }
+
+  const totalMinutes = hh * 60 + mm;
+  if (totalMinutes < 5 || totalMinutes > 1440 || (totalMinutes - 5) % 5 !== 0) {
+    return null;
+  }
+
+  const idx = (totalMinutes - 5) / 5;
+  return idx >= 0 && idx < 288 ? idx : null;
+}
+
+function resolveIntertieAreas(intertieName: string): IntertieAreaDefinition {
+  const exact = INTERTIE_AREA_MAP[intertieName];
+  if (exact) {
+    return exact;
+  }
+
+  const normalized = intertieName.replace(/\s+/g, "");
+  for (const [name, areas] of Object.entries(INTERTIE_AREA_MAP)) {
+    const normalizedName = name.replace(/\s+/g, "");
+    if (normalized.includes(normalizedName) || normalizedName.includes(normalized)) {
+      return areas;
+    }
+  }
+
+  return { sourceArea: "不明", targetArea: "不明" };
 }
 
 function buildTimeLabels(startMinute: number, points: number, stepMinute: number): string[] {

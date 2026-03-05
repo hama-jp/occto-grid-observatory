@@ -49,6 +49,7 @@ export type TopUnit = {
   plantName: string;
   unitName: string;
   sourceType: string;
+  maxOutputManKw: number;
   dailyKwh: number;
 };
 
@@ -67,6 +68,26 @@ export type LineSeries = {
   peakAbsMw: number;
   avgMw: number;
   values: number[];
+};
+
+export type IntertieSeries = {
+  intertieName: string;
+  sourceArea: string;
+  targetArea: string;
+  peakAbsMw: number;
+  avgMw: number;
+  avgAbsMw: number;
+  values: number[];
+};
+
+export type InterAreaFlow = {
+  sourceArea: string;
+  targetArea: string;
+  avgMw: number;
+  avgAbsMw: number;
+  peakAbsMw: number;
+  intertieCount: number;
+  intertieNames: string[];
 };
 
 export type AreaBalance = {
@@ -91,12 +112,14 @@ export type DashboardData = {
     sources: {
       generationCsv: string;
       flowCsv: string;
+      intertieCsv?: string;
     };
   };
   generation: {
     areaTotals: AreaTotal[];
     sourceTotals: SourceTotal[];
     hourlyBySource: HourlySourcePoint[];
+    hourlyBySourceByArea?: Record<string, HourlySourcePoint[]>;
     hourlyTotalByArea: HourlyAreaPoint[];
     topUnits: TopUnit[];
   };
@@ -109,6 +132,8 @@ export type DashboardData = {
       p95AbsMw: number;
     }>;
     lineSeries: LineSeries[];
+    intertieSeries?: IntertieSeries[];
+    interAreaFlows?: InterAreaFlow[];
   };
   insights: {
     areaBalance: AreaBalance[];
