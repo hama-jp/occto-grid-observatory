@@ -61,6 +61,19 @@ const MAP_VIEWBOX = {
   padding: 30,
 };
 
+const FLOW_AREA_NAME_SET = new Set<string>([
+  "北海道",
+  "東北",
+  "東京",
+  "中部",
+  "北陸",
+  "関西",
+  "中国",
+  "四国",
+  "九州",
+  "沖縄",
+]);
+
 type GeoHint = {
   keyword: string;
   lat: number;
@@ -701,6 +714,9 @@ export function DashboardApp({ data }: DashboardAppProps) {
 
       const sourceName = line.avgMw >= 0 ? direction.source : direction.target;
       const targetName = line.avgMw >= 0 ? direction.target : direction.source;
+      if (isPseudoAreaNodeName(sourceName) || isPseudoAreaNodeName(targetName)) {
+        return;
+      }
       const source = buildStationNodeId(line.area, sourceName);
       const target = buildStationNodeId(line.area, targetName);
 
@@ -1365,7 +1381,10 @@ function pickIntertieStationNodeId(args: {
     return null;
   }
 
-  const stations = Array.from(stationSet);
+  const stations = Array.from(stationSet).filter((station) => !isPseudoAreaNodeName(station));
+  if (stations.length === 0) {
+    return null;
+  }
   const intertieHints = INTERTIE_STATION_HINTS[args.intertieName]?.[args.area] ?? [];
 
   for (const keyword of intertieHints) {
@@ -1459,6 +1478,17 @@ function normalizeStationName(station: string): string {
     .replace(/（[^）]*）/g, "")
     .replace(/\([^)]*\)/g, "")
     .replace(/変電所|開閉所|変換所|発電所|火力|幹線|連系線|SS|ss|SWS|sws|CS|cs|PS|ps/g, "");
+}
+
+function isPseudoAreaNodeName(name: string): boolean {
+  const normalized = name
+    .trim()
+    .replace(/[!！?？]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/（[^）]*）/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/エリア/g, "");
+  return FLOW_AREA_NAME_SET.has(normalized);
 }
 
 function getDirectionalNudge(station: string): { dx: number; dy: number } {
