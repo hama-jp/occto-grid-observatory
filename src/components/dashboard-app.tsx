@@ -492,25 +492,50 @@ export function DashboardApp({ data }: DashboardAppProps) {
       sourceDonutArea === "全エリア"
         ? data.generation.sourceTotals
         : (sourceTotalsByArea[sourceDonutArea] ?? []);
+    const totalKwh = rows.reduce((sum, item) => sum + item.totalKwh, 0);
+    let cumulativePercent = 0;
+    const rightLegend: string[] = [];
+    const leftLegend: string[] = [];
+
+    rows.forEach((item) => {
+      const percent = totalKwh > 0 ? (item.totalKwh / totalKwh) * 100 : 0;
+      cumulativePercent += percent;
+      const name = normalizeSourceName(item.source);
+      if (cumulativePercent <= 50) {
+        rightLegend.push(name);
+      } else {
+        leftLegend.push(name);
+      }
+    });
 
     return {
       tooltip: { trigger: "item" },
-      legend: {
-        type: "scroll",
-        orient: "vertical",
-        left: "58%",
-        top: "middle",
-        bottom: 8,
-        itemGap: 10,
-        textStyle: { color: "#264653" },
-        formatter: (name: string) => normalizeSourceName(name),
-      },
+      legend: [
+        {
+          type: "scroll",
+          orient: "vertical",
+          left: "4%",
+          top: "middle",
+          itemGap: 8,
+          textStyle: { color: "#264653" },
+          data: leftLegend,
+        },
+        {
+          type: "scroll",
+          orient: "vertical",
+          right: "4%",
+          top: "middle",
+          itemGap: 8,
+          textStyle: { color: "#264653" },
+          data: rightLegend,
+        },
+      ],
       series: [
         {
           name: "発電方式",
           type: "pie",
-          radius: ["45%", "72%"],
-          center: ["30%", "50%"],
+          radius: ["42%", "68%"],
+          center: ["50%", "50%"],
           avoidLabelOverlap: true,
           label: {
             formatter: (params: { percent?: number; name: string }) => {
