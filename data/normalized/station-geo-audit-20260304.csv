@@ -1,0 +1,383 @@
+area,station,stationNormalized,query,confidence,score,lat,lon,displayName,reason,resultCount
+中部,信濃,信濃,信濃 中部 変電所 日本,low,0.439,34.9951671,135.7643299,"信濃善光寺分身如来, 富小路通, 下柳町, 唐物町, 下京区, 京都市, 京都府, 600-8184, 日本","stationContained=true, displayHasKind=false, overlap=1, queryOverlap=0.444",1
+東京,西東京,西東京,西東京 東京 変電所 日本,low,0.325,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=1, queryOverlap=0.625",5
+東北,新庄,新庄,新庄 東北 変電所 日本,low,0.439,35.0035743,135.7548399,"新庄家旗店, 四条通, 傘鉾町, 下京区, 京都市, 京都府, 600-8473, 日本","stationContained=true, displayHasKind=false, overlap=1, queryOverlap=0.444",1
+東北,西山形,西山形,西山形 東北 変電所 日本,low,0.3,34.225939,135.178504,"和歌山西警察署屋形町交番, 屋形通り, 屋形町五丁目, 和歌山市, 和歌山県, 640-8511, 日本","stationContained=false, displayHasKind=false, overlap=1, queryOverlap=0.5",1
+北陸,城端開閉所,城端,城端開閉所 北陸 開閉所 日本,low,0.289,35.0491953,135.7864183,"大城田町, 川端通, 一乗寺小谷町, 山端川端町, 左京区, 京都市, 京都府, 606-8003, 日本","stationContained=false, displayHasKind=false, overlap=1, queryOverlap=0.444",3
+沖縄,栄野比変電所,栄野比,栄野比変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,吉の浦火力変電所,吉の浦,吉の浦火力変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,金武火力変電所,金武,金武火力変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,具志川火力開閉所,具志川,具志川火力開閉所 沖縄 開閉所 日本,none,0,,,,no_result,0
+沖縄,具志川火力変電所,具志川,具志川火力変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,西原変電所,西原,西原変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,西那覇変電所,西那覇,西那覇変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,石川火力変電所,石川,石川火力変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,石川開閉所,石川,石川開閉所 沖縄 開閉所 日本,none,0,,,,no_result,0
+沖縄,渡口変電所,渡口,渡口変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,北那覇変電所,北那覇,北那覇変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,牧港第一変電所,牧港第一,牧港第一変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+沖縄,友寄変電所,友寄,友寄変電所 沖縄 変電所 日本,none,0,,,,no_result,0
+関西,１０９T（泉南東大阪線）,１０９T,１０９T（泉南東大阪線） 関西 変電所 日本,none,0,,,,no_result,0
+関西,１７T（北大阪線）,１７T,１７T（北大阪線） 関西 変電所 日本,none,0,,,,no_result,0
+関西,４２T,４２T,４２T 関西 変電所 日本,none,0,,,,no_result,0
+関西,４２T（北神線）,４２T,４２T（北神線） 関西 変電所 日本,none,0,,,,no_result,0
+関西,伊丹変電所,伊丹,伊丹変電所 関西 変電所 日本,none,0,,,,no_result,0
+関西,喜撰山発電所,喜撰山,喜撰山発電所 関西 発電所 日本,none,0,34.2317088,135.1724446,"日本政策金融公庫和歌山支店, 市堀川遊歩道, 十二番丁, 和歌山市, 和歌山県, 640-8511, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",1
+関西,紀の川変電所,紀の川,紀の川変電所 関西 変電所 日本,none,0,,,,no_result,0
+関西,紀北変換所,紀北,紀北変換所 関西 変換所 日本,none,0,,,,no_result,0
+関西,京北開閉所,京北,京北開閉所 関西 開閉所 日本,none,0,,,,no_result,0
+関西,金剛開閉所,金剛,金剛開閉所 関西 開閉所 日本,none,0,,,,no_result,0
+関西,金剛変電所,金剛,金剛変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",1
+関西,栗東変電所,栗東,栗東変電所 関西 変電所 日本,none,0.064,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",5
+関西,湖東変電所,湖東,湖東変電所 関西 変電所 日本,none,0.064,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",5
+関西,湖南変電所,湖南,湖南変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+関西,甲賀変電所,甲賀,甲賀変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",2
+関西,山崎開閉所,山崎,山崎開閉所 関西 開閉所 日本,none,0,,,,no_result,0
+関西,小曽根変電所・下穂積変電所・北豊中変電所,小曽根・下穂積・北豊中,小曽根変電所・下穂積変電所・北豊中変電所 関西 変電所 日本,none,0,,,,no_result,0
+関西,信貴変電所,信貴,信貴変電所 関西 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",1
+関西,新綾部変電所,新綾部,新綾部変電所 関西 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",1
+関西,新加古川変電所,新加古川,新加古川変電所 関西 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.25, queryOverlap=0.273",1
+関西,新加古川変電所（東播変電所）,新加古川,新加古川変電所（東播変電所） 関西 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.25, queryOverlap=0.2",1
+関西,新神戸変電所,新神戸,新神戸変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",5
+関西,新生駒変電所,新生駒,新生駒変電所 関西 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",1
+関西,神戸変電所,神戸,神戸変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",5
+関西,西京都変電所,西京都,西京都変電所 関西 変電所 日本,none,0.139,35.0035349,135.7531292,"TinToy&Doll Museum, 四条通, 傘鉾町, 下京区, 京都市, 京都府, 600-8473, 日本","stationContained=false, displayHasKind=false, overlap=0.667, queryOverlap=0.444",1
+関西,西神戸変電所,西神戸,西神戸変電所 関西 変電所 日本,none,0,,,,no_result,0
+関西,西大阪変電所,西大阪,西大阪変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.333",5
+関西,西播変電所,西播,西播変電所 関西 変電所 日本,none,0.05,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.375",4
+関西,泉南変電所,泉南,泉南変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+関西,大河内発電所,大河内,大河内発電所 関西 発電所 日本,none,0,35.0026662,135.7616327,"日本武尊　春日大社　伏見稲荷大社　石清水八幡宮　北野天満宮, 綾小路, 塩屋町, 下京区, 京都市, 京都府, 600-8071, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",5
+関西,猪名川変電所,猪名川,猪名川変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",5
+関西,東近江開閉所,東近江,東近江開閉所 関西 開閉所 日本,none,0,,,,no_result,0
+関西,東近江変電所,東近江,東近江変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",5
+関西,東大阪変電所,東大阪,東大阪変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",5
+関西,東大阪変電所（新寝屋川変電所）,東大阪,東大阪変電所（新寝屋川変電所） 関西 変電所 日本,none,0,,,,no_result,0
+関西,東大和開閉所,東大和,東大和開閉所 関西 開閉所 日本,none,0,,,,no_result,0
+関西,南京都変電所,南京都,南京都変電所 関西 変電所 日本,none,0,,,,no_result,0
+関西,南大阪変電所,南大阪,南大阪変電所 関西 変電所 日本,none,0,35.0026662,135.7616327,"日本武尊　春日大社　伏見稲荷大社　石清水八幡宮　北野天満宮, 綾小路, 塩屋町, 下京区, 京都市, 京都府, 600-8071, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",4
+関西,能勢変電所,能勢,能勢変電所 関西 変電所 日本,none,0,35.0076183,135.7602547,"本堂, 六角通, 鍛冶屋町, 中京区, 京都市, 京都府, 604-8212, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",1
+関西,姫路変電所,姫路,姫路変電所 関西 変電所 日本,none,0.064,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",5
+関西,宝塚開閉所,宝塚,宝塚開閉所 関西 開閉所 日本,none,0,,,,no_result,0
+関西,北葛城変電所,北葛城,北葛城変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",5
+関西,北摂変電所,北摂,北摂変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",5
+関西,北大阪変電所,北大阪,北大阪変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",5
+関西,北大阪変電所（西大阪変電所）,北大阪,北大阪変電所（西大阪変電所） 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.25",5
+関西,枚方変電所,枚方,枚方変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",5
+関西,枚方変電所（洛南変電所）,枚方,枚方変電所（洛南変電所） 関西 変電所 日本,none,0,,,,no_result,0
+関西,淀川変電所,淀川,淀川変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",5
+関西,嶺南変電所,嶺南,嶺南変電所 関西 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+九州,ひむかss,ひむか,ひむかss 九州 変電所 日本,none,0,,,,no_result,0
+九州,伊都ss,伊都,伊都ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,一ツ瀬ss,一ツ瀬,一ツ瀬ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,海崎ss,海崎,海崎ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,苅田ss,苅田,苅田ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,久留米ss,久留米,久留米ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,宮崎ss,宮崎,宮崎ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,弓削ss,弓削,弓削ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,熊本,熊本,熊本 九州 変電所 日本,none,0,,,,no_result,0
+九州,熊本ss,熊本,熊本ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,古賀ss,古賀,古賀ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,高野sws,高野,高野sws 九州 開閉所 日本,none,0,,,,no_result,0
+九州,三池ss,三池,三池ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,山家ss,山家,山家ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,鹿児島ss,鹿児島,鹿児島ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,住吉ss,住吉,住吉ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,松島ss,松島,松島ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,上津役ss,上津役,上津役ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,上椎葉ps,上椎葉,上椎葉ps 九州 発電所 日本,none,0,,,,no_result,0
+九州,上椎葉ss,上椎葉,上椎葉ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,新鹿児島ss,新鹿児島,新鹿児島ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,新日向ss,新日向,新日向ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,人吉ss,人吉,人吉ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,西九州ss,西九州,西九州ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,西佐世保ss,西佐世保,西佐世保ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,西大分ss,西大分,西大分ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,西谷ss,西谷,西谷ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,西福岡ss,西福岡,西福岡ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,脊振ss,脊振,脊振ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,川薩ss,川薩,川薩ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,速見ss,速見,速見ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,大隅ss,大隅,大隅ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,大分ss,大分,大分ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,大平ss,大平,大平ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,筑豊ss,筑豊,筑豊ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,中央ss,中央,中央ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,中九州ss,中九州,中九州ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,長崎ss,長崎,長崎ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,鳥栖ss,鳥栖,鳥栖ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,槻田sws,槻田,槻田sws 九州 開閉所 日本,none,0,,,,no_result,0
+九州,都城ss,都城,都城ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,唐津ss,唐津,唐津ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,東九州ss,東九州,東九州ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,東佐世保ss,東佐世保,東佐世保ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,東大分ss,東大分,東大分ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,東福岡ss,東福岡,東福岡ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,到津ss,到津,到津ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,南宮崎ss,南宮崎,南宮崎ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,南九州ss,南九州,南九州ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,南熊本ss,南熊本,南熊本ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,南福岡ss,南福岡,南福岡ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,日田ss,日田,日田ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,柏田ss,柏田,柏田ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,八代ss,八代,八代ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,武雄ss,武雄,武雄ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,豊前ss,豊前,豊前ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,北九州ss,北九州,北九州ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,北熊本ss,北熊本,北熊本ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,北佐賀ss,北佐賀,北佐賀ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,北長崎ss,北長崎,北長崎ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,霧島ss,霧島,霧島ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,木佐木ss,木佐木,木佐木ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,門司ss,門司,門司ss 九州 変電所 日本,none,0,,,,no_result,0
+九州,諫早ss,諫早,諫早ss 九州 変電所 日本,none,0,,,,no_result,0
+四国,阿南CS,阿南,阿南CS 四国 変換所 日本,none,0,,,,no_result,0
+四国,阿波SS,阿波,阿波SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,井川SS,井川,井川SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,広見SS,広見,広見SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,香川SS,香川,香川SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,高松SS,高松,高松SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,高知SS,高知,高知SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,国府SS,国府,国府SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,三島SS,三島,三島SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,讃岐SS,讃岐,讃岐SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,松山SS,松山,松山SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,新改PS,新改,新改PS 四国 発電所 日本,none,0,,,,no_result,0
+四国,西条SS,西条,西条SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,川内SS,川内,川内SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,大洲SS,大洲,大洲SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,東予SS,東予,東予SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,北松山SS,北松山,北松山SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,本川PS,本川,本川PS 四国 発電所 日本,none,0,,,,no_result,0
+四国,麻SS,麻,麻SS 四国 変電所 日本,none,0,,,,no_result,0
+四国,鳴門SS,鳴門,鳴門SS 四国 変電所 日本,none,0,,,,no_result,0
+中国,井原（開）,井原,井原（開） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.25",5
+中国,岡山（変）,岡山,岡山（変） 中国 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.182",1
+中国,笠岡（変）,笠岡,笠岡（変） 中国 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.182",1
+中国,広島（変）,広島,広島（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.273",5
+中国,広島西幹線,広島西,広島西幹線 中国 変電所 日本,none,0,,,,no_result,0
+中国,広島中央（変）,広島中央,広島中央（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.25, queryOverlap=0.25",5
+中国,広島東幹線,広島東,広島東幹線 中国 変電所 日本,none,0,,,,no_result,0
+中国,黒瀬（変）,黒瀬,黒瀬（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.273",4
+中国,作木（変）,作木,作木（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.273",5
+中国,山陰幹線,山陰,山陰幹線 中国 変電所 日本,none,0,,,,no_result,0
+中国,山口（変）,山口,山口（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.273",5
+中国,山口幹線,山口,山口幹線 中国 変電所 日本,none,0,,,,no_result,0
+中国,松江（変）,松江,松江（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.273",5
+中国,新岡山（変）,新岡山,新岡山（変） 中国 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.167",1
+中国,新岩国（変）,新岩国,新岩国（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.364",5
+中国,新広島（変）,新広島,新広島（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.333",5
+中国,新山口（変）,新山口,新山口（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.333",5
+中国,新西広島（変）,新西広島,新西広島（変） 中国 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.25, queryOverlap=0.308",1
+中国,新倉敷（変）,新倉敷,新倉敷（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.333",5
+中国,新鳥取（変）,新鳥取,新鳥取（変） 中国 変電所 日本,none,0,,,,no_result,0
+中国,新徳山（変）,新徳山,新徳山（変） 中国 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.333",5
+中国,新徳山幹線,新徳山,新徳山幹線 中国 変電所 日本,none,0,,,,no_result,0
+中国,西島根（変）,西島根,西島根（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.25",1
+中国,智頭（変）,智頭,智頭（変） 中国 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.182",3
+中国,東岡山（変）,東岡山,東岡山（変） 中国 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.25",1
+中国,東山口（変）,東山口,東山口（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.25",5
+中国,南山口（変）,南山口,南山口（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.25",2
+中国,日野（変）,日野,日野（変） 中国 変電所 日本,none,0.035,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.3",2
+中国,北松江（変）,北松江,北松江（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.25",5
+中国,北尾道（変）,北尾道,北尾道（変） 中国 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.25",2
+中部,愛知,愛知,愛知 中部 変電所 日本,none,0,,,,no_result,0
+中部,伊勢,伊勢,伊勢 中部 変電所 日本,none,0,35.0095581,135.7566589,"歴史的意匠建造物, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",2
+中部,遠江,遠江,遠江 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,下広井,下広井,下広井 中部 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",4
+中部,海部,海部,海部 中部 変電所 日本,none,0,,,,no_result,0
+中部,額田,額田,額田 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,岐阜,岐阜,岐阜 中部 変電所 日本,none,0,,,,no_result,0
+中部,亀山,亀山,亀山 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,牛島町,牛島町,牛島町 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",1
+中部,金山,金山,金山 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,犬山,犬山,犬山 中部 変電所 日本,none,0.064,34.2302299,135.1742466,"全国健康保険協会和歌山支部, 本町通り, 十一番丁, 和歌山市, 和歌山県, 640-8511, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",1
+中部,湖西,湖西,湖西 中部 変電所 日本,none,0.042,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.333",4
+中部,幸田,幸田,幸田 中部 変電所 日本,none,0,,,,no_result,0
+中部,高根,高根,高根 中部 変電所 日本,none,0,,,,no_result,0
+中部,佐久,佐久,佐久 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",3
+中部,佐久間,佐久間,佐久間 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",3
+中部,三河,三河,三河 中部 変電所 日本,none,0,,,,no_result,0
+中部,三重,三重,三重 中部 変電所 日本,none,0,,,,no_result,0
+中部,駿遠,駿遠,駿遠 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,駿河,駿河,駿河 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,松ヶ枝,松ヶ枝,松ヶ枝 中部 変電所 日本,none,0,35.0076183,135.7602547,"本堂, 六角通, 鍛冶屋町, 中京区, 京都市, 京都府, 604-8212, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",1
+中部,新佐倉,新佐倉,新佐倉 中部 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",1
+中部,新三河,新三河,新三河 中部 変電所 日本,none,0,,,,no_result,0
+中部,新北信,新北信,新北信 中部 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",1
+中部,瀬戸,瀬戸,瀬戸 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",1
+中部,西濃,西濃,西濃 中部 変電所 日本,none,0.042,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.333",3
+中部,西尾張,西尾張,西尾張 中部 変電所 日本,none,0,,,,no_result,0
+中部,西部,西部,西部 中部 変電所 日本,none,0,,,,no_result,0
+中部,西名古屋,西名古屋,西名古屋 中部 変電所 日本,none,0,,,,no_result,0
+中部,静岡,静岡,静岡 中部 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",1
+中部,川越,川越,川越 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,川根,川根,川根 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",1
+中部,知多火力,知多,知多火力 中部 変電所 日本,none,0,,,,no_result,0
+中部,知多第二,知多第二,知多第二 中部 変電所 日本,none,0,,,,no_result,0
+中部,中信,中信,中信 中部 変電所 日本,none,0.05,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.375",4
+中部,中勢,中勢,中勢 中部 変電所 日本,none,0.05,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.375",4
+中部,中濃,中濃,中濃 中部 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.25",3
+中部,田原,田原,田原 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,電名,電名,電名 中部 変電所 日本,none,0.05,35.0035003,135.756055,"明光電子株式会社, 膏薬辻子, 新釜座町, 下京区, 京都市, 京都府, 604-8225, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.375",1
+中部,東浦,東浦,東浦 中部 変電所 日本,none,0,,,,no_result,0
+中部,東栄,東栄,東栄 中部 変電所 日本,none,0,,,,no_result,0
+中部,東海,東海,東海 中部 変電所 日本,none,0,35.0034285,135.7650589,"ドトールコーヒーショップ, 22, 富小路通, 徳正寺町, 下京区, 京都市, 京都府, 600-8005, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",1
+中部,東信,東信,東信 中部 変電所 日本,none,0.042,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.333",4
+中部,東清水,東清水,東清水 中部 変電所 日本,none,0.13,35.0026662,135.7616327,"日本武尊　春日大社　伏見稲荷大社　石清水八幡宮　北野天満宮, 綾小路, 塩屋町, 下京区, 京都市, 京都府, 600-8071, 日本","stationContained=false, displayHasKind=false, overlap=0.667, queryOverlap=0.4",3
+中部,東部,東部,東部 中部 変電所 日本,none,0,35.0075049,135.7601222,"石不動, 六角通, 鍛冶屋町, 中京区, 京都市, 京都府, 604-8212, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.375",4
+中部,東名古屋,東名古屋,東名古屋 中部 変電所 日本,none,0.048,34.9880962,135.7538873,"伊東甲子太郎外数名殉難之跡, 油小路通, 門前町, 太子山町, 下京区, 京都市, 京都府, 600-8475, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.364",2
+中部,南信,南信,南信 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,南勢,南勢,南勢 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,南武平町,南武平町,南武平町 中部 変電所 日本,none,0.048,35.0026662,135.7616327,"日本武尊　春日大社　伏見稲荷大社　石清水八幡宮　北野天満宮, 綾小路, 塩屋町, 下京区, 京都市, 京都府, 600-8071, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.364",4
+中部,南福光,南福光,南福光 中部 変電所 日本,none,0,,,,no_result,0
+中部,馬瀬,馬瀬,馬瀬 中部 変電所 日本,none,0,,,,no_result,0
+中部,梅森,梅森,梅森 中部 変電所 日本,none,0,,,,no_result,0
+中部,飛騨,飛騨,飛騨 中部 変電所 日本,none,0,,,,no_result,0
+中部,尾鷲,尾鷲,尾鷲 中部 変電所 日本,none,0,,,,no_result,0
+中部,浜岡,浜岡,浜岡 中部 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",1
+中部,分岐点,分岐点,分岐点 中部 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.2",1
+中部,碧南,碧南,碧南 中部 変電所 日本,none,0,,,,no_result,0
+中部,豊根,豊根,豊根 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",1
+中部,北部,北部,北部 中部 変電所 日本,none,0,,,,no_result,0
+中部,北豊田,北豊田,北豊田 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",2
+中部,名城,名城,名城 中部 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",4
+中部,鈴鹿,鈴鹿,鈴鹿 中部 変電所 日本,none,0,35.0025258,135.7632478,"綾小路, 塩屋町, 下京区, 京都市, 京都府, 600-8071, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",5
+東京,571T(西南多摩線),571T,571T(西南多摩線) 東京 変電所 日本,none,0,,,,no_result,0
+東京,荏田,荏田,荏田 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.444",2
+東京,永代橋,永代橋,永代橋 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",3
+東京,葛南,葛南,葛南 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.444",4
+東京,京浜,京浜,京浜 東京 変電所 日本,none,0.075,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.5",3
+東京,京北,京北,京北 東京 変電所 日本,none,0.075,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.5",5
+東京,江東,江東,江東 東京 変電所 日本,none,0.075,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.5",5
+東京,港北,港北,港北 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.444",1
+東京,高輪,高輪,高輪 東京 変電所 日本,none,0,,,,no_result,0
+東京,鹿島,鹿島,鹿島 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.444",5
+東京,上尾,上尾,上尾 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.444",2
+東京,上野,上野,上野 東京 変電所 日本,none,0.064,35.0026662,135.7616327,"日本武尊　春日大社　伏見稲荷大社　石清水八幡宮　北野天満宮, 綾小路, 塩屋町, 下京区, 京都市, 京都府, 600-8071, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",5
+東京,城南,城南,城南 東京 変電所 日本,none,0,35.00777,135.7521796,"東横イン, 堀川通, 錦堀川町, 中京区, 京都市, 京都府, 604-8252, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.444",1
+東京,新いわき,新いわき,新いわき 東京 変電所 日本,none,0,,,,no_result,0
+東京,新岡部,新岡部,新岡部 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",1
+東京,新京葉,新京葉,新京葉 東京 変電所 日本,none,0.139,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.667, queryOverlap=0.444",1
+東京,新古河,新古河,新古河 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",5
+東京,新今市,新今市,新今市 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.5",5
+東京,新佐原,新佐原,新佐原 東京 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",1
+東京,新座,新座,新座 東京 変電所 日本,none,0.064,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",5
+東京,新坂戸,新坂戸,新坂戸 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",5
+東京,新宿,新宿,新宿 東京 変電所 日本,none,0,,,,no_result,0
+東京,新所沢,新所沢,新所沢 東京 変電所 日本,none,0,,,,no_result,0
+東京,新信濃,新信濃,新信濃 東京 変電所 日本,none,0.15,35.0008821,135.7625734,"佛光寺門信徒研修会館, 高倉通, 西魚屋町, 新開町, 下京区, 京都市, 京都府, 600-8075, 日本","stationContained=false, displayHasKind=false, overlap=0.667, queryOverlap=0.5",5
+東京,新新田,新新田,新新田 東京 変電所 日本,none,0.064,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",1
+東京,新榛名,新榛名,新榛名 東京 変電所 日本,none,0,,,,no_result,0
+東京,新秦野,新秦野,新秦野 東京 変電所 日本,none,0,,,,no_result,0
+東京,新多摩,新多摩,新多摩 東京 変電所 日本,none,0,,,,no_result,0
+東京,新筑波,新筑波,新筑波 東京 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",1
+東京,新秩父,新秩父,新秩父 東京 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",1
+東京,新栃木,新栃木,新栃木 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",5
+東京,新飯能,新飯能,新飯能 東京 変電所 日本,none,0,35.0086255,135.7524648,"たん新, 三条通, 桝屋町, 中京区, 京都市, 京都府, 604-8166, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",3
+東京,新富士,新富士,新富士 東京 変電所 日本,none,0,35.0018952,135.7653572,"新鮮激安市場！ 四条麩屋町店, 麩屋町通, 下鱗形町, 下京区, 京都市, 京都府, 600-8055, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",1
+東京,新福島,新福島,新福島 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",5
+東京,新豊洲,新豊洲,新豊洲 東京 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",5
+東京,新茂木,新茂木,新茂木 東京 変電所 日本,none,0,35.0086255,135.7524648,"たん新, 三条通, 桝屋町, 中京区, 京都市, 京都府, 604-8166, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",3
+東京,新木更津,新木更津,新木更津 東京 変電所 日本,none,0,,,,no_result,0
+東京,新野田,新野田,新野田 東京 変電所 日本,none,0,35.0081253,135.7565612,"心, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",1
+東京,水道橋,水道橋,水道橋 東京 変電所 日本,none,0,35.0026662,135.7616327,"日本武尊　春日大社　伏見稲荷大社　石清水八幡宮　北野天満宮, 綾小路, 塩屋町, 下京区, 京都市, 京都府, 600-8071, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.4",5
+東京,世田谷,世田谷,世田谷 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",5
+東京,西越谷,西越谷,西越谷 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.5",5
+東京,西群馬,西群馬,西群馬 東京 変電所 日本,none,0,,,,no_result,0
+東京,西毛,西毛,西毛 東京 変電所 日本,none,0,35.0076183,135.7602547,"本堂, 六角通, 鍛冶屋町, 中京区, 京都市, 京都府, 604-8212, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",1
+東京,青梅,青梅,青梅 東京 変電所 日本,none,0,35.0084203,135.7557561,"大西清右衛門美術館, 三条通, 桝屋町, 中京区, 京都市, 京都府, 604-8166, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",1
+東京,千葉印西,千葉印西,千葉印西 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.25, queryOverlap=0.455",5
+東京,千葉中央,千葉中央,千葉中央 東京 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.25, queryOverlap=0.364",5
+東京,多摩,多摩,多摩 東京 変電所 日本,none,0,,,,no_result,0
+東京,池上,池上,池上 東京 変電所 日本,none,0.064,35.0073968,135.7573425,"六角井上歯科クリニック, 六角通, 鍛冶屋町, 中京区, 京都市, 京都府, 604-8212, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",1
+東京,筑波南,筑波南,筑波南 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",4
+東京,中東京,中東京,中東京 東京 変電所 日本,none,0.15,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.667, queryOverlap=0.5",5
+東京,東群馬,東群馬,東群馬 東京 変電所 日本,none,0,,,,no_result,0
+東京,東新宿,東新宿,東新宿 東京 変電所 日本,none,0,,,,no_result,0
+東京,東内幸町,東内幸町,東内幸町 東京 変電所 日本,none,0.075,35.0035554,135.756796,"一般社団法人 日本内分泌学会, 四条通, 月鉾町, 下京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.5",5
+東京,東毛,東毛,東毛 東京 変電所 日本,none,0,35.0076183,135.7602547,"本堂, 六角通, 鍛冶屋町, 中京区, 京都市, 京都府, 604-8212, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.375",1
+東京,那珂,那珂,那珂 東京 変電所 日本,none,0,,,,no_result,0
+東京,南いわき,南いわき,南いわき 東京 変電所 日本,none,0,,,,no_result,0
+東京,南横須賀,南横須賀,南横須賀 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.364",3
+東京,南狭山,南狭山,南狭山 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",4
+東京,南川越,南川越,南川越 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",4
+東京,南川崎,南川崎,南川崎 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",4
+東京,豊島,豊島,豊島 東京 変電所 日本,none,0,34.849922,135.6225441,"歴史の散歩道, 国道171号, 南芥川町, 高槻市, 大阪府, 569-0067, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",2
+東京,房総,房総,房総 東京 変電所 日本,none,0.064,35.0042037,135.7521947,"京町家工房, 堀川通, 錦堀川町, 中京区, 京都市, 京都府, 604-8252, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",3
+東京,北葛飾,北葛飾,北葛飾 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",5
+東京,北熊谷,北熊谷,北熊谷 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",5
+東京,北相模,北相模,北相模 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",4
+東京,北多摩,北多摩,北多摩 東京 変電所 日本,none,0,,,,no_result,0
+東京,北東京,北東京,北東京 東京 変電所 日本,none,0.15,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.667, queryOverlap=0.5",5
+東京,北与野,北与野,北与野 東京 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.4",5
+東京,練馬,練馬,練馬 東京 変電所 日本,none,0,,,,no_result,0
+東北,いわき,いわき,いわき 東北 変電所 日本,none,0,,,,no_result,0
+東北,羽後,羽後,羽後 東北 変電所 日本,none,0,,,,no_result,0
+東北,越後,越後,越後 東北 変電所 日本,none,0,,,,no_result,0
+東北,岩手,岩手,岩手 東北 変電所 日本,none,0,34.9935138,135.7646683,"勅願所/金佛殿 延寿寺, 河原町通, 住吉町, 下京区, 京都市, 京都府, 600-8505, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",1
+東北,宮城,宮城,宮城 東北 変電所 日本,none,0.064,34.2294966,135.1705439,"和歌山城公園北口バス駐車場, けやき大通り, 北汀丁, 和歌山市, 和歌山県, 640-8511, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.444",5
+東北,雫石,雫石,雫石 東北 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",1
+東北,秋田,秋田,秋田 東北 変電所 日本,none,0,,,,no_result,0
+東北,上北,上北,上北 東北 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.375",5
+東北,信濃川,信濃川,信濃川 東北 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",1
+東北,新潟,新潟,新潟 東北 変電所 日本,none,0.042,34.9933326,135.7551795,"西洞院新花屋町, 西洞院通, 門前町, 高辻西洞院町, 下京区, 京都市, 京都府, 600-8302, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.333",1
+東北,須賀川,須賀川,須賀川 東北 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.3",4
+東北,水沢,水沢,水沢 東北 変電所 日本,none,0,,,,no_result,0
+東北,西仙台,西仙台,西仙台 東北 変電所 日本,none,0,,,,no_result,0
+東北,青森,青森,青森 東北 変電所 日本,none,0,,,,no_result,0
+東北,石巻,石巻,石巻 東北 変電所 日本,none,0,,,,no_result,0
+東北,仙台,仙台,仙台 東北 変電所 日本,none,0,35.0035554,135.756796,"一般社団法人 日本内分泌学会, 四条通, 月鉾町, 下京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",3
+東北,中越,中越,中越 東北 変電所 日本,none,0.042,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.333",5
+東北,東上越,東上越,東上越 東北 変電所 日本,none,0,,,,no_result,0
+東北,東仙台,東仙台,東仙台 東北 変電所 日本,none,0,35.0035554,135.756796,"一般社団法人 日本内分泌学会, 四条通, 月鉾町, 下京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",3
+東北,南相馬,南相馬,南相馬 東北 変電所 日本,none,0,,,,no_result,0
+東北,能代,能代,能代 東北 変電所 日本,none,0,35.0076183,135.7602547,"本堂, 六角通, 鍛冶屋町, 中京区, 京都市, 京都府, 604-8212, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",1
+東北,福島,福島,福島 東北 変電所 日本,none,0.042,35.0034877,135.7587494,"公益財団法人 稲盛福祉財団, 四条通, 函谷鉾町, 下京区, 京都市, 京都府, 600-8009, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.333",2
+東北,米沢,米沢,米沢 東北 変電所 日本,none,0,,,,no_result,0
+東北,北新潟,北新潟,北新潟 東北 変電所 日本,none,0,35.0040011,135.7568619,"日本産業カウンセラー協会, 新町通, 御影町, 中京区, 京都市, 京都府, 600-8492, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.333",5
+東北,本名,本名,本名 東北 変電所 日本,none,0.05,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.5, queryOverlap=0.375",5
+東北,名取,名取,名取 東北 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.333",5
+北海道,旭川SS,旭川,旭川SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,旭川嵐山SWS,旭川嵐山,旭川嵐山SWS 北海道 開閉所 日本,none,0,,,,no_result,0
+北海道,宇円別SS,宇円別,宇円別SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,岩清水SWS,岩清水,岩清水SWS 北海道 開閉所 日本,none,0,,,,no_result,0
+北海道,恵庭SS,恵庭,恵庭SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,室蘭SS,室蘭,室蘭SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,篠路SS,篠路,篠路SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,新冠SWS,新冠,新冠SWS 北海道 開閉所 日本,none,0,,,,no_result,0
+北海道,西旭川SS,西旭川,西旭川SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西音更SS,西音更,西音更SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西札幌SS,西札幌,西札幌SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西室蘭SWS,西室蘭,西室蘭SWS 北海道 開閉所 日本,none,0,,,,no_result,0
+北海道,西春別SS,西春別,西春別SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西小樽SS,西小樽,西小樽SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西双葉SWS,西双葉,西双葉SWS 北海道 開閉所 日本,none,0,,,,no_result,0
+北海道,西滝川SS,西滝川,西滝川SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西中川SS,西中川,西中川SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西当別SS,西当別,西当別SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西名寄SS,西名寄,西名寄SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,西野SS,西野,西野SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,双葉SWS,双葉,双葉SWS 北海道 開閉所 日本,none,0,,,,no_result,0
+北海道,大野SS,大野,大野SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,追分SWS,追分,追分SWS 北海道 開閉所 日本,none,0,,,,no_result,0
+北海道,東釧路SS,東釧路,東釧路SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,苫小牧SS,苫小牧,苫小牧SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,南九条SS,南九条,南九条SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,南札幌SS,南札幌,南札幌SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,南早来SS,南早来,南早来SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,函館変換所,函館,函館変換所 北海道 変換所 日本,none,0,,,,no_result,0
+北海道,苗穂SS,苗穂,苗穂SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,北芽室SS,北芽室,北芽室SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,北江別SS,北江別,北江別SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,北七飯SS,北七飯,北七飯SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,北新得SS,北新得,北新得SS 北海道 変電所 日本,none,0,,,,no_result,0
+北海道,北斗CS,北斗,北斗CS 北海道 変換所 日本,none,0,,,,no_result,0
+北陸,越前変電所,越前,越前変電所 北陸 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",5
+北陸,加賀変電所,加賀,加賀変電所 北陸 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0, queryOverlap=0.222",2
+北陸,新富山変電所,新富山,新富山変電所 北陸 変電所 日本,none,0,34.2290056,135.1787593,"和歌山信愛中学校・高等学校, 屋形通り, 屋形町五丁目, 和歌山市, 和歌山県, 640-8151, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",3
+北陸,新福井変電所,新福井,新福井変電所 北陸 変電所 日本,none,0,35.0008821,135.7625734,"佛光寺門信徒研修会館, 高倉通, 西魚屋町, 新開町, 下京区, 京都市, 京都府, 600-8075, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",5
+北陸,中能登変電所,中能登,中能登変電所 北陸 変電所 日本,none,0,35.0072589,135.7600065,"鐘楼堂, 六角通, 鍛冶屋町, 中京区, 京都市, 京都府, 604-8212, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",2
+北陸,東金津変電所,東金津,東金津変電所 北陸 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",5
+北陸,敦賀火力発電所,敦賀,敦賀火力発電所 北陸 発電所 日本,none,0,,,,no_result,0
+北陸,南条変電所,南条,南条変電所 北陸 変電所 日本,none,0,,,,no_result,0
+北陸,南福光変電所,南福光,南福光変電所 北陸 変電所 日本,none,0,34.9963669,135.7649638,"損保ジャパン日本興亜, 富小路通, 西魚屋町, 仏光寺東町, 下京区, 京都市, 京都府, 600-8078, 日本","stationContained=false, displayHasKind=false, overlap=0.333, queryOverlap=0.3",2
