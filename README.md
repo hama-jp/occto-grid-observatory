@@ -102,7 +102,12 @@ PR / push 時に以下を実行:
     - `now`: 当日/指定日の都度更新
     - `daily`: 前日分更新
     - `backfill`: `from/to` 範囲を一括取得
+  - `sample`:
+    - `daily`: 日次で取得
+    - `monthly`: 月次スナップショットで取得
+    - `quarterly`: 四半期スナップショットで取得
   - `force=true` で既存JSONを上書き更新
+  - 初回の長期履歴埋めは upstream 負荷を抑えるため `monthly` / `quarterly` を推奨
   - Pages の日付セレクタに過去日を増やしたい場合は、最初に `backfill` を数日から数週間分だけ流して `dashboard-YYYYMMDD.json` を作成しておく
 
 例:

@@ -37,6 +37,7 @@ type CliArgs = {
   mode: "daily" | "now" | "backfill";
   targetDates: string[];
   force: boolean;
+  sample: "daily" | "monthly" | "quarterly";
 };
 
 type DownloadResult = {
@@ -75,14 +76,17 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const normalizedDir = path.join(process.cwd(), "data", "normalized");
   await fs.mkdir(normalizedDir, { recursive: true });
+  const existingLatest = await readExistingLatestDate(normalizedDir);
 
   console.log(`[ingest] mode=${args.mode}, force=${String(args.force)}`);
+  console.log(`[ingest] sample=${args.sample}`);
   console.log(`[ingest] dates=${args.targetDates.join(", ")}`);
 
   let latestPayload = "";
   let latestDate = "";
   let updatedCount = 0;
   let skippedCount = 0;
+  const newestRequestedDate = args.targetDates[args.targetDates.length - 1] ?? "";
 
   for (let i = 0; i < args.targetDates.length; i += 1) {
     const targetDate = args.targetDates[i];
@@ -129,10 +133,29 @@ async function main(): Promise<void> {
     }
   }
 
-  if (latestPayload) {
+  let latestWritePayload = latestPayload;
+  let latestWriteDate = latestDate;
+
+  if (args.mode === "backfill" && newestRequestedDate) {
+    const newestRequestedPath = path.join(normalizedDir, `dashboard-${newestRequestedDate.replaceAll("/", "")}.json`);
+    if (await fileExists(newestRequestedPath)) {
+      latestWritePayload = await fs.readFile(newestRequestedPath, "utf-8");
+      latestWriteDate = newestRequestedDate;
+    }
+  }
+
+  const shouldWriteLatest =
+    latestWritePayload &&
+    (args.mode !== "backfill" || !existingLatest || compareNormalizedDate(latestWriteDate, existingLatest) >= 0);
+
+  if (shouldWriteLatest) {
     const latestOutputPath = path.join(normalizedDir, "dashboard-latest.json");
-    await fs.writeFile(latestOutputPath, latestPayload, "utf-8");
-    console.log(`[ingest] wrote ${latestOutputPath} (from ${latestDate})`);
+    await fs.writeFile(latestOutputPath, latestWritePayload, "utf-8");
+    console.log(`[ingest] wrote ${latestOutputPath} (from ${latestWriteDate})`);
+  } else if (latestWritePayload && args.mode === "backfill") {
+    console.log(
+      `[ingest] preserved dashboard-latest.json (${existingLatest ?? "unknown"}) because backfill target ${latestWriteDate} is older`,
+    );
   } else {
     console.log("[ingest] no new data generated");
   }
@@ -164,6 +187,11 @@ function parseArgs(args: string[]): CliArgs {
     throw new Error("`--mode` must be one of: daily | now | backfill.");
   }
 
+  const sampleRaw = options.get("sample") ?? "daily";
+  if (sampleRaw !== "daily" && sampleRaw !== "monthly" && sampleRaw !== "quarterly") {
+    throw new Error("`--sample` must be one of: daily | monthly | quarterly.");
+  }
+
   let targetDates: string[] = [];
   if (modeRaw === "daily") {
     const dateInput = options.get("date");
@@ -189,7 +217,7 @@ function parseArgs(args: string[]): CliArgs {
     if (!from || !to) {
       throw new Error("`--mode=backfill` requires both `--from` and `--to`.");
     }
-    targetDates = enumerateDateRange(from, to);
+    targetDates = enumerateDateRange(from, to, sampleRaw as CliArgs["sample"]);
     if (targetDates.length === 0) {
       throw new Error("`--from` must be earlier than or equal to `--to`.");
     }
@@ -202,6 +230,7 @@ function parseArgs(args: string[]): CliArgs {
     mode: modeRaw,
     targetDates,
     force,
+    sample: sampleRaw as CliArgs["sample"],
   };
 }
 
@@ -244,13 +273,25 @@ function normalizeDate(input: string): string | null {
   return `${y}/${m}/${d}`;
 }
 
-function enumerateDateRange(from: string, to: string): string[] {
+function enumerateDateRange(from: string, to: string, sample: CliArgs["sample"]): string[] {
   const start = toUtcDate(from);
   const end = toUtcDate(to);
   if (!start || !end || start.getTime() > end.getTime()) {
     return [];
   }
 
+  if (sample === "daily") {
+    return enumerateDailyDateRange(start, end);
+  }
+
+  if (sample === "monthly") {
+    return enumerateMonthlyDateRange(start, end, 1);
+  }
+
+  return enumerateMonthlyDateRange(start, end, 3);
+}
+
+function enumerateDailyDateRange(start: Date, end: Date): string[] {
   const dates: string[] = [];
   const current = new Date(start.getTime());
   while (current.getTime() <= end.getTime()) {
@@ -258,6 +299,45 @@ function enumerateDateRange(from: string, to: string): string[] {
     current.setUTCDate(current.getUTCDate() + 1);
   }
   return dates;
+}
+
+function enumerateMonthlyDateRange(start: Date, end: Date, monthStep: number): string[] {
+  const dates: string[] = [];
+  const anchorDay = start.getUTCDate();
+  const current = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  current.setUTCDate(clampDayOfMonth(current.getUTCFullYear(), current.getUTCMonth(), anchorDay));
+  while (current.getTime() <= end.getTime()) {
+    if (current.getTime() >= start.getTime()) {
+      dates.push(formatUtcDate(current));
+    }
+    current.setUTCMonth(current.getUTCMonth() + monthStep, 1);
+    current.setUTCDate(clampDayOfMonth(current.getUTCFullYear(), current.getUTCMonth(), anchorDay));
+  }
+
+  const finalDate = formatUtcDate(end);
+  if (!dates.includes(finalDate)) {
+    dates.push(finalDate);
+  }
+  return dates;
+}
+
+function clampDayOfMonth(year: number, monthIndex: number, day: number): number {
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  return Math.min(day, lastDay);
+}
+
+async function readExistingLatestDate(normalizedDir: string): Promise<string | null> {
+  try {
+    const content = await fs.readFile(path.join(normalizedDir, "dashboard-latest.json"), "utf-8");
+    const parsed = JSON.parse(content) as { meta?: { targetDate?: string } };
+    return normalizeDate(parsed.meta?.targetDate ?? "") ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function compareNormalizedDate(a: string, b: string): number {
+  return a.replaceAll("/", "").localeCompare(b.replaceAll("/", ""), "en");
 }
 
 function toUtcDate(normalized: string): Date | null {
@@ -322,46 +402,50 @@ async function downloadCsvFiles(targetDate: string, rawDir: string): Promise<Dow
 }
 
 async function downloadGenerationCsv(targetDate: string, rawDir: string): Promise<string> {
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ acceptDownloads: true });
-  const page = await context.newPage();
+  return retryOperation(`generation ${targetDate}`, async () => {
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ acceptDownloads: true });
+    const page = await context.newPage();
 
-  try {
-    await page.goto(`${HKS_BASE}/disclaimer-agree`, { waitUntil: "domcontentloaded" });
+    try {
+      await page.goto(`${HKS_BASE}/disclaimer-agree`, { waitUntil: "domcontentloaded" });
 
-    const agreedCheckbox = page.locator("#agreed");
-    if (await agreedCheckbox.isVisible()) {
-      await agreedCheckbox.check();
-      await Promise.all([
-        page.waitForURL("**/info/home", { timeout: 60_000 }),
-        page.locator("#next").click(),
-      ]);
+      const agreedCheckbox = page.locator("#agreed");
+      if (await agreedCheckbox.isVisible()) {
+        await agreedCheckbox.check();
+        await Promise.all([
+          page.waitForURL("**/info/home", { timeout: 60_000 }),
+          page.locator("#next").click(),
+        ]);
+      }
+
+      await page.goto(`${HKS_BASE}/info/hks`, { waitUntil: "domcontentloaded" });
+      await page.fill('input[name="tgtDateDateFrom"]', targetDate);
+      await page.fill('input[name="tgtDateDateTo"]', targetDate);
+
+      await page.locator("#search_btn").click();
+      await page.waitForSelector("#csv_btn:not([disabled])", { timeout: 120_000 });
+
+      const download = await captureDownload(page, async () => {
+        await page.locator("#csv_btn").click();
+      });
+
+      const outputPath = path.join(rawDir, `generation-${targetDate.replaceAll("/", "")}.csv`);
+      await download.saveAs(outputPath);
+      return outputPath;
+    } finally {
+      await context.close();
+      await browser.close();
     }
-
-    await page.goto(`${HKS_BASE}/info/hks`, { waitUntil: "domcontentloaded" });
-    await page.fill('input[name="tgtDateDateFrom"]', targetDate);
-    await page.fill('input[name="tgtDateDateTo"]', targetDate);
-
-    await page.locator("#search_btn").click();
-    await page.waitForSelector("#csv_btn:not([disabled])", { timeout: 120_000 });
-
-    const download = await captureDownload(page, async () => {
-      await page.locator("#csv_btn").click();
-    });
-
-    const outputPath = path.join(rawDir, `generation-${targetDate.replaceAll("/", "")}.csv`);
-    await download.saveAs(outputPath);
-    return outputPath;
-  } finally {
-    await context.close();
-    await browser.close();
-  }
+  });
 }
 
 async function downloadFlowCsvByArea(targetDate: string, rawDir: string): Promise<string[]> {
   const outputFiles: string[] = [];
   for (const area of FLOW_AREAS) {
-    const outputPath = await downloadFlowCsvForSingleArea(targetDate, rawDir, area.code, area.name);
+    const outputPath = await retryOperation(`flow ${targetDate} ${area.name}`, async () =>
+      downloadFlowCsvForSingleArea(targetDate, rawDir, area.code, area.name),
+    );
     outputFiles.push(outputPath);
     console.log(`[ingest] downloaded flow csv for ${area.name}`);
   }
@@ -410,87 +494,89 @@ async function downloadFlowCsvForSingleArea(
 }
 
 async function downloadIntertieCsvByLine(targetDate: string, rawDir: string): Promise<string[]> {
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ acceptDownloads: true });
-  const page = await context.newPage();
-  const outputFiles: string[] = [];
+  return retryOperation(`intertie ${targetDate}`, async () => {
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ acceptDownloads: true });
+    const page = await context.newPage();
+    const outputFiles: string[] = [];
 
-  try {
-    await page.goto(OCCTO_LOGIN_URL, { waitUntil: "domcontentloaded" });
-    await page.locator("#menu1-1").click();
+    try {
+      await page.goto(OCCTO_LOGIN_URL, { waitUntil: "domcontentloaded" });
+      await page.locator("#menu1-1").click();
 
-    const popupPromise = context.waitForEvent("page");
-    await page.locator("#menu1-1-3-1").click();
-    const intertiePage = await popupPromise;
-    await intertiePage.waitForLoadState("domcontentloaded");
-    await intertiePage.waitForSelector("#tgtRkl", { timeout: 60_000 });
+      const popupPromise = context.waitForEvent("page");
+      await page.locator("#menu1-1-3-1").click();
+      const intertiePage = await popupPromise;
+      await intertiePage.waitForLoadState("domcontentloaded");
+      await intertiePage.waitForSelector("#tgtRkl", { timeout: 60_000 });
 
-    const options = await intertiePage.evaluate(() =>
-      Array.from(document.querySelectorAll<HTMLSelectElement>("#tgtRkl option"))
-        .map((option) => ({
-          value: option.value.trim(),
-          label: option.textContent?.trim() ?? "",
-        }))
-        .filter((option) => option.value.length > 0),
-    );
+      const options = await intertiePage.evaluate(() =>
+        Array.from(document.querySelectorAll<HTMLSelectElement>("#tgtRkl option"))
+          .map((option) => ({
+            value: option.value.trim(),
+            label: option.textContent?.trim() ?? "",
+          }))
+          .filter((option) => option.value.length > 0),
+      );
 
-    for (let i = 0; i < options.length; i += 1) {
-      const option = options[i];
-      console.log(`[ingest] downloading intertie csv for ${option.label}`);
-      try {
-        await intertiePage.fill("#spcDay", targetDate);
-        await intertiePage.selectOption("#tgtRkl", option.value);
-        await intertiePage.locator("#searchBtn").click();
-        await intertiePage.waitForLoadState("networkidle").catch(() => {});
+      for (let i = 0; i < options.length; i += 1) {
+        const option = options[i];
+        console.log(`[ingest] downloading intertie csv for ${option.label}`);
+        try {
+          await intertiePage.fill("#spcDay", targetDate);
+          await intertiePage.selectOption("#tgtRkl", option.value);
+          await intertiePage.locator("#searchBtn").click();
+          await intertiePage.waitForLoadState("networkidle").catch(() => {});
 
-        const csvButton = intertiePage.locator("#csvBtn");
-        await intertiePage.waitForTimeout(700);
-        if (!(await csvButton.isEnabled())) {
-          console.log(`[ingest] skip intertie csv (no data): ${option.label}`);
-          continue;
+          const csvButton = intertiePage.locator("#csvBtn");
+          await intertiePage.waitForTimeout(700);
+          if (!(await csvButton.isEnabled())) {
+            console.log(`[ingest] skip intertie csv (no data): ${option.label}`);
+            continue;
+          }
+
+          const download = await captureDownload(
+            intertiePage,
+            async () => {
+              await csvButton.click();
+              const okButton = intertiePage.locator('.ui-dialog-buttonset button:has-text("OK")').first();
+              await okButton.click({ timeout: 10_000 }).catch(() => {});
+              await intertiePage.locator(".ui-widget-overlay").first().waitFor({ state: "hidden" }).catch(() => {});
+            },
+            30_000,
+          );
+
+          const fileIndex = String(i + 1).padStart(2, "0");
+          const safeLabel = sanitizeFilePart(option.label);
+          const outputPath = path.join(
+            rawDir,
+            `intertie-${targetDate.replaceAll("/", "")}-${fileIndex}-${safeLabel}.csv`,
+          );
+          await download.saveAs(outputPath);
+          outputFiles.push(outputPath);
+          console.log(`[ingest] downloaded intertie csv for ${option.label}`);
+        } catch (error: unknown) {
+          const detail = error instanceof Error ? error.message : String(error);
+          console.warn(`[ingest] skip intertie csv for ${option.label}: ${detail}`);
+
+          const cancelButton = intertiePage
+            .locator('.ui-dialog-buttonset button:has-text("cancel"), .ui-dialog-titlebar-close')
+            .first();
+          if (await cancelButton.isVisible().catch(() => false)) {
+            await cancelButton.click().catch(() => {});
+          }
+          await intertiePage.keyboard.press("Escape").catch(() => {});
         }
 
-        const download = await captureDownload(
-          intertiePage,
-          async () => {
-            await csvButton.click();
-            const okButton = intertiePage.locator('.ui-dialog-buttonset button:has-text("OK")').first();
-            await okButton.click({ timeout: 10_000 }).catch(() => {});
-            await intertiePage.locator(".ui-widget-overlay").first().waitFor({ state: "hidden" }).catch(() => {});
-          },
-          30_000,
-        );
-
-        const fileIndex = String(i + 1).padStart(2, "0");
-        const safeLabel = sanitizeFilePart(option.label);
-        const outputPath = path.join(
-          rawDir,
-          `intertie-${targetDate.replaceAll("/", "")}-${fileIndex}-${safeLabel}.csv`,
-        );
-        await download.saveAs(outputPath);
-        outputFiles.push(outputPath);
-        console.log(`[ingest] downloaded intertie csv for ${option.label}`);
-      } catch (error: unknown) {
-        const detail = error instanceof Error ? error.message : String(error);
-        console.warn(`[ingest] skip intertie csv for ${option.label}: ${detail}`);
-
-        const cancelButton = intertiePage
-          .locator('.ui-dialog-buttonset button:has-text("cancel"), .ui-dialog-titlebar-close')
-          .first();
-        if (await cancelButton.isVisible().catch(() => false)) {
-          await cancelButton.click().catch(() => {});
-        }
-        await intertiePage.keyboard.press("Escape").catch(() => {});
+        await intertiePage.waitForTimeout(800);
       }
 
-      await intertiePage.waitForTimeout(800);
+      return outputFiles;
+    } finally {
+      await context.close();
+      await browser.close();
     }
-
-    return outputFiles;
-  } finally {
-    await context.close();
-    await browser.close();
-  }
+  });
 }
 
 async function captureDownload(
@@ -501,6 +587,25 @@ async function captureDownload(
   const downloadPromise = page.waitForEvent("download", { timeout: timeoutMs });
   await trigger();
   return downloadPromise;
+}
+
+async function retryOperation<T>(label: string, action: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      if (attempt > 1) {
+        console.warn(`[ingest] retry ${attempt}/${attempts}: ${label}`);
+      }
+      return await action();
+    } catch (error: unknown) {
+      lastError = error;
+      if (attempt === attempts) {
+        throw error;
+      }
+      await sleep(5000 * attempt);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(`failed: ${label}`);
 }
 
 async function parseGenerationCsv(filePath: string): Promise<GenerationRow[]> {
