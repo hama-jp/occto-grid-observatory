@@ -53,6 +53,19 @@ npm run test:ui
 
 - `npm run test:ui` は `build -> 静的配信 -> Playwright` の順に実行
 - 失敗時は `playwright-report/` と `test-results/` に成果物を出力
+- 公開中の GitHub Pages を直接監視する場合:
+
+```bash
+$env:PLAYWRIGHT_BASE_URL="https://hama-jp.github.io/occto-grid-observatory/"
+npm run test:ui:public
+```
+
+- カバー内容:
+  - 主要セクションの表示確認
+  - エリア選択の並び順確認
+  - 俯瞰モードでの表示制御確認
+  - 時間スライダーの回帰確認
+  - 円グラフ・棒グラフの描画信号確認
 
 ## 運用フロー（Linear + GitHub）
 - [LINEAR_GITHUB_WORKFLOW.md](docs/LINEAR_GITHUB_WORKFLOW.md)
@@ -63,6 +76,10 @@ PR / push 時に以下を実行:
 - `npm run lint`
 - `npm run build`
 - `npm run test:ui`
+
+別ワークフロー `UI Monitor` で公開URLに対する定期監視も実行:
+- 対象: `https://hama-jp.github.io/occto-grid-observatory/`
+- 実行: 毎日 `09:30 / 15:30 / 21:30 / 03:30 JST`
 
 `.github` 配下に Issue / PR テンプレートを用意しています。
 

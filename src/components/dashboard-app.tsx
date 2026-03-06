@@ -1846,7 +1846,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
         {visibleSectionSet.has("generation") ? (
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <Panel title="発電方式別 30分推移" className="lg:col-span-7">
+            <Panel title="発電方式別 30分推移" className="lg:col-span-7" testId="generation-trend-panel">
               <div className="mb-2 flex justify-end">
                 <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
                   表示エリア
@@ -1864,9 +1864,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   ))}
                 </select>
               </div>
-              <ReactECharts option={generationLineOption} style={{ height: 360 }} />
+              <div data-testid="generation-trend-chart">
+                <ReactECharts option={generationLineOption} style={{ height: 360 }} />
+              </div>
             </Panel>
-            <Panel title="発電方式 構成比" className="lg:col-span-5">
+            <Panel title="発電方式 構成比" className="lg:col-span-5" testId="source-composition-panel">
               <div className="mb-2 flex justify-end">
                 <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
                   表示エリア
@@ -1884,7 +1886,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   ))}
                 </select>
               </div>
-              <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
+              <div data-testid="source-composition-chart">
+                <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
+              </div>
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {sourceCompositionItems.map((item) => (
                   <div
@@ -1914,21 +1918,25 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
         {visibleSectionSet.has("totals") ? (
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Panel title="エリア別 日量発電">
-              <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
+            <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
+              <div data-testid="area-total-generation-chart">
+                <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
+              </div>
             </Panel>
-            <Panel title="連系線潮流トレンド（時系列）">
-              <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
+            <Panel title="連系線潮流トレンド（時系列）" testId="intertie-trend-panel">
+              <div data-testid="intertie-trend-chart">
+                <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
+              </div>
             </Panel>
           </section>
         ) : null}
 
         {visibleSectionSet.has("network") ? (
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2">
+            <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2" testId="network-flow-panel">
               <div className="mb-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-                  <span>表示日時: {selectedFlowDateTimeLabel}</span>
+                  <span data-testid="selected-flow-datetime">表示日時: {selectedFlowDateTimeLabel}</span>
                   <span>
                     スロット {flowSlotLabels.length === 0 ? 0 : clampedNetworkFlowSlotIndex + 1} / {flowSlotLabels.length}
                   </span>
@@ -1952,11 +1960,15 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   注: この図は公開CSVで端点が確定できる地域内送電線のみ表示します。連系線と発電所-SS接続は推定が必要なため描画していません。
                 </p>
               </div>
-              <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
+              <div data-testid="network-flow-chart">
+                <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
+              </div>
             </Panel>
-            <Panel title="エリア間連系潮流（実績）">
+            <Panel title="エリア間連系潮流（実績）" testId="inter-area-flow-panel">
               <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-              <ReactECharts option={interAreaFlowOption} style={{ height: isMobileViewport ? 520 : 594 }} />
+              <div data-testid="inter-area-flow-chart">
+                <ReactECharts option={interAreaFlowOption} style={{ height: isMobileViewport ? 520 : 594 }} />
+              </div>
             </Panel>
           </section>
         ) : null}
@@ -2041,14 +2053,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 function Panel({
   title,
   className,
+  testId,
   children,
 }: {
   title: string;
   className?: string;
+  testId?: string;
   children: ReactNode;
 }) {
   return (
-    <section className={`rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm ${className ?? ""}`}>
+    <section
+      data-testid={testId}
+      className={`rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm ${className ?? ""}`}
+    >
       <h2 className="mb-2 text-base font-semibold text-slate-800">{title}</h2>
       {children}
     </section>

@@ -1,0 +1,43 @@
+name: UI Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 0,6,12,18 * * *"
+
+concurrency:
+  group: ui-monitor
+  cancel-in-progress: true
+
+jobs:
+  monitor-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Monitor deployed dashboard
+        env:
+          PLAYWRIGHT_BASE_URL: https://hama-jp.github.io/occto-grid-observatory/
+        run: npm run test:ui:public
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-monitor-playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
