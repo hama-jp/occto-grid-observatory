@@ -65,6 +65,20 @@ const AREA_ANCHORS: Record<string, { x: number; y: number }> = {
   default: { x: 610, y: 300 },
 };
 
+const AREA_LAYOUT_BOUNDS: Record<string, { xMin: number; xMax: number; yMin: number; yMax: number }> = {
+  北海道: { xMin: 640, xMax: 845, yMin: 38, yMax: 156 },
+  東北: { xMin: 610, xMax: 770, yMin: 116, yMax: 226 },
+  東京: { xMin: 650, xMax: 820, yMin: 194, yMax: 292 },
+  中部: { xMin: 520, xMax: 700, yMin: 244, yMax: 350 },
+  北陸: { xMin: 528, xMax: 655, yMin: 174, yMax: 264 },
+  関西: { xMin: 472, xMax: 595, yMin: 302, yMax: 392 },
+  中国: { xMin: 338, xMax: 504, yMin: 320, yMax: 406 },
+  四国: { xMin: 418, xMax: 540, yMin: 392, yMax: 476 },
+  九州: { xMin: 246, xMax: 430, yMin: 404, yMax: 528 },
+  沖縄: { xMin: 146, xMax: 306, yMin: 468, yMax: 540 },
+  default: { xMin: 30, xMax: 890, yMin: 30, yMax: 530 },
+};
+
 const AREA_DISPLAY_ORDER = ["北海道", "東北", "東京", "中部", "北陸", "関西", "中国", "四国", "九州", "沖縄"];
 const MAP_VIEWBOX = {
   width: 920,
@@ -1098,10 +1112,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       const angle = ((hashSeed(`${plant.area}-${plant.plantName}`) % 360) * Math.PI) / 180;
       const ratio = plant.dailyKwh / maxPlantDaily;
       const radius = 6 + ratio * 9 + (plantIndex % 2) * 2;
-      const radialCandidate = {
-        x: clamp(base.x + Math.cos(angle) * radius, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
-        y: clamp(base.y + Math.sin(angle) * radius * 0.66, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
-      };
+      const radialCandidate = clampPointToAreaBounds(plant.area, {
+        x: base.x + Math.cos(angle) * radius,
+        y: base.y + Math.sin(angle) * radius * 0.66,
+      });
       const position = placePointAvoidingOverlap(
         radialCandidate,
         `power-${plant.area}-${plant.plantName}`,
@@ -2351,10 +2365,11 @@ function buildStationLayout(
     sorted.forEach((station, index) => {
       const seed = `${area}-${station}-${index}`;
       const hinted = resolveStationGeoBase(area, station);
-      const base = hinted ?? {
+      const unclampedBase = hinted ?? {
         x: anchor.x + ((hashSeed(seed) % 13) - 6),
         y: anchor.y + (((hashSeed(seed + "-y") % 13) - 6) * 0.85),
       };
+      const base = clampPointToAreaBounds(area, unclampedBase);
       basePositions.set(buildStationNodeId(area, station), base);
       const placed = placePointAvoidingOverlap(base, seed, occupiedCells);
       positions.set(buildStationNodeId(area, station), placed);
@@ -2391,10 +2406,10 @@ function resolveStationGeoBase(area: string, station: string): { x: number; y: n
 
   const point = geoToCanvas(matched.lat, matched.lon);
   const directionalNudge = getDirectionalNudge(normalized);
-  return {
-    x: clamp(point.x + directionalNudge.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
-    y: clamp(point.y + directionalNudge.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
-  };
+  return clampPointToAreaBounds(area, {
+    x: point.x + directionalNudge.dx,
+    y: point.y + directionalNudge.dy,
+  });
 }
 
 function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: number } | null {
@@ -2413,10 +2428,7 @@ function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: n
     return resolveStationGeoBase(area, plantName);
   }
   const point = geoToCanvas(matched.lat, matched.lon);
-  return {
-    x: clamp(point.x, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
-    y: clamp(point.y, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
-  };
+  return clampPointToAreaBounds(area, point);
 }
 
 function resolveStationCanvasOverride(area: string, normalizedStation: string): { x: number; y: number } | null {
@@ -2426,10 +2438,10 @@ function resolveStationCanvasOverride(area: string, normalizedStation: string): 
     return null;
   }
   const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
-  return {
-    x: clamp(anchor.x + matched.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
-    y: clamp(anchor.y + matched.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
-  };
+  return clampPointToAreaBounds(area, {
+    x: anchor.x + matched.dx,
+    y: anchor.y + matched.dy,
+  });
 }
 
 function resolveGlobalStationGeoBase(normalizedStation: string): { x: number; y: number } | null {
@@ -2577,6 +2589,7 @@ function relaxStationLayout(
     const nodeIds = Array.from(stations)
       .map((station) => buildStationNodeId(area, station))
       .filter((nodeId) => positions.has(nodeId));
+    const bounds = getAreaLayoutBounds(area);
 
     for (let iteration = 0; iteration < 32; iteration += 1) {
       const deltas = new Map<string, { dx: number; dy: number }>();
@@ -2640,8 +2653,8 @@ function relaxStationLayout(
         delta.dx += (base.x - position.x) * (0.12 + Math.min(degree, 6) * 0.01);
         delta.dy += (base.y - position.y) * (0.12 + Math.min(degree, 6) * 0.01);
 
-        position.x = clamp(position.x + delta.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding);
-        position.y = clamp(position.y + delta.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding);
+        position.x = clamp(position.x + delta.dx, bounds.xMin, bounds.xMax);
+        position.y = clamp(position.y + delta.dy, bounds.yMin, bounds.yMax);
       });
     }
   });
@@ -2712,6 +2725,18 @@ function buildCurvedLineCoords(
     [midX + normalX * offset, midY + normalY * offset],
     [to.x, to.y],
   ];
+}
+
+function getAreaLayoutBounds(area: string): { xMin: number; xMax: number; yMin: number; yMax: number } {
+  return AREA_LAYOUT_BOUNDS[area] ?? AREA_LAYOUT_BOUNDS.default;
+}
+
+function clampPointToAreaBounds(area: string, point: { x: number; y: number }): { x: number; y: number } {
+  const bounds = getAreaLayoutBounds(area);
+  return {
+    x: clamp(point.x, bounds.xMin, bounds.xMax),
+    y: clamp(point.y, bounds.yMin, bounds.yMax),
+  };
 }
 
 function compareAreaOrder(a: string, b: string): number {
