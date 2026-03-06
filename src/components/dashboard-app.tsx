@@ -103,11 +103,6 @@ type PlantGeoHint = {
   lon: number;
 };
 
-type PlantAttachHint = {
-  plantKeyword: string;
-  stationKeywords: string[];
-};
-
 const JAPAN_GEO_BOUNDS = {
   latMin: 24.0,
   latMax: 45.8,
@@ -394,65 +389,6 @@ const PLANT_GEO_HINTS_BY_AREA: Record<string, PlantGeoHint[]> = {
   ],
 };
 
-const PLANT_ATTACH_HINTS_BY_AREA: Record<string, PlantAttachHint[]> = {
-  四国: [
-    { plantKeyword: "伊方", stationKeywords: ["大洲", "川内"] },
-    { plantKeyword: "坂出", stationKeywords: ["讃岐", "高松"] },
-    { plantKeyword: "橘湾", stationKeywords: ["阿南"] },
-    { plantKeyword: "阿南", stationKeywords: ["阿南"] },
-    { plantKeyword: "西条", stationKeywords: ["西条", "東予"] },
-    { plantKeyword: "新居浜", stationKeywords: ["東予", "西条"] },
-    { plantKeyword: "壬生川", stationKeywords: ["東予", "西条"] },
-    { plantKeyword: "本川", stationKeywords: ["本川", "高知"] },
-  ],
-};
-
-const INTERTIE_STATION_HINTS: Record<string, Record<string, string[]>> = {
-  "北海道・本州間電力連系設備": {
-    北海道: ["函館", "北斗"],
-    東北: ["上北", "青森"],
-  },
-  相馬双葉幹線: {
-    東北: ["南相馬", "いわき"],
-    東京: ["南いわき", "新福島"],
-  },
-  周波数変換設備: {
-    東京: ["新信濃", "新宿"],
-    中部: ["信濃", "東信"],
-  },
-  三重東近江線: {
-    中部: ["三重", "鈴鹿"],
-    関西: ["東近江", "湖南", "甲賀"],
-  },
-  "南福光連系所・南福光変電所の連系設備": {
-    北陸: ["南福光"],
-    関西: ["東近江", "嶺南"],
-  },
-  越前嶺南線: {
-    北陸: ["越前", "南条"],
-    関西: ["嶺南"],
-  },
-  "西播東岡山線・山崎智頭線": {
-    関西: ["山崎", "西播"],
-    中国: ["東岡山", "智頭", "新岡山"],
-  },
-  阿南紀北直流幹線: {
-    四国: ["阿南", "鳴門"],
-    関西: ["紀北"],
-  },
-  本四連系線: {
-    中国: ["新倉敷", "岡山"],
-    四国: ["讃岐", "阿波", "鳴門"],
-  },
-  関門連系線: {
-    中国: ["東山口", "山口", "新山口"],
-    九州: ["門司", "北九州"],
-  },
-  北陸フェンス: {
-    中部: ["南福光", "東信", "信濃"],
-    北陸: ["南福光", "新富山"],
-  },
-};
 
 export function DashboardApp({ initialData, availableDates }: DashboardAppProps) {
   const [data, setData] = useState<DashboardData>(initialData);
@@ -899,36 +835,20 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
   const flowNetworkOption = useMemo(() => {
     type NetworkLink = {
-      kind: "intra" | "intertie" | "plant";
+      kind: "intra";
       source: string;
       target: string;
       value: number;
       absAvgMw: number;
       area?: string;
       lineName?: string;
-      intertieName?: string;
       voltageKv?: string;
       positiveDirection?: string;
       peakAbsMw?: number;
-      sourceArea?: string;
-      targetArea?: string;
-      sourceStation?: string;
-      targetStation?: string;
-      plantName?: string;
-      dailyKwh?: number;
-      avgOutputMw?: number;
-      converterRoute?: boolean;
-      converterPair?: boolean;
     };
-
-    const scopedInterties = data.flows.intertieSeries ?? [];
 
     const areaScope = new Set<string>();
     data.flows.lineSeries.forEach((line) => areaScope.add(line.area));
-    scopedInterties.forEach((row) => {
-      areaScope.add(row.sourceArea);
-      areaScope.add(row.targetArea);
-    });
     if (areaScope.size === 0) {
       data.flows.areaSummaries.forEach((row) => areaScope.add(row.area));
     }
@@ -985,59 +905,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
     const stationPositions = buildStationLayout(stationsByArea);
 
-    scopedInterties.forEach((line) => {
-      visibleAreas.add(line.sourceArea);
-      visibleAreas.add(line.targetArea);
-
-      const sourceStationId = pickIntertieStationNodeId({
-        intertieName: line.intertieName,
-        area: line.sourceArea,
-        oppositeArea: line.targetArea,
-        stationsByArea,
-        stationPositions,
-        nodeDegree,
-      });
-      const targetStationId = pickIntertieStationNodeId({
-        intertieName: line.intertieName,
-        area: line.targetArea,
-        oppositeArea: line.sourceArea,
-        stationsByArea,
-        stationPositions,
-        nodeDegree,
-      });
-
-      if (!sourceStationId || !targetStationId || sourceStationId === targetStationId) {
-        return;
-      }
-
-      nodeDegree.set(sourceStationId, (nodeDegree.get(sourceStationId) ?? 0) + 1);
-      nodeDegree.set(targetStationId, (nodeDegree.get(targetStationId) ?? 0) + 1);
-
-      const slotMw = line.values[clampedNetworkFlowSlotIndex] ?? line.avgMw ?? 0;
-      const flowSource = slotMw >= 0 ? sourceStationId : targetStationId;
-      const flowTarget = slotMw >= 0 ? targetStationId : sourceStationId;
-      const sourceStationName = stationNameFromNodeId(sourceStationId);
-      const targetStationName = stationNameFromNodeId(targetStationId);
-      const sourceIsConverter = isConverterStationName(sourceStationName);
-      const targetIsConverter = isConverterStationName(targetStationName);
-
-      links.push({
-        kind: "intertie",
-        source: flowSource,
-        target: flowTarget,
-        value: slotMw,
-        absAvgMw: Math.abs(slotMw),
-        intertieName: line.intertieName,
-        peakAbsMw: line.peakAbsMw,
-        sourceArea: line.sourceArea,
-        targetArea: line.targetArea,
-        sourceStation: sourceStationName,
-        targetStation: targetStationName,
-        converterRoute: sourceIsConverter || targetIsConverter,
-        converterPair: sourceIsConverter && targetIsConverter,
-      });
-    });
-
     if (visibleAreas.size === 0) {
       data.flows.areaSummaries.forEach((row) => visibleAreas.add(row.area));
     }
@@ -1093,27 +960,15 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       .sort((a, b) => b.dailyKwh - a.dailyKwh);
     const maxPlantDaily = Math.max(...scopedPowerPlants.map((item) => item.dailyKwh), 1);
     const powerOccupiedCells = new Set<string>();
-    const plantAttachCounts = new Map<string, number>();
 
     scopedPowerPlants.forEach((plant, plantIndex) => {
       const base = resolvePlantGeoBase(plant.area, plant.plantName) ?? (AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default);
-      const attachStationNodeId = pickPlantAttachStationNodeId({
-        area: plant.area,
-        plantName: plant.plantName,
-        stationsByArea,
-        stationPositions,
-        stationAttachCounts: plantAttachCounts,
-        plantBase: base,
-      });
-      const attachPos = attachStationNodeId
-        ? stationPositions.get(attachStationNodeId) ?? (AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default)
-        : base;
       const angle = ((hashSeed(`${plant.area}-${plant.plantName}`) % 360) * Math.PI) / 180;
       const ratio = plant.dailyKwh / maxPlantDaily;
-      const radius = 14 + ratio * 28 + (plantIndex % 3) * 2;
+      const radius = 6 + ratio * 9 + (plantIndex % 2) * 2;
       const radialCandidate = {
-        x: clamp(attachPos.x + Math.cos(angle) * radius, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
-        y: clamp(attachPos.y + Math.sin(angle) * radius * 0.66, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+        x: clamp(base.x + Math.cos(angle) * radius, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+        y: clamp(base.y + Math.sin(angle) * radius * 0.66, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
       };
       const position = placePointAvoidingOverlap(
         radialCandidate,
@@ -1144,70 +999,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           shadowColor: "rgba(15,23,42,0.16)",
         },
       });
-
-      if (attachStationNodeId) {
-        plantAttachCounts.set(attachStationNodeId, (plantAttachCounts.get(attachStationNodeId) ?? 0) + 1);
-        links.push({
-          kind: "plant",
-          source: powerNodeId,
-          target: attachStationNodeId,
-          value: plant.avgOutputMw,
-          absAvgMw: plant.avgOutputMw,
-          area: plant.area,
-          plantName: plant.plantName,
-          dailyKwh: plant.dailyKwh,
-          avgOutputMw: plant.avgOutputMw,
-          sourceStation: plant.plantName,
-          targetStation: stationNameFromNodeId(attachStationNodeId),
-        });
-      }
     });
 
     const maxAbsIntra = Math.max(
       ...links.filter((line) => line.kind === "intra").map((line) => line.absAvgMw),
       1,
     );
-    const maxAbsIntertie = Math.max(
-      ...links.filter((line) => line.kind === "intertie").map((line) => line.absAvgMw),
-      1,
-    );
-    const maxPlantFlow = Math.max(
-      ...links.filter((line) => line.kind === "plant").map((line) => line.absAvgMw),
-      1,
-    );
 
     const renderedLinks = links.map((line) => {
-      if (line.kind === "plant") {
-        const ratio = line.absAvgMw / maxPlantFlow;
-        return {
-          ...line,
-          lineStyle: {
-            width: 1.4 + ratio * 3.2,
-            opacity: 0.62,
-            curveness: 0.02,
-            color: "rgba(20,184,166,0.75)",
-          },
-          z: 3,
-        };
-      }
-
-      if (line.kind === "intertie") {
-        const ratio = line.absAvgMw / maxAbsIntertie;
-        const baseColor = line.value >= 0 ? "#ef4444" : "#1d4ed8";
-        const converterColor = line.value >= 0 ? "#f97316" : "#0891b2";
-        return {
-          ...line,
-          lineStyle: {
-            width: (line.converterRoute ? 3.4 : 2.8) + ratio * (line.converterRoute ? 5.4 : 4.8),
-            opacity: line.converterRoute ? 0.94 : 0.86,
-            curveness: line.converterRoute ? 0.16 : 0.12,
-            type: line.converterRoute ? "dashed" : "solid",
-            color: line.converterRoute ? converterColor : baseColor,
-          },
-          z: 4,
-        };
-      }
-
       const ratio = line.absAvgMw / maxAbsIntra;
       return {
         ...line,
@@ -1231,28 +1030,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       }
     });
     const animatedFlowLines = renderedLinks
-      .filter((line) => line.kind !== "plant" && !line.converterRoute)
-      .map((line) => {
-        const from = nodePointById.get(String(line.source));
-        const to = nodePointById.get(String(line.target));
-        if (!from || !to) {
-          return null;
-        }
-        return {
-          coords: [
-            [from.x, from.y],
-            [to.x, to.y],
-          ],
-          lineStyle: {
-            color: line.lineStyle.color,
-            width: 0,
-            opacity: 0,
-          },
-        };
-      })
-      .filter((item) => item !== null);
-    const animatedConverterLines = renderedLinks
-      .filter((line) => line.kind === "intertie" && line.converterRoute)
       .map((line) => {
         const from = nodePointById.get(String(line.source));
         const to = nodePointById.get(String(line.target));
@@ -1284,55 +1061,26 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           dataType: "node" | "edge";
           name: string;
           data: {
-            kind?: "intra" | "intertie" | "plant";
+            kind?: "intra";
             value: number;
             area?: string;
             lineName?: string;
-            intertieName?: string;
             voltageKv?: string;
             positiveDirection?: string;
             peakAbsMw?: number;
-            sourceArea?: string;
-            targetArea?: string;
-            sourceStation?: string;
-            targetStation?: string;
             nodeType?: "ss" | "power" | "converter";
             sourceType?: string;
             dailyKwh?: number;
             maxOutputManKw?: number;
-            avgOutputMw?: number;
-            converterRoute?: boolean;
-            converterPair?: boolean;
           };
         }) => {
           if (params.dataType === "edge") {
-            if (params.data.kind === "plant") {
-              return `${params.data.area} | ${params.data.sourceStation}<br/>区分: 電源接続<br/>接続SS: ${
-                params.data.targetStation
-              }<br/>平均出力: ${decimalFmt.format(params.data.avgOutputMw ?? params.data.value)} MW<br/>日量: ${numberFmt.format(
-                Math.round(params.data.dailyKwh ?? 0),
-              )} kWh`;
-            }
-            if (params.data.kind === "intertie") {
-              return `${params.data.intertieName}<br/>区分: 連系線<br/>接続: ${params.data.sourceArea} ⇄ ${
-                params.data.targetArea
-              }<br/>接続SS: ${params.data.sourceStation} ⇄ ${params.data.targetStation}<br/>変換所連系: ${
-                params.data.converterPair ? "変換所-変換所" : params.data.converterRoute ? "含む" : "なし"
-              }<br/>表示時刻: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(
-                params.data.value,
-              )} MW<br/>最大|潮流|: ${numberFmt.format(
-                params.data.peakAbsMw ?? 0,
-              )} MW`;
-            }
-            if (params.data.kind === "intra") {
-              const voltageText = formatVoltageKv(params.data.voltageKv);
-              return `${params.data.area} | ${params.data.lineName}<br/>区分: 地域内送電線<br/>定義方向: ${
-                params.data.positiveDirection
-              }<br/>表示時刻: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
-                params.data.peakAbsMw ?? 0,
-              )} MW${voltageText ? `<br/>電圧: ${voltageText}` : ""}`;
-            }
-            return "";
+            const voltageText = formatVoltageKv(params.data.voltageKv);
+            return `${params.data.area} | ${params.data.lineName}<br/>区分: 地域内送電線<br/>定義方向: ${
+              params.data.positiveDirection
+            }<br/>表示時刻: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
+              params.data.peakAbsMw ?? 0,
+            )} MW${voltageText ? `<br/>電圧: ${voltageText}` : ""}`;
           }
           if (params.data.nodeType === "power") {
             return `${params.data.area} | ${params.name}<br/>区分: 電源<br/>平均出力: ${decimalFmt.format(
@@ -1434,31 +1182,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             opacity: 0,
           },
         },
-        {
-          type: "lines",
-          coordinateSystem: "none",
-          polyline: false,
-          silent: true,
-          z: 8,
-          data: animatedConverterLines,
-          effect: {
-            show: true,
-            constantSpeed: 20,
-            trailLength: 0.24,
-            symbol: "arrow",
-            symbolSize: 7,
-            color: "#0f766e",
-          },
-          lineStyle: {
-            width: 0,
-            opacity: 0,
-          },
-        },
       ],
     };
   }, [
     data.flows.areaSummaries,
-    data.flows.intertieSeries,
     data.flows.lineSeries,
     clampedNetworkFlowSlotIndex,
     networkPowerPlants,
@@ -1871,7 +1598,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         </section>
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Panel title="エリアネットワーク潮流（連系線＋地域内送電線）" className="lg:col-span-2">
+          <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2">
             <div className="mb-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
                 <span>表示日時: {selectedFlowDateTimeLabel}</span>
@@ -1894,6 +1621,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 <span>{flowSlotLabels[0] ?? "-"}</span>
                 <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
               </div>
+              <p className="mt-2 text-[11px] text-slate-600">
+                注: この図は公開CSVで端点が確定できる地域内送電線のみ表示します。連系線と発電所-SS接続は推定が必要なため描画していません。
+              </p>
             </div>
             <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
           </Panel>
@@ -2017,135 +1747,6 @@ function buildStationNodeId(area: string, station: string): string {
 
 function buildPowerNodeId(area: string, plantName: string): string {
   return `power::${area.trim()}::${plantName.trim()}`;
-}
-
-function stationNameFromNodeId(nodeId: string): string {
-  const marker = nodeId.indexOf("::", "station::".length);
-  if (marker === -1) {
-    return nodeId;
-  }
-  return nodeId.slice(marker + 2);
-}
-
-function pickIntertieStationNodeId(args: {
-  intertieName: string;
-  area: string;
-  oppositeArea: string;
-  stationsByArea: Map<string, Set<string>>;
-  stationPositions: Map<string, { x: number; y: number }>;
-  nodeDegree: Map<string, number>;
-}): string | null {
-  const stationSet = args.stationsByArea.get(args.area);
-  if (!stationSet || stationSet.size === 0) {
-    return null;
-  }
-
-  const stations = Array.from(stationSet).filter(
-    (station) => !isPseudoAreaNodeName(station) && !isLineLikeNodeName(station),
-  );
-  if (stations.length === 0) {
-    return null;
-  }
-  const intertieHints = INTERTIE_STATION_HINTS[args.intertieName]?.[args.area] ?? [];
-
-  for (const keyword of intertieHints) {
-    const normalizedKeyword = normalizeStationName(keyword);
-    const matched = stations.filter((station) =>
-      normalizeStationName(station).includes(normalizedKeyword),
-    );
-    if (matched.length === 0) {
-      continue;
-    }
-    const best = matched.sort((a, b) => {
-      const aId = buildStationNodeId(args.area, a);
-      const bId = buildStationNodeId(args.area, b);
-      return (args.nodeDegree.get(bId) ?? 0) - (args.nodeDegree.get(aId) ?? 0);
-    })[0];
-    return buildStationNodeId(args.area, best);
-  }
-
-  const areaAnchor = AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default;
-  const oppositeAnchor = AREA_ANCHORS[args.oppositeArea] ?? AREA_ANCHORS.default;
-  let bestNodeId: string | null = null;
-  let bestScore = Number.NEGATIVE_INFINITY;
-
-  for (const station of stations) {
-    const nodeId = buildStationNodeId(args.area, station);
-    const position = args.stationPositions.get(nodeId) ?? areaAnchor;
-    const degree = args.nodeDegree.get(nodeId) ?? 0;
-    const distanceToOpposite = Math.hypot(position.x - oppositeAnchor.x, position.y - oppositeAnchor.y);
-    const distanceToAreaCenter = Math.hypot(position.x - areaAnchor.x, position.y - areaAnchor.y);
-    const score = degree * 24 - distanceToOpposite * 0.5 - distanceToAreaCenter * 0.09;
-    if (score > bestScore) {
-      bestScore = score;
-      bestNodeId = nodeId;
-    }
-  }
-
-  return bestNodeId;
-}
-
-function pickPlantAttachStationNodeId(args: {
-  area: string;
-  plantName: string;
-  stationsByArea: Map<string, Set<string>>;
-  stationPositions: Map<string, { x: number; y: number }>;
-  stationAttachCounts: Map<string, number>;
-  plantBase?: { x: number; y: number };
-}): string | null {
-  const stationSet = args.stationsByArea.get(args.area);
-  if (!stationSet || stationSet.size === 0) {
-    return null;
-  }
-
-  const candidates = Array.from(stationSet).filter(
-    (station) => !isPseudoAreaNodeName(station) && !isLineLikeNodeName(station),
-  );
-  if (candidates.length === 0) {
-    return null;
-  }
-  const base = args.plantBase ?? resolvePlantGeoBase(args.area, args.plantName) ?? (AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default);
-
-  const scoreCandidateStations = (
-    stations: string[],
-    options?: {
-      strongHint?: boolean;
-    },
-  ): string | null => {
-    let bestNodeId: string | null = null;
-    let bestScore = Number.POSITIVE_INFINITY;
-    for (const station of stations) {
-      const nodeId = buildStationNodeId(args.area, station);
-      const point = args.stationPositions.get(nodeId) ?? (AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default);
-      const distance = Math.hypot(point.x - base.x, point.y - base.y);
-      const attachedCount = args.stationAttachCounts.get(nodeId) ?? 0;
-      const score = distance + attachedCount * (options?.strongHint ? 1.5 : 9);
-      if (score < bestScore) {
-        bestScore = score;
-        bestNodeId = nodeId;
-      }
-    }
-    return bestNodeId;
-  };
-
-  const normalizedPlant = normalizeStationName(args.plantName);
-  const attachHints = PLANT_ATTACH_HINTS_BY_AREA[args.area] ?? [];
-  const matchedHint = attachHints
-    .filter((hint) => normalizedPlant.includes(normalizeStationName(hint.plantKeyword)))
-    .sort((a, b) => normalizeStationName(b.plantKeyword).length - normalizeStationName(a.plantKeyword).length)[0];
-
-  if (matchedHint) {
-    const hintedStations = candidates.filter((station) => {
-      const normalizedStation = normalizeStationName(station);
-      return matchedHint.stationKeywords.some((keyword) => normalizedStation.includes(normalizeStationName(keyword)));
-    });
-    const hintedStationNodeId = scoreCandidateStations(hintedStations, { strongHint: true });
-    if (hintedStationNodeId) {
-      return hintedStationNodeId;
-    }
-  }
-
-  return scoreCandidateStations(candidates);
 }
 
 function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<string, { x: number; y: number }> {
