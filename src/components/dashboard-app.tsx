@@ -1005,6 +1005,17 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const stationsByArea = new Map<string, Set<string>>();
     const nodeDegree = new Map<string, number>();
     const links: NetworkLink[] = [];
+    const intertieBridgeMap = new Map<
+      string,
+      {
+        sourceArea: string;
+        targetArea: string;
+        value: number;
+        absMw: number;
+        peakAbsMw: number;
+        intertieNames: Set<string>;
+      }
+    >();
 
     networkLines.forEach((line) => {
       const direction = parseDirection(line.positiveDirection);
@@ -1047,6 +1058,28 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         positiveDirection: line.positiveDirection,
         peakAbsMw: line.peakAbsMw,
       });
+    });
+
+    (data.flows.intertieSeries ?? []).forEach((row) => {
+      visibleAreas.add(row.sourceArea);
+      visibleAreas.add(row.targetArea);
+      const slotMw = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
+      const sourceArea = slotMw >= 0 ? row.sourceArea : row.targetArea;
+      const targetArea = slotMw >= 0 ? row.targetArea : row.sourceArea;
+      const key = `${sourceArea}=>${targetArea}`;
+      const current = intertieBridgeMap.get(key) ?? {
+        sourceArea,
+        targetArea,
+        value: 0,
+        absMw: 0,
+        peakAbsMw: 0,
+        intertieNames: new Set<string>(),
+      };
+      current.value += Math.abs(slotMw);
+      current.absMw += Math.abs(slotMw);
+      current.peakAbsMw = Math.max(current.peakAbsMw, row.peakAbsMw ?? 0);
+      current.intertieNames.add(row.intertieName);
+      intertieBridgeMap.set(key, current);
     });
 
     const stationPositions = buildStationLayout(stationsByArea, links, nodeDegree);
@@ -1169,6 +1202,27 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       };
     });
 
+    const maxAbsIntertie = Math.max(...Array.from(intertieBridgeMap.values()).map((item) => item.absMw), 1);
+    const intertieBridgeLines = Array.from(intertieBridgeMap.values())
+      .map((bridge) => {
+        const endpoints = buildAreaBridgeEndpoints(bridge.sourceArea, bridge.targetArea);
+        if (!endpoints) {
+          return null;
+        }
+        const ratio = bridge.absMw / maxAbsIntertie;
+        return {
+          ...bridge,
+          coords: buildCurvedLineCoords(endpoints.from, endpoints.to, endpoints.curveness),
+          lineStyle: {
+            width: 1.2 + ratio * 3.2,
+            opacity: 0.46,
+            color: bridge.value >= 0 ? "rgba(234,88,12,0.55)" : "rgba(37,99,235,0.55)",
+            type: "solid",
+          },
+        };
+      })
+      .filter((item) => item !== null);
+
     const nodePointById = new Map<string, { x: number; y: number }>();
     nodes.forEach((node) => {
       const id = String(node.id ?? "");
@@ -1195,6 +1249,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         };
       })
       .filter((item) => item !== null);
+    const animatedIntertieLines = intertieBridgeLines.map((line) => ({
+      coords: line.coords,
+      lineStyle: {
+        color: line.lineStyle.color,
+        width: 0,
+        opacity: 0,
+      },
+    }));
 
     const guideGraphics = buildJapanGuideGraphics();
 
@@ -1257,6 +1319,33 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       ],
       graphic: guideGraphics,
       series: [
+        {
+          type: "lines",
+          coordinateSystem: "none",
+          polyline: true,
+          silent: false,
+          z: 1,
+          data: intertieBridgeLines,
+          tooltip: {
+            formatter: (params: {
+              data: {
+                sourceArea: string;
+                targetArea: string;
+                absMw: number;
+                peakAbsMw: number;
+                intertieNames: Set<string>;
+              };
+            }) =>
+              `${params.data.sourceArea} → ${params.data.targetArea}<br/>区分: 連係線（エリア橋）<br/>表示時刻: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(
+                params.data.absMw,
+              )} MW<br/>最大|潮流|: ${numberFmt.format(params.data.peakAbsMw)} MW<br/>連係線: ${Array.from(
+                params.data.intertieNames,
+              ).join(" / ")}`,
+          },
+          lineStyle: {
+            opacity: 0.42,
+          },
+        },
         {
           type: "graph",
           layout: "none",
@@ -1328,10 +1417,31 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             opacity: 0,
           },
         },
+        {
+          type: "lines",
+          coordinateSystem: "none",
+          polyline: true,
+          silent: true,
+          z: 6,
+          data: animatedIntertieLines,
+          effect: {
+            show: true,
+            constantSpeed: 22,
+            trailLength: 0,
+            symbol: "arrow",
+            symbolSize: 7,
+            color: "rgba(15,23,42,0.72)",
+          },
+          lineStyle: {
+            width: 0,
+            opacity: 0,
+          },
+        },
       ],
     };
   }, [
     data.flows.areaSummaries,
+    data.flows.intertieSeries,
     data.flows.lineSeries,
     clampedNetworkFlowSlotIndex,
     networkPowerPlants,
@@ -2725,6 +2835,56 @@ function buildCurvedLineCoords(
     [midX + normalX * offset, midY + normalY * offset],
     [to.x, to.y],
   ];
+}
+
+function buildAreaBridgeEndpoints(
+  sourceArea: string,
+  targetArea: string,
+): { from: { x: number; y: number }; to: { x: number; y: number }; curveness: number } | null {
+  const sourceBounds = getAreaLayoutBounds(sourceArea);
+  const targetBounds = getAreaLayoutBounds(targetArea);
+  if (!sourceBounds || !targetBounds) {
+    return null;
+  }
+
+  const sourceCenter = {
+    x: (sourceBounds.xMin + sourceBounds.xMax) / 2,
+    y: (sourceBounds.yMin + sourceBounds.yMax) / 2,
+  };
+  const targetCenter = {
+    x: (targetBounds.xMin + targetBounds.xMax) / 2,
+    y: (targetBounds.yMin + targetBounds.yMax) / 2,
+  };
+  const dx = targetCenter.x - sourceCenter.x;
+  const dy = targetCenter.y - sourceCenter.y;
+  const from = projectPointToAreaEdge(sourceBounds, { x: dx, y: dy });
+  const to = projectPointToAreaEdge(targetBounds, { x: -dx, y: -dy });
+  const curveness = clamp((Math.abs(dy) > Math.abs(dx) ? 0.08 : 0.05) * Math.sign(dx || 1), -0.12, 0.12);
+
+  return { from, to, curveness };
+}
+
+function projectPointToAreaEdge(
+  bounds: { xMin: number; xMax: number; yMin: number; yMax: number },
+  direction: { x: number; y: number },
+): { x: number; y: number } {
+  const center = {
+    x: (bounds.xMin + bounds.xMax) / 2,
+    y: (bounds.yMin + bounds.yMax) / 2,
+  };
+  const dx = direction.x || 0.001;
+  const dy = direction.y || 0.001;
+  const candidates = [
+    (bounds.xMax - center.x) / dx,
+    (bounds.xMin - center.x) / dx,
+    (bounds.yMax - center.y) / dy,
+    (bounds.yMin - center.y) / dy,
+  ].filter((value) => Number.isFinite(value) && value > 0);
+  const scale = Math.min(...candidates, 1);
+  return {
+    x: clamp(center.x + dx * scale, bounds.xMin, bounds.xMax),
+    y: clamp(center.y + dy * scale, bounds.yMin, bounds.yMax),
+  };
 }
 
 function getAreaLayoutBounds(area: string): { xMin: number; xMax: number; yMin: number; yMax: number } {
