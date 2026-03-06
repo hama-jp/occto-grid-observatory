@@ -1027,6 +1027,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         shouldLabel: ratio >= (selectedArea === "全エリア" ? 0.5 : 0.3),
         x: position.x,
         y: position.y,
+        symbol: "rect",
         symbolSize: 5.2 + ratio * 10.8,
         itemStyle: {
           color: FLOW_AREA_COLORS[plant.area] ?? FLOW_AREA_COLORS.default,
