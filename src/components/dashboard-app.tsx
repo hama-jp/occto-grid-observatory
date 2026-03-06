@@ -1286,81 +1286,68 @@ export function DashboardApp({ data }: DashboardAppProps) {
     selectedFlowDateTimeLabel,
   ]);
 
-  const interAreaFlowOption = useMemo(() => {
-    const baseRows = data.flows.interAreaFlows ?? [];
-    const filteredRows = baseRows
+  const interAreaFlowTextRows = useMemo(() => {
+    const scopedInterties = (data.flows.intertieSeries ?? []).filter((row) =>
+      selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
+    );
+    const pairMap = new Map<
+      string,
+      {
+        sourceArea: string;
+        targetArea: string;
+        upMw: number;
+        downMw: number;
+        intertieNames: Set<string>;
+      }
+    >();
+
+    scopedInterties.forEach((row) => {
+      const key = `${row.sourceArea}::${row.targetArea}`;
+      const slotMw = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
+      const current = pairMap.get(key) ?? {
+        sourceArea: row.sourceArea,
+        targetArea: row.targetArea,
+        upMw: 0,
+        downMw: 0,
+        intertieNames: new Set<string>(),
+      };
+      if (slotMw >= 0) {
+        current.upMw += slotMw;
+      } else {
+        current.downMw += Math.abs(slotMw);
+      }
+      current.intertieNames.add(row.intertieName);
+      pairMap.set(key, current);
+    });
+
+    const rows = Array.from(pairMap.values()).map((row) => ({
+      sourceArea: row.sourceArea,
+      targetArea: row.targetArea,
+      upMw: roundTo(row.upMw, 1),
+      downMw: roundTo(row.downMw, 1),
+      magnitudeMw: roundTo(row.upMw + row.downMw, 1),
+      intertieNames: Array.from(row.intertieNames),
+    }));
+
+    if (rows.length > 0) {
+      return rows.sort((a, b) => b.magnitudeMw - a.magnitudeMw).slice(0, selectedArea === "全エリア" ? 14 : 22);
+    }
+
+    return (data.flows.interAreaFlows ?? [])
       .filter((row) =>
         selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
       )
-      .slice(0, selectedArea === "全エリア" ? 12 : 20);
-    const hasData = filteredRows.length > 0;
-
-    return {
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        formatter: (params: Array<{ data: { row: (typeof filteredRows)[number] } }>) => {
-          const row = params[0]?.data?.row;
-          if (!row) {
-            return "";
-          }
-          return `${row.sourceArea} ⇄ ${row.targetArea}<br/>平均|潮流|: ${decimalFmt.format(
-            row.avgAbsMw,
-          )} MW<br/>平均潮流(符号付): ${decimalFmt.format(row.avgMw)} MW<br/>最大|潮流|: ${numberFmt.format(
-            row.peakAbsMw,
-          )} MW<br/>連系線: ${row.intertieNames.join(" / ")}`;
-        },
-      },
-      grid: { top: 20, left: 128, right: 20, bottom: 24 },
-      xAxis: {
-        type: "value",
-        axisLabel: { formatter: (value: number) => `${Math.round(value)} MW` },
-      },
-      yAxis: {
-        type: "category",
-        inverse: true,
-        data: filteredRows.map((row) => `${row.sourceArea} ⇄ ${row.targetArea}`),
-        axisLabel: { color: "#334155", fontSize: 11 },
-      },
-      graphic: hasData
-        ? undefined
-        : [
-            {
-              type: "text",
-              left: "center",
-              top: "middle",
-              style: {
-                text: "連系線潮流実績データが未取得です",
-                fill: "#475569",
-                font: "14px sans-serif",
-              },
-              silent: true,
-            },
-          ],
-      series: [
-        {
-          type: "bar",
-          barWidth: 14,
-          data: filteredRows.map((row) => ({
-            value: row.avgAbsMw,
-            row,
-            itemStyle: {
-              color: FLOW_AREA_COLORS[row.sourceArea] ?? FLOW_AREA_COLORS.default,
-              borderRadius: [0, 5, 5, 0],
-            },
-          })),
-          label: {
-            show: true,
-            position: "right",
-            formatter: (params: { data: { row: (typeof filteredRows)[number] } }) =>
-              `${decimalFmt.format(params.data.row.avgMw)} MW`,
-            color: "#334155",
-            fontSize: 10,
-          },
-        },
-      ],
-    };
-  }, [data.flows.interAreaFlows, selectedArea]);
+      .map((row) => ({
+        sourceArea: row.sourceArea,
+        targetArea: row.targetArea,
+        upMw: roundTo(Math.max(row.avgMw, 0), 1),
+        downMw: roundTo(Math.max(-row.avgMw, 0), 1),
+        magnitudeMw: roundTo(row.avgAbsMw, 1),
+        intertieNames: row.intertieNames,
+      }))
+      .sort((a, b) => b.magnitudeMw - a.magnitudeMw)
+      .slice(0, selectedArea === "全エリア" ? 14 : 22);
+  }, [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, data.flows.intertieSeries, selectedArea]);
 
   const intertieTrendOption = useMemo(() => {
     const scopedSeries = (data.flows.intertieSeries ?? []).filter((row) =>
@@ -1600,7 +1587,36 @@ export function DashboardApp({ data }: DashboardAppProps) {
             <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
           </Panel>
           <Panel title="エリア間連系潮流（実績）">
-            <ReactECharts option={interAreaFlowOption} style={{ height: 620 }} />
+            <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
+            <div className="h-[594px] space-y-2 overflow-y-auto pr-1">
+              {interAreaFlowTextRows.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                  連系線潮流実績データが未取得です
+                </div>
+              ) : (
+                interAreaFlowTextRows.map((row) => (
+                  <article
+                    key={`${row.sourceArea}-${row.targetArea}`}
+                    className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-800">
+                        {row.sourceArea} ⇄ {row.targetArea}
+                      </p>
+                      <p className="text-xs text-slate-500">{row.intertieNames.length}線路</p>
+                    </div>
+                    <p className="mt-1 font-mono text-sm">
+                      <span className="text-emerald-700">{decimalFmt.format(row.upMw)}MW ↑</span>
+                      <span className="mx-2 text-slate-400">|</span>
+                      <span className="text-rose-700">{decimalFmt.format(row.downMw)}MW ↓</span>
+                    </p>
+                    <p className="mt-1 truncate text-[11px] text-slate-500" title={row.intertieNames.join(" / ")}>
+                      {row.intertieNames.join(" / ")}
+                    </p>
+                  </article>
+                ))
+              )}
+            </div>
           </Panel>
         </section>
 
