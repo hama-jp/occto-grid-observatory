@@ -836,6 +836,31 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     }));
   }, [data.generation.sourceTotals, sourceDonutArea, sourceTotalsByArea]);
 
+  const sourceCompositionLegendColumns = useMemo(() => {
+    if (!useSplitDonutLegends) {
+      return {
+        left: sourceCompositionItems,
+        right: [] as typeof sourceCompositionItems,
+      };
+    }
+
+    let cumulativePercent = 0;
+    const left: typeof sourceCompositionItems = [];
+    const right: typeof sourceCompositionItems = [];
+
+    sourceCompositionItems.forEach((item) => {
+      const midpoint = cumulativePercent + item.percent / 2;
+      if (midpoint <= 50) {
+        left.push(item);
+      } else {
+        right.push(item);
+      }
+      cumulativePercent += item.percent;
+    });
+
+    return { left, right };
+  }, [sourceCompositionItems, useSplitDonutLegends]);
+
   const sourceDonutOption = useMemo(() => {
     return {
       tooltip: { trigger: "item" },
@@ -843,7 +868,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         {
           name: "発電方式",
           type: "pie",
-          radius: useSplitDonutLegends ? ["40%", "68%"] : ["38%", "60%"],
+          radius: useSplitDonutLegends ? ["42%", "72%"] : ["38%", "60%"],
           center: useSplitDonutLegends ? ["50%", "50%"] : ["50%", "42%"],
           avoidLabelOverlap: true,
           label: {
@@ -2067,32 +2092,36 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   ))}
                 </select>
               </div>
-              <div data-testid="source-composition-chart">
-                <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
+              <div
+                className={`${
+                  useSplitDonutLegends ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px_minmax(0,1fr)]" : ""
+                } items-center`}
+              >
+                {useSplitDonutLegends ? (
+                  <CompositionLegendList
+                    items={sourceCompositionLegendColumns.left}
+                    align="right"
+                    className="hidden xl:flex"
+                  />
+                ) : null}
+                <div data-testid="source-composition-chart" className="mx-auto w-full max-w-[360px]">
+                  <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
+                </div>
+                {useSplitDonutLegends ? (
+                  <CompositionLegendList
+                    items={sourceCompositionLegendColumns.right}
+                    align="left"
+                    className="hidden xl:flex"
+                  />
+                ) : null}
               </div>
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {sourceCompositionItems.map((item) => (
-                  <div
-                    key={item.name}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2"
-                  >
-                    <div className="min-w-0 pr-3">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-3 w-3 shrink-0 rounded-full"
-                          style={{ backgroundColor: item.color }}
-                          aria-hidden="true"
-                        />
-                        <span className="truncate text-sm font-medium text-slate-800">{item.name}</span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">{formatCompactEnergy(item.totalKwh)}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-base font-semibold text-slate-900">{decimalFmt.format(item.percent)}%</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {useSplitDonutLegends ? null : (
+                <CompositionLegendList
+                  items={sourceCompositionLegendColumns.left}
+                  align="left"
+                  className="mt-3"
+                />
+              )}
             </Panel>
           </section>
         ) : null}
@@ -2286,6 +2315,51 @@ function MetricTile({
       <p className="text-xs tracking-[0.16em] text-slate-500">{label}</p>
       <p className="mt-1 text-base font-semibold text-slate-900">{value}</p>
       <p className="mt-1 text-sm text-slate-600">{detail}</p>
+    </div>
+  );
+}
+
+function CompositionLegendList({
+  items,
+  align,
+  className,
+}: {
+  items: Array<{ name: string; totalKwh: number; percent: number; color: string }>;
+  align: "left" | "right";
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col gap-2 ${className ?? ""}`}>
+      {items.map((item) => (
+        <div
+          key={item.name}
+          className={`flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 ${
+            align === "right" ? "text-right" : "text-left"
+          }`}
+        >
+          {align === "right" ? null : (
+            <span
+              className="mt-0.5 h-3 w-3 shrink-0 rounded-full"
+              style={{ backgroundColor: item.color }}
+              aria-hidden="true"
+            />
+          )}
+          <div className={`min-w-0 flex-1 ${align === "right" ? "order-1" : ""}`}>
+            <p className="truncate text-sm font-medium text-slate-800">{item.name}</p>
+            <p className="text-xs text-slate-500">{formatCompactEnergy(item.totalKwh)}</p>
+          </div>
+          <div className={`shrink-0 ${align === "right" ? "order-0" : ""}`}>
+            <p className="text-base font-semibold text-slate-900">{decimalFmt.format(item.percent)}%</p>
+          </div>
+          {align === "right" ? (
+            <span
+              className="mt-0.5 h-3 w-3 shrink-0 rounded-full"
+              style={{ backgroundColor: item.color }}
+              aria-hidden="true"
+            />
+          ) : null}
+        </div>
+      ))}
     </div>
   );
 }
