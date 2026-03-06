@@ -23,8 +23,8 @@ export async function getSelectOptions(locator: Locator): Promise<string[]> {
 }
 
 export async function waitForChartSurface(locator: Locator): Promise<void> {
-  await expect(locator).toBeVisible();
-  await expect(locator.locator("canvas, svg").first()).toBeVisible();
+  const surface = locator.locator("canvas, svg").first();
+  await expect(surface).toBeVisible();
 }
 
 export async function waitForDashboardReady(page: Page): Promise<void> {
