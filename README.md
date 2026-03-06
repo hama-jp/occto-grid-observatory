@@ -45,6 +45,15 @@ npm run dev
 
 ブラウザで `http://localhost:3000` を開くと、`data/normalized/dashboard-latest.json` を読み込んで表示します。
 
+## UIテスト
+```bash
+npx playwright install chromium
+npm run test:ui
+```
+
+- `npm run test:ui` は `build -> 静的配信 -> Playwright` の順に実行
+- 失敗時は `playwright-report/` と `test-results/` に成果物を出力
+
 ## 運用フロー（Linear + GitHub）
 - [LINEAR_GITHUB_WORKFLOW.md](docs/LINEAR_GITHUB_WORKFLOW.md)
 - [ROADMAP.md](docs/ROADMAP.md)
@@ -53,6 +62,7 @@ npm run dev
 PR / push 時に以下を実行:
 - `npm run lint`
 - `npm run build`
+- `npm run test:ui`
 
 `.github` 配下に Issue / PR テンプレートを用意しています。
 

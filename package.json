@@ -7,6 +7,7 @@
     "build": "npm run sync-public-data && next build",
     "start": "next start",
     "lint": "eslint",
+    "test:ui": "npm run build && playwright test",
     "ingest": "tsx scripts/ingest.ts",
     "sync-public-data": "tsx scripts/sync-public-data.ts"
   },
@@ -23,12 +24,14 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "serve": "^14.2.6",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"
