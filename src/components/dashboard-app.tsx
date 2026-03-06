@@ -507,6 +507,47 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     [data.generation.topUnits, selectedArea],
   );
 
+  const networkPowerPlants = useMemo(() => {
+    if (data.generation.plantSummaries && data.generation.plantSummaries.length > 0) {
+      return data.generation.plantSummaries
+        .filter((plant) => isNetworkPowerPlantSource(plant.sourceType))
+        .map((plant) => ({
+          area: plant.area,
+          plantName: plant.plantName,
+          sourceType: plant.sourceType,
+          dailyKwh: plant.dailyKwh,
+          avgOutputMw: plant.dailyKwh / 24 / 1000,
+          maxOutputManKw: plant.maxOutputManKw,
+        }));
+    }
+
+    const fallback = new Map<string, { area: string; plantName: string; sourceType: string; dailyKwh: number; maxOutputManKw: number }>();
+    data.generation.topUnits.forEach((unit) => {
+      if (!isNetworkPowerPlantSource(unit.sourceType)) {
+        return;
+      }
+      const key = `${unit.area}::${unit.plantName}`;
+      const current = fallback.get(key) ?? {
+        area: unit.area,
+        plantName: unit.plantName,
+        sourceType: unit.sourceType,
+        dailyKwh: 0,
+        maxOutputManKw: 0,
+      };
+      current.dailyKwh += unit.dailyKwh;
+      current.maxOutputManKw = Math.max(current.maxOutputManKw, unit.maxOutputManKw ?? 0);
+      fallback.set(key, current);
+    });
+    return Array.from(fallback.values()).map((plant) => ({
+      area: plant.area,
+      plantName: plant.plantName,
+      sourceType: plant.sourceType,
+      dailyKwh: plant.dailyKwh,
+      avgOutputMw: plant.dailyKwh / 24 / 1000,
+      maxOutputManKw: plant.maxOutputManKw,
+    }));
+  }, [data.generation.plantSummaries, data.generation.topUnits]);
+
   const filteredLines = useMemo(
     () =>
       data.flows.lineSeries.filter((line) =>
@@ -943,45 +984,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         });
     });
 
-    const plantByArea = new Map<
-      string,
-      Array<{ plantName: string; dailyKwh: number; avgOutputMw: number; maxOutputManKw: number }>
-    >();
-    const plantAccum = new Map<string, { area: string; plantName: string; dailyKwh: number; maxOutputManKw: number }>();
-    data.generation.topUnits
-      .filter((unit) => (selectedArea === "全エリア" ? areaScope.has(unit.area) : areaScope.has(unit.area)))
-      .forEach((unit) => {
-        const key = `${unit.area}::${unit.plantName}`;
-        const current = plantAccum.get(key) ?? {
-          area: unit.area,
-          plantName: unit.plantName,
-          dailyKwh: 0,
-          maxOutputManKw: 0,
-        };
-        current.dailyKwh += unit.dailyKwh;
-        current.maxOutputManKw = Math.max(current.maxOutputManKw, unit.maxOutputManKw ?? 0);
-        plantAccum.set(key, current);
-      });
+    const scopedPowerPlants = networkPowerPlants
+      .filter((plant) => areaScope.has(plant.area))
+      .sort((a, b) => b.dailyKwh - a.dailyKwh);
+    const maxPlantDaily = Math.max(...scopedPowerPlants.map((item) => item.dailyKwh), 1);
+    const powerOccupiedCells = new Set<string>();
 
-    for (const item of plantAccum.values()) {
-      const rows = plantByArea.get(item.area) ?? [];
-      rows.push({
-        plantName: item.plantName,
-        dailyKwh: item.dailyKwh,
-        avgOutputMw: item.dailyKwh / 24 / 1000,
-        maxOutputManKw: item.maxOutputManKw,
-      });
-      plantByArea.set(item.area, rows);
-    }
-
-    const topPlants = Array.from(plantByArea.entries()).flatMap(([area, rows]) =>
-      rows
-        .sort((a, b) => b.dailyKwh - a.dailyKwh)
-        .slice(0, selectedArea === "全エリア" ? 5 : 8)
-        .map((row) => ({ area, ...row })),
-    );
-    const maxPlantDaily = Math.max(...topPlants.map((item) => item.dailyKwh), 1);
-    topPlants.forEach((plant) => {
+    scopedPowerPlants.forEach((plant, plantIndex) => {
       const base = resolveStationGeoBase(plant.area, plant.plantName) ?? (AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default);
       const attachStationNodeId = pickPlantAttachStationNodeId({
         area: plant.area,
@@ -994,11 +1003,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         : base;
       const angle = ((hashSeed(`${plant.area}-${plant.plantName}`) % 360) * Math.PI) / 180;
       const ratio = plant.dailyKwh / maxPlantDaily;
-      const radius = 18 + ratio * 34;
-      const position = {
+      const radius = 14 + ratio * 28 + (plantIndex % 3) * 2;
+      const radialCandidate = {
         x: clamp(attachPos.x + Math.cos(angle) * radius, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
         y: clamp(attachPos.y + Math.sin(angle) * radius * 0.66, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
       };
+      const position = placePointAvoidingOverlap(
+        radialCandidate,
+        `power-${plant.area}-${plant.plantName}`,
+        powerOccupiedCells,
+      );
       const powerNodeId = buildPowerNodeId(plant.area, plant.plantName);
       nodes.push({
         id: powerNodeId,
@@ -1007,18 +1021,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         category: categoryIndex.get(plant.area) ?? 0,
         value: roundTo(plant.avgOutputMw, 1),
         nodeType: "power",
+        sourceType: plant.sourceType,
         dailyKwh: plant.dailyKwh,
         maxOutputManKw: roundTo(plant.maxOutputManKw, 2),
-        shouldLabel: ratio >= 0.36 || selectedArea !== "全エリア",
+        shouldLabel: ratio >= (selectedArea === "全エリア" ? 0.5 : 0.3),
         x: position.x,
         y: position.y,
-        symbolSize: 9 + ratio * 22,
+        symbolSize: 5.2 + ratio * 10.8,
         itemStyle: {
           color: FLOW_AREA_COLORS[plant.area] ?? FLOW_AREA_COLORS.default,
           borderColor: "#ffffff",
-          borderWidth: 1.2,
-          shadowBlur: 6,
-          shadowColor: "rgba(15,23,42,0.2)",
+          borderWidth: 1,
+          shadowBlur: 4,
+          shadowColor: "rgba(15,23,42,0.16)",
         },
       });
 
@@ -1173,6 +1188,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             sourceStation?: string;
             targetStation?: string;
             nodeType?: "ss" | "power" | "converter";
+            sourceType?: string;
             dailyKwh?: number;
             maxOutputManKw?: number;
             avgOutputMw?: number;
@@ -1211,7 +1227,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           if (params.data.nodeType === "power") {
             return `${params.data.area} | ${params.name}<br/>区分: 電源<br/>平均出力: ${decimalFmt.format(
               params.data.value,
-            )} MW<br/>最大出力: ${decimalFmt.format(params.data.maxOutputManKw ?? 0)} 万kW<br/>日量: ${numberFmt.format(
+            )} MW<br/>方式: ${params.data.sourceType ?? "不明"}<br/>最大出力: ${decimalFmt.format(
+              params.data.maxOutputManKw ?? 0,
+            )} 万kW<br/>日量: ${numberFmt.format(
               Math.round(params.data.dailyKwh ?? 0),
             )} kWh`;
           }
@@ -1332,8 +1350,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     data.flows.areaSummaries,
     data.flows.intertieSeries,
     data.flows.lineSeries,
-    data.generation.topUnits,
     clampedNetworkFlowSlotIndex,
+    networkPowerPlants,
     selectedArea,
     selectedFlowDateTimeLabel,
   ]);
@@ -2104,6 +2122,20 @@ function hashSeed(input: string): number {
 function normalizeSourceName(source: string): string {
   const trimmed = source.trim();
   return trimmed.length > 0 ? trimmed : "不明";
+}
+
+function isNetworkPowerPlantSource(sourceType: string): boolean {
+  const normalized = sourceType.trim();
+  if (normalized.includes("火力")) {
+    return true;
+  }
+  if (normalized.includes("原子力")) {
+    return true;
+  }
+  if (normalized.includes("水力")) {
+    return true;
+  }
+  return false;
 }
 
 function roundTo(value: number, digits: number): number {

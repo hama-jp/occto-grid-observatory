@@ -633,6 +633,10 @@ function buildDashboardData(args: {
   const hourlyByAreaMap = new Map<string, number[]>();
   const hourlyBySourceMap = new Map<string, number[]>();
   const hourlyByAreaSourceMap = new Map<string, Map<string, number[]>>();
+  const plantSummaryMap = new Map<
+    string,
+    { area: string; plantName: string; sourceType: string; dailyKwh: number; maxSlotKwh: number }
+  >();
 
   for (const row of args.generationRows) {
     areaTotalsMap.set(row.area, (areaTotalsMap.get(row.area) ?? 0) + row.dailyKwh);
@@ -651,6 +655,24 @@ function buildDashboardData(args: {
     hourlyBySourceMap.set(row.sourceType, sourceSeries);
     areaSourceMap.set(row.sourceType, areaSourceSeries);
     hourlyByAreaSourceMap.set(row.area, areaSourceMap);
+
+    const plantKey = `${row.area}::${row.plantName}`;
+    const currentPlant = plantSummaryMap.get(plantKey) ?? {
+      area: row.area,
+      plantName: row.plantName,
+      sourceType: row.sourceType,
+      dailyKwh: 0,
+      maxSlotKwh: 0,
+    };
+    currentPlant.dailyKwh += row.dailyKwh;
+    currentPlant.maxSlotKwh = Math.max(
+      currentPlant.maxSlotKwh,
+      row.values.reduce((max, value) => Math.max(max, value), 0),
+    );
+    if (!currentPlant.sourceType && row.sourceType) {
+      currentPlant.sourceType = row.sourceType;
+    }
+    plantSummaryMap.set(plantKey, currentPlant);
   }
 
   const lineSeries: LineSeries[] = args.flowRows.map((row) => {
@@ -783,6 +805,16 @@ function buildDashboardData(args: {
       };
     });
 
+  const plantSummaries = Array.from(plantSummaryMap.values())
+    .map((row) => ({
+      area: row.area,
+      plantName: row.plantName,
+      sourceType: row.sourceType,
+      dailyKwh: roundTo(row.dailyKwh, 0),
+      maxOutputManKw: roundTo(row.maxSlotKwh / 5000, 2),
+    }))
+    .sort((a, b) => b.dailyKwh - a.dailyKwh);
+
   const areaBalance: AreaBalance[] = generationAreaTotals.map((generation) => {
     const flow = areaSummaries.find((item) => item.area === generation.area);
     const peakAbsMw = flow?.peakAbsMw ?? 0;
@@ -826,6 +858,7 @@ function buildDashboardData(args: {
       hourlyBySourceByArea,
       hourlyTotalByArea,
       topUnits,
+      plantSummaries,
     },
     flows: {
       areaSummaries,

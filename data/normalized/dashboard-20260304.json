@@ -7125,6 +7125,1891 @@
         "maxOutputManKw": 58.6,
         "dailyKwh": 10705000
       }
+    ],
+    "plantSummaries": [
+      {
+        "area": "中部",
+        "plantName": "碧南火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 75884000,
+        "maxOutputManKw": 95.8
+      },
+      {
+        "area": "関西",
+        "plantName": "高浜発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 62495869,
+        "maxOutputManKw": 89.72
+      },
+      {
+        "area": "九州",
+        "plantName": "玄海原子力発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 55533000,
+        "maxOutputManKw": 116.2
+      },
+      {
+        "area": "関西",
+        "plantName": "姫路第二発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 54581028,
+        "maxOutputManKw": 45.58
+      },
+      {
+        "area": "中部",
+        "plantName": "西名古屋火力発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 52499000,
+        "maxOutputManKw": 116
+      },
+      {
+        "area": "関西",
+        "plantName": "舞鶴発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 40131790,
+        "maxOutputManKw": 85.99
+      },
+      {
+        "area": "東北",
+        "plantName": "上越火力発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 39630000,
+        "maxOutputManKw": 57.2
+      },
+      {
+        "area": "北海道",
+        "plantName": "苫東厚真発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 36377550,
+        "maxOutputManKw": 66.13
+      },
+      {
+        "area": "九州",
+        "plantName": "電源開発松浦火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 35733000,
+        "maxOutputManKw": 94.6
+      },
+      {
+        "area": "中部",
+        "plantName": "川越火力発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 34677000,
+        "maxOutputManKw": 24.4
+      },
+      {
+        "area": "東京",
+        "plantName": "東京柏崎刈羽",
+        "sourceType": "原子力",
+        "dailyKwh": 31495000,
+        "maxOutputManKw": 131.4
+      },
+      {
+        "area": "関西",
+        "plantName": "神戸発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 31389075,
+        "maxOutputManKw": 65.8
+      },
+      {
+        "area": "中部",
+        "plantName": "新名古屋火力発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 30358000,
+        "maxOutputManKw": 38.4
+      },
+      {
+        "area": "四国",
+        "plantName": "電源開発橘湾火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 29110000,
+        "maxOutputManKw": 95.2
+      },
+      {
+        "area": "関西",
+        "plantName": "大飯発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 28080324,
+        "maxOutputManKw": 117.23
+      },
+      {
+        "area": "東京",
+        "plantName": "真岡発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 27829000,
+        "maxOutputManKw": 58.6
+      },
+      {
+        "area": "東北",
+        "plantName": "相馬共同火力発電株式会社新地火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 26739000,
+        "maxOutputManKw": 83.96
+      },
+      {
+        "area": "東北",
+        "plantName": "勿来発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 25939645,
+        "maxOutputManKw": 57.15
+      },
+      {
+        "area": "九州",
+        "plantName": "松浦発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 24743000,
+        "maxOutputManKw": 94.8
+      },
+      {
+        "area": "中部",
+        "plantName": "武豊火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 22616000,
+        "maxOutputManKw": 95
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力原町火力発電所１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 22580234,
+        "maxOutputManKw": 95.33
+      },
+      {
+        "area": "九州",
+        "plantName": "川内原子力発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 21895000,
+        "maxOutputManKw": 92.4
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力原町火力発電所２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 21566166,
+        "maxOutputManKw": 95.13
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 敦賀火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 21266000,
+        "maxOutputManKw": 66.38
+      },
+      {
+        "area": "四国",
+        "plantName": "四国電力　伊方発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 21099000,
+        "maxOutputManKw": 88
+      },
+      {
+        "area": "九州",
+        "plantName": "苓北発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 21001000,
+        "maxOutputManKw": 66.4
+      },
+      {
+        "area": "中国",
+        "plantName": "三隅発電所第２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 20382209,
+        "maxOutputManKw": 95.05
+      },
+      {
+        "area": "中国",
+        "plantName": "三隅発電所第１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 20324286,
+        "maxOutputManKw": 94.83
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力新仙台火力発電所３号系列",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 20097010,
+        "maxOutputManKw": 51
+      },
+      {
+        "area": "関西",
+        "plantName": "美浜発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 19776817,
+        "maxOutputManKw": 82.43
+      },
+      {
+        "area": "東京",
+        "plantName": "常陸那珂火力発電所１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 18918000,
+        "maxOutputManKw": 95.2
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力東新潟火力発電所４号系列",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 18842064,
+        "maxOutputManKw": 75.81
+      },
+      {
+        "area": "東京",
+        "plantName": "五井火力発電所2号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 17734000,
+        "maxOutputManKw": 77
+      },
+      {
+        "area": "関西",
+        "plantName": "姫路第一発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 17472426,
+        "maxOutputManKw": 63.53
+      },
+      {
+        "area": "関西",
+        "plantName": "堺港発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 16933777,
+        "maxOutputManKw": 37.85
+      },
+      {
+        "area": "東京",
+        "plantName": "扇島パワー",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 16887000,
+        "maxOutputManKw": 34.2
+      },
+      {
+        "area": "東京",
+        "plantName": "五井火力発電所1号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 16780000,
+        "maxOutputManKw": 77
+      },
+      {
+        "area": "東京",
+        "plantName": "五井火力発電所3号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 16718000,
+        "maxOutputManKw": 76.8
+      },
+      {
+        "area": "東北",
+        "plantName": "福島天然ガス発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 16230000,
+        "maxOutputManKw": 52.89
+      },
+      {
+        "area": "東京",
+        "plantName": "常陸那珂火力発電所２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 15172000,
+        "maxOutputManKw": 70
+      },
+      {
+        "area": "東京",
+        "plantName": "鹿島火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 14558000,
+        "maxOutputManKw": 60.8
+      },
+      {
+        "area": "東京",
+        "plantName": "電源開発磯子火力発電所新１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13867000,
+        "maxOutputManKw": 57.8
+      },
+      {
+        "area": "東京",
+        "plantName": "鹿島共同発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 13858000,
+        "maxOutputManKw": 33.2
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 富山新港火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13616500,
+        "maxOutputManKw": 40.42
+      },
+      {
+        "area": "東京",
+        "plantName": "姉崎火力発電所新１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 13504000,
+        "maxOutputManKw": 63.2
+      },
+      {
+        "area": "東京",
+        "plantName": "姉崎火力発電所新２号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 13496000,
+        "maxOutputManKw": 63.2
+      },
+      {
+        "area": "東京",
+        "plantName": "横須賀火力発電所2号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13429000,
+        "maxOutputManKw": 61.6
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力能代火力発電所１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13232309,
+        "maxOutputManKw": 56.85
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力能代火力発電所３号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13099963,
+        "maxOutputManKw": 56.87
+      },
+      {
+        "area": "中国",
+        "plantName": "電源開発竹原火力発電所新１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 12902745,
+        "maxOutputManKw": 55.17
+      },
+      {
+        "area": "東京",
+        "plantName": "横須賀火力発電所1号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 12535000,
+        "maxOutputManKw": 61.6
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力東新潟火力発電所３号系列",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 12523936,
+        "maxOutputManKw": 48.94
+      },
+      {
+        "area": "東京",
+        "plantName": "常陸那珂共同火力発電所1号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 12032000,
+        "maxOutputManKw": 62.2
+      },
+      {
+        "area": "東京",
+        "plantName": "広野火力発電所６号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 11418000,
+        "maxOutputManKw": 57.2
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 七尾大田火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 10778500,
+        "maxOutputManKw": 47.34
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所４号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10736000,
+        "maxOutputManKw": 49
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所４号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10730000,
+        "maxOutputManKw": 49.2
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力上越火力発電所１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10705000,
+        "maxOutputManKw": 58.6
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所１号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10678000,
+        "maxOutputManKw": 49.8
+      },
+      {
+        "area": "中国",
+        "plantName": "電源開発竹原火力発電所３号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 10670667,
+        "maxOutputManKw": 51.77
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所１号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10616000,
+        "maxOutputManKw": 49.4
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所４号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10608000,
+        "maxOutputManKw": 49
+      },
+      {
+        "area": "北海道",
+        "plantName": "石狩湾新港発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10561320,
+        "maxOutputManKw": 49.3
+      },
+      {
+        "area": "九州",
+        "plantName": "新大分発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10128000,
+        "maxOutputManKw": 22.2
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所２号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10117000,
+        "maxOutputManKw": 67.6
+      },
+      {
+        "area": "東京",
+        "plantName": "ＪＦＥスチール株式会社川鉄千葉クリーンパワーステーション",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 9831000,
+        "maxOutputManKw": 41
+      },
+      {
+        "area": "中国",
+        "plantName": "新小野田発電所第２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 9706277,
+        "maxOutputManKw": 46.74
+      },
+      {
+        "area": "四国",
+        "plantName": "四国電力　坂出発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 9589000,
+        "maxOutputManKw": 28
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所３号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 9513000,
+        "maxOutputManKw": 47.4
+      },
+      {
+        "area": "四国",
+        "plantName": "四国電力　橘湾発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 9391000,
+        "maxOutputManKw": 51.6
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所３号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 9382000,
+        "maxOutputManKw": 47.8
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所３号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 9295000,
+        "maxOutputManKw": 47.6
+      },
+      {
+        "area": "関西",
+        "plantName": "姫路天然ガス発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 8424494,
+        "maxOutputManKw": 59.17
+      },
+      {
+        "area": "中国",
+        "plantName": "新小野田発電所第１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 8045276,
+        "maxOutputManKw": 40.46
+      },
+      {
+        "area": "中国",
+        "plantName": "柳井発電所第２号系列",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 7992998,
+        "maxOutputManKw": 17.76
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所１号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 7923000,
+        "maxOutputManKw": 50.4
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎天然ガス発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 7854000,
+        "maxOutputManKw": 40
+      },
+      {
+        "area": "東北",
+        "plantName": "酒田共同火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 7727000,
+        "maxOutputManKw": 32.4
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所２号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 7523000,
+        "maxOutputManKw": 50.2
+      },
+      {
+        "area": "関西",
+        "plantName": "電源開発高砂火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 7412611,
+        "maxOutputManKw": 25.02
+      },
+      {
+        "area": "東京",
+        "plantName": "横浜火力発電所８号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6801000,
+        "maxOutputManKw": 35.8
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力八戸火力発電所５号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6700000,
+        "maxOutputManKw": 40
+      },
+      {
+        "area": "東京",
+        "plantName": "横浜火力発電所7号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6605000,
+        "maxOutputManKw": 36.6
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所３号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6447000,
+        "maxOutputManKw": 33
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所２号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6442000,
+        "maxOutputManKw": 32.2
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所２号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6414000,
+        "maxOutputManKw": 33.4
+      },
+      {
+        "area": "東京",
+        "plantName": "袖ケ浦火力発電所２号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6386000,
+        "maxOutputManKw": 95
+      },
+      {
+        "area": "中国",
+        "plantName": "トクヤマ東発電所第3号発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 6353000,
+        "maxOutputManKw": 27.4
+      },
+      {
+        "area": "九州",
+        "plantName": "日本製鉄（株） 大分製鐵発電所 第9号発電設備",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 6335000,
+        "maxOutputManKw": 30
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所１号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6265000,
+        "maxOutputManKw": 35.4
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所１号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6243000,
+        "maxOutputManKw": 35.4
+      },
+      {
+        "area": "中国",
+        "plantName": "柳井発電所第１号系列上位",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6105388,
+        "maxOutputManKw": 11.29
+      },
+      {
+        "area": "東京",
+        "plantName": "品川火力発電所１号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 6091000,
+        "maxOutputManKw": 31.2
+      },
+      {
+        "area": "北海道",
+        "plantName": "砂川発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 5393520,
+        "maxOutputManKw": 11.48
+      },
+      {
+        "area": "東京",
+        "plantName": "横浜火力発電所８号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 5138000,
+        "maxOutputManKw": 32.6
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所１号系列４軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 5086000,
+        "maxOutputManKw": 35
+      },
+      {
+        "area": "中国",
+        "plantName": "宇部興産発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 5030000,
+        "maxOutputManKw": 19.4
+      },
+      {
+        "area": "東京",
+        "plantName": "横浜火力発電所８号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 4972000,
+        "maxOutputManKw": 35.6
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所１号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 4870000,
+        "maxOutputManKw": 35
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力東新潟火力発電所２号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 4786000,
+        "maxOutputManKw": 37.2
+      },
+      {
+        "area": "東京",
+        "plantName": "横浜火力発電所８号系列４軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 4580000,
+        "maxOutputManKw": 32.6
+      },
+      {
+        "area": "九州",
+        "plantName": "小丸川発電所",
+        "sourceType": "水力",
+        "dailyKwh": 4469000,
+        "maxOutputManKw": 26
+      },
+      {
+        "area": "北海道",
+        "plantName": "知内発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 4416390,
+        "maxOutputManKw": 25.15
+      },
+      {
+        "area": "関西",
+        "plantName": "相生バイオマス発電所",
+        "sourceType": "その他",
+        "dailyKwh": 4327720,
+        "maxOutputManKw": 18.7
+      },
+      {
+        "area": "中部",
+        "plantName": "四日市霞発電所",
+        "sourceType": "その他",
+        "dailyKwh": 4314000,
+        "maxOutputManKw": 18.4
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所２号系列４軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 4173000,
+        "maxOutputManKw": 30.6
+      },
+      {
+        "area": "東京",
+        "plantName": "横浜火力発電所７号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 4031000,
+        "maxOutputManKw": 36.6
+      },
+      {
+        "area": "中国",
+        "plantName": "水島発電所第１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 4018226,
+        "maxOutputManKw": 24.51
+      },
+      {
+        "area": "東京",
+        "plantName": "千葉火力発電所２号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 3936000,
+        "maxOutputManKw": 30.4
+      },
+      {
+        "area": "東京",
+        "plantName": "品川火力発電所１号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 3843000,
+        "maxOutputManKw": 31.2
+      },
+      {
+        "area": "沖縄",
+        "plantName": "吉の浦2号",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 3516100,
+        "maxOutputManKw": 16.54
+      },
+      {
+        "area": "中部",
+        "plantName": "電源開発新豊根発電所（中部）",
+        "sourceType": "水力",
+        "dailyKwh": 3483270,
+        "maxOutputManKw": 21.34
+      },
+      {
+        "area": "東北",
+        "plantName": "電源開発奥只見発電所",
+        "sourceType": "水力",
+        "dailyKwh": 3423000,
+        "maxOutputManKw": 8.4
+      },
+      {
+        "area": "沖縄",
+        "plantName": "金武2号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 3396000,
+        "maxOutputManKw": 17.78
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所１号系列４軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 3337000,
+        "maxOutputManKw": 15.4
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所１号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 3323000,
+        "maxOutputManKw": 15.4
+      },
+      {
+        "area": "東北",
+        "plantName": "石巻雲雀野発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 3250000,
+        "maxOutputManKw": 13.6
+      },
+      {
+        "area": "中部",
+        "plantName": "名古屋発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 3247000,
+        "maxOutputManKw": 13.6
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所２号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 3240000,
+        "maxOutputManKw": 14.6
+      },
+      {
+        "area": "東京",
+        "plantName": "南横浜火力発電所３号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 3236000,
+        "maxOutputManKw": 22.4
+      },
+      {
+        "area": "東京",
+        "plantName": "東扇島火力発電所２号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 3113000,
+        "maxOutputManKw": 46.4
+      },
+      {
+        "area": "東北",
+        "plantName": "日本製鉄(株) 釜石火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2874100,
+        "maxOutputManKw": 12.36
+      },
+      {
+        "area": "沖縄",
+        "plantName": "金武1号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2763500,
+        "maxOutputManKw": 13.34
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所３号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 2632000,
+        "maxOutputManKw": 33.2
+      },
+      {
+        "area": "東京",
+        "plantName": "品川火力発電所１号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 2585000,
+        "maxOutputManKw": 29.2
+      },
+      {
+        "area": "東京",
+        "plantName": "鹿島火力発電所７号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 2568000,
+        "maxOutputManKw": 35.6
+      },
+      {
+        "area": "四国",
+        "plantName": "新居浜西火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2554000,
+        "maxOutputManKw": 12
+      },
+      {
+        "area": "東北",
+        "plantName": "電源開発田子倉発電所(東北)",
+        "sourceType": "水力",
+        "dailyKwh": 2502000,
+        "maxOutputManKw": 5.4
+      },
+      {
+        "area": "中国",
+        "plantName": "海田発電所",
+        "sourceType": "",
+        "dailyKwh": 2473000,
+        "maxOutputManKw": 10.4
+      },
+      {
+        "area": "東北",
+        "plantName": "福島いわきバイオマス発電所",
+        "sourceType": "その他",
+        "dailyKwh": 2466000,
+        "maxOutputManKw": 10.4
+      },
+      {
+        "area": "東京",
+        "plantName": "神栖火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2459000,
+        "maxOutputManKw": 10.4
+      },
+      {
+        "area": "中国",
+        "plantName": "防府バイオマス発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2447000,
+        "maxOutputManKw": 10.4
+      },
+      {
+        "area": "東北",
+        "plantName": "相馬石炭・バイオマス発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2429000,
+        "maxOutputManKw": 10.2
+      },
+      {
+        "area": "東北",
+        "plantName": "仙台パワーステーション",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2426000,
+        "maxOutputManKw": 10.2
+      },
+      {
+        "area": "中部",
+        "plantName": "名古屋第二発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2424000,
+        "maxOutputManKw": 10.2
+      },
+      {
+        "area": "中部",
+        "plantName": "電源開発御母衣発電所",
+        "sourceType": "水力",
+        "dailyKwh": 2419582,
+        "maxOutputManKw": 7.68
+      },
+      {
+        "area": "沖縄",
+        "plantName": "石川石炭火力発電所１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2419400,
+        "maxOutputManKw": 13.26
+      },
+      {
+        "area": "中部",
+        "plantName": "田原バイオマス発電所",
+        "sourceType": "その他",
+        "dailyKwh": 2416000,
+        "maxOutputManKw": 10.2
+      },
+      {
+        "area": "北海道",
+        "plantName": "釧路火力発電所",
+        "sourceType": "",
+        "dailyKwh": 2410500,
+        "maxOutputManKw": 10.08
+      },
+      {
+        "area": "北海道",
+        "plantName": "日本製鉄（株）室蘭中央発電所 第5号発電設備",
+        "sourceType": "",
+        "dailyKwh": 2397000,
+        "maxOutputManKw": 10.2
+      },
+      {
+        "area": "東京",
+        "plantName": "鹿島火力発電所７号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 2381000,
+        "maxOutputManKw": 31.2
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所１号系列６軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 2244000,
+        "maxOutputManKw": 15
+      },
+      {
+        "area": "中国",
+        "plantName": "水島MZ",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 2203451,
+        "maxOutputManKw": 9.42
+      },
+      {
+        "area": "関西",
+        "plantName": "泉北天然ガス第二発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 2201927,
+        "maxOutputManKw": 23.16
+      },
+      {
+        "area": "東京",
+        "plantName": "鹿島発電所",
+        "sourceType": "その他",
+        "dailyKwh": 2064000,
+        "maxOutputManKw": 8.8
+      },
+      {
+        "area": "四国",
+        "plantName": "壬生川火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 1883000,
+        "maxOutputManKw": 14.8
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所２号系列５軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1827000,
+        "maxOutputManKw": 14
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所１号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1822000,
+        "maxOutputManKw": 14.6
+      },
+      {
+        "area": "東京",
+        "plantName": "鹿島火力発電所７号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1788000,
+        "maxOutputManKw": 34.4
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所１号系列５軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1759000,
+        "maxOutputManKw": 14.2
+      },
+      {
+        "area": "東京",
+        "plantName": "中袖クリーンパワー発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1729000,
+        "maxOutputManKw": 9.8
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所２号系列７軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1704000,
+        "maxOutputManKw": 14.2
+      },
+      {
+        "area": "関西",
+        "plantName": "大河内発電所",
+        "sourceType": "水力",
+        "dailyKwh": 1702971,
+        "maxOutputManKw": 15.53
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所１号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1691000,
+        "maxOutputManKw": 14
+      },
+      {
+        "area": "東京",
+        "plantName": "神流川発電所",
+        "sourceType": "水力",
+        "dailyKwh": 1610000,
+        "maxOutputManKw": 29.8
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所２号系列１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1575000,
+        "maxOutputManKw": 14
+      },
+      {
+        "area": "東京",
+        "plantName": "株式会社エフビット横須賀パワー　横須賀パワーステーション",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1572000,
+        "maxOutputManKw": 21.6
+      },
+      {
+        "area": "中部",
+        "plantName": "木曽発電所",
+        "sourceType": "水力",
+        "dailyKwh": 1537321,
+        "maxOutputManKw": 7.89
+      },
+      {
+        "area": "東北",
+        "plantName": "電源開発下郷発電所",
+        "sourceType": "水力",
+        "dailyKwh": 1415000,
+        "maxOutputManKw": 12.4
+      },
+      {
+        "area": "中国",
+        "plantName": "南原発電所",
+        "sourceType": "水力",
+        "dailyKwh": 1402710,
+        "maxOutputManKw": 24.8
+      },
+      {
+        "area": "北陸",
+        "plantName": "音沢発電所",
+        "sourceType": "水力",
+        "dailyKwh": 1299728,
+        "maxOutputManKw": 6.7
+      },
+      {
+        "area": "北陸",
+        "plantName": "電源開発 手取川第一",
+        "sourceType": "水力",
+        "dailyKwh": 1269000,
+        "maxOutputManKw": 14.2
+      },
+      {
+        "area": "沖縄",
+        "plantName": "具志川1号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 1265600,
+        "maxOutputManKw": 12.84
+      },
+      {
+        "area": "九州",
+        "plantName": "天山発電所",
+        "sourceType": "水力",
+        "dailyKwh": 1248000,
+        "maxOutputManKw": 29.6
+      },
+      {
+        "area": "東京",
+        "plantName": "横浜火力発電所7号系列４軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1208000,
+        "maxOutputManKw": 32.8
+      },
+      {
+        "area": "東北",
+        "plantName": "電源開発奥清津第二発電所",
+        "sourceType": "水力",
+        "dailyKwh": 1193000,
+        "maxOutputManKw": 12.8
+      },
+      {
+        "area": "東京",
+        "plantName": "カナデビア株式会社茨城工場第一発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 1011000,
+        "maxOutputManKw": 10.8
+      },
+      {
+        "area": "東京",
+        "plantName": "横浜火力発電所7号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 975000,
+        "maxOutputManKw": 32.6
+      },
+      {
+        "area": "中部",
+        "plantName": "馬瀬川第一発電所",
+        "sourceType": "水力",
+        "dailyKwh": 933740,
+        "maxOutputManKw": 11.34
+      },
+      {
+        "area": "東京",
+        "plantName": "玉原発電所",
+        "sourceType": "水力",
+        "dailyKwh": 864000,
+        "maxOutputManKw": 18
+      },
+      {
+        "area": "東京",
+        "plantName": "電源開発沼原発電所",
+        "sourceType": "水力",
+        "dailyKwh": 836000,
+        "maxOutputManKw": 13.8
+      },
+      {
+        "area": "九州",
+        "plantName": "大平発電所",
+        "sourceType": "水力",
+        "dailyKwh": 790000,
+        "maxOutputManKw": 25
+      },
+      {
+        "area": "中部",
+        "plantName": "奥美濃発電所",
+        "sourceType": "水力",
+        "dailyKwh": 622537,
+        "maxOutputManKw": 15.89
+      },
+      {
+        "area": "中国",
+        "plantName": "俣野川発電所",
+        "sourceType": "水力",
+        "dailyKwh": 614489,
+        "maxOutputManKw": 20.25
+      },
+      {
+        "area": "中国",
+        "plantName": "柳井発電所第１号系列下位",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 605995,
+        "maxOutputManKw": 11.85
+      },
+      {
+        "area": "北海道",
+        "plantName": "高見発電所",
+        "sourceType": "水力",
+        "dailyKwh": 603900,
+        "maxOutputManKw": 8.32
+      },
+      {
+        "area": "東京",
+        "plantName": "広野火力発電所５号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 574000,
+        "maxOutputManKw": 16.2
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所２号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 573000,
+        "maxOutputManKw": 14.6
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所２号系列６軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 495000,
+        "maxOutputManKw": 13.2
+      },
+      {
+        "area": "中国",
+        "plantName": "水島製油所　B工場",
+        "sourceType": "その他",
+        "dailyKwh": 484360,
+        "maxOutputManKw": 2.03
+      },
+      {
+        "area": "北陸",
+        "plantName": "下小鳥発電所",
+        "sourceType": "水力",
+        "dailyKwh": 457793,
+        "maxOutputManKw": 10.82
+      },
+      {
+        "area": "東京",
+        "plantName": "安曇発電所",
+        "sourceType": "水力",
+        "dailyKwh": 414000,
+        "maxOutputManKw": 8
+      },
+      {
+        "area": "東北",
+        "plantName": "電源開発奥清津発電所",
+        "sourceType": "水力",
+        "dailyKwh": 378000,
+        "maxOutputManKw": 24
+      },
+      {
+        "area": "北海道",
+        "plantName": "新冠発電所",
+        "sourceType": "水力",
+        "dailyKwh": 341550,
+        "maxOutputManKw": 7.92
+      },
+      {
+        "area": "東京",
+        "plantName": "新中袖発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 326000,
+        "maxOutputManKw": 5
+      },
+      {
+        "area": "東北",
+        "plantName": "第二沼沢発電所",
+        "sourceType": "水力",
+        "dailyKwh": 277430,
+        "maxOutputManKw": 22.38
+      },
+      {
+        "area": "関西",
+        "plantName": "奥吉野発電所",
+        "sourceType": "水力",
+        "dailyKwh": 116332,
+        "maxOutputManKw": 10.06
+      },
+      {
+        "area": "北海道",
+        "plantName": "泊発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北海道",
+        "plantName": "京極発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北海道",
+        "plantName": "奈井江発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北海道",
+        "plantName": "伊達発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北海道",
+        "plantName": "北海道ﾊﾟﾜｰｴﾝｼﾞﾆｱﾘﾝｸﾞ株式会社　苫小牧共同火力発電所3G",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北海道",
+        "plantName": "苫小牧発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東北",
+        "plantName": "女川原子力発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東北",
+        "plantName": "東通原子力発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力能代火力発電所２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東北",
+        "plantName": "糸魚川発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力仙台火力発電所４号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力東新潟火力発電所１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "東海第二発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "今市発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "塩原発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "新高瀬川発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "葛野川発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "鈴川エネルギーセンター発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "電源開発磯子火力発電所新２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "南横浜火力発電所１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "南横浜火力発電所２号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "姉崎火力発電所新３号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所１号系列７軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所２号系列４軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所３号系列２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所３号系列４軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所２号系列３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "東扇島火力発電所１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "ゼロワットパワー株式会社　市原発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "袖ケ浦火力発電所３号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "袖ケ浦火力発電所４号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "根岸 ガス化複合発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "東京",
+        "plantName": "日本製鉄 鹿島発電所",
+        "sourceType": "",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中部",
+        "plantName": "浜岡原子力発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中部",
+        "plantName": "奥矢作発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中部",
+        "plantName": "徳山発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中部",
+        "plantName": "四日市火力発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中部",
+        "plantName": "知多火力発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中部",
+        "plantName": "知多第二火力発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中部",
+        "plantName": "渥美火力発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 志賀原子力発電所",
+        "sourceType": "原子力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 有峰第一発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 有峰第二発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北陸",
+        "plantName": "電源開発 長野発電所（北陸）",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北陸",
+        "plantName": "電源開発長野発電所（北陸）",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 富山火力発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 福井火力発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "敦賀発電所2号機",
+        "sourceType": "原子力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "喜撰山発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "奥多々良木発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "電源開発池原発電所（関西）",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "泉北天然ガス第一発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "船町発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "酉島エネルギーセンター発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "御坊発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "関西",
+        "plantName": "日本製鉄(株) 広畑発電所 第7号発電設備",
+        "sourceType": "",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中国",
+        "plantName": "島根原子力発電所第２号機",
+        "sourceType": "原子力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中国",
+        "plantName": "大崎発電所第１号１軸",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中国",
+        "plantName": "水島発電所第３号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中国",
+        "plantName": "玉島発電所第１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中国",
+        "plantName": "玉島発電所第２号機",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中国",
+        "plantName": "玉島発電所第３号機",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "中国",
+        "plantName": "麻里布 第２発電所",
+        "sourceType": "その他",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "四国",
+        "plantName": "四国電力　本川発電所",
+        "sourceType": "水力",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "四国",
+        "plantName": "四国電力　西条発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "四国",
+        "plantName": "四国電力　阿南発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "九州",
+        "plantName": "三池発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "九州",
+        "plantName": "ひびき灘石炭・バイオマス発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "九州",
+        "plantName": "苅田発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "九州",
+        "plantName": "電源開発松島火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "九州",
+        "plantName": "響灘火力発電所",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "九州",
+        "plantName": "新小倉発電所",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "九州",
+        "plantName": "豊前発電所",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "九州",
+        "plantName": "大分 第２発電所",
+        "sourceType": "その他",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "沖縄",
+        "plantName": "具志川2号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "沖縄",
+        "plantName": "石川石炭火力発電所２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "沖縄",
+        "plantName": "吉の浦1号",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "沖縄",
+        "plantName": "牧港9号",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "沖縄",
+        "plantName": "牧港GT2号",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "沖縄",
+        "plantName": "石川1号",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "沖縄",
+        "plantName": "石川2号",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      },
+      {
+        "area": "沖縄",
+        "plantName": "石川GT1号",
+        "sourceType": "火力（石油）",
+        "dailyKwh": 0,
+        "maxOutputManKw": 0
+      }
     ]
   },
   "flows": {

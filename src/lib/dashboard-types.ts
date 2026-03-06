@@ -53,6 +53,14 @@ export type TopUnit = {
   dailyKwh: number;
 };
 
+export type PlantSummary = {
+  area: string;
+  plantName: string;
+  sourceType: string;
+  dailyKwh: number;
+  maxOutputManKw: number;
+};
+
 export type AreaFlowSummary = {
   area: string;
   lineCount: number;
@@ -122,6 +130,7 @@ export type DashboardData = {
     hourlyBySourceByArea?: Record<string, HourlySourcePoint[]>;
     hourlyTotalByArea: HourlyAreaPoint[];
     topUnits: TopUnit[];
+    plantSummaries?: PlantSummary[];
   };
   flows: {
     areaSummaries: AreaFlowSummary[];
