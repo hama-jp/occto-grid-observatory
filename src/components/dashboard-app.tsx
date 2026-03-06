@@ -962,11 +962,11 @@ export function DashboardApp({ data }: DashboardAppProps) {
         y: position.y,
         symbolSize: 9 + ratio * 22,
         itemStyle: {
-          color: "#0f766e",
-          borderColor: "#ecfeff",
+          color: FLOW_AREA_COLORS[plant.area] ?? FLOW_AREA_COLORS.default,
+          borderColor: "#ffffff",
           borderWidth: 1.2,
-          shadowBlur: 10,
-          shadowColor: "rgba(15,118,110,0.35)",
+          shadowBlur: 6,
+          shadowColor: "rgba(15,23,42,0.2)",
         },
       });
 
