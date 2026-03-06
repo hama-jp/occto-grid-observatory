@@ -97,6 +97,17 @@ type CanvasOffsetHint = {
   dy: number;
 };
 
+type PlantGeoHint = {
+  keyword: string;
+  lat: number;
+  lon: number;
+};
+
+type PlantAttachHint = {
+  plantKeyword: string;
+  stationKeywords: string[];
+};
+
 const JAPAN_GEO_BOUNDS = {
   latMin: 24.0,
   latMax: 45.8,
@@ -367,6 +378,32 @@ const STATION_CANVAS_OFFSETS_BY_AREA: Record<string, CanvasOffsetHint[]> = {
   四国: [
     { keyword: "麻", dx: 26, dy: -16 },
     { keyword: "新改", dx: 30, dy: 30 },
+  ],
+};
+
+const PLANT_GEO_HINTS_BY_AREA: Record<string, PlantGeoHint[]> = {
+  四国: [
+    { keyword: "伊方", lat: 33.49, lon: 132.31 },
+    { keyword: "坂出", lat: 34.33, lon: 133.86 },
+    { keyword: "橘湾", lat: 33.92, lon: 134.72 },
+    { keyword: "阿南", lat: 33.9214, lon: 134.6597 },
+    { keyword: "西条", lat: 33.92, lon: 133.18 },
+    { keyword: "新居浜", lat: 33.96, lon: 133.28 },
+    { keyword: "壬生川", lat: 33.92, lon: 133.09 },
+    { keyword: "本川", lat: 33.78, lon: 133.22 },
+  ],
+};
+
+const PLANT_ATTACH_HINTS_BY_AREA: Record<string, PlantAttachHint[]> = {
+  四国: [
+    { plantKeyword: "伊方", stationKeywords: ["大洲", "川内", "西条"] },
+    { plantKeyword: "坂出", stationKeywords: ["讃岐", "香川", "高松"] },
+    { plantKeyword: "橘湾", stationKeywords: ["阿南", "阿波", "鳴門"] },
+    { plantKeyword: "阿南", stationKeywords: ["阿南", "阿波"] },
+    { plantKeyword: "西条", stationKeywords: ["西条", "東予"] },
+    { plantKeyword: "新居浜", stationKeywords: ["東予", "西条"] },
+    { plantKeyword: "壬生川", stationKeywords: ["東予", "西条"] },
+    { plantKeyword: "本川", stationKeywords: ["本川", "高知"] },
   ],
 };
 
@@ -1056,14 +1093,17 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       .sort((a, b) => b.dailyKwh - a.dailyKwh);
     const maxPlantDaily = Math.max(...scopedPowerPlants.map((item) => item.dailyKwh), 1);
     const powerOccupiedCells = new Set<string>();
+    const plantAttachCounts = new Map<string, number>();
 
     scopedPowerPlants.forEach((plant, plantIndex) => {
-      const base = resolveStationGeoBase(plant.area, plant.plantName) ?? (AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default);
+      const base = resolvePlantGeoBase(plant.area, plant.plantName) ?? (AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default);
       const attachStationNodeId = pickPlantAttachStationNodeId({
         area: plant.area,
         plantName: plant.plantName,
         stationsByArea,
         stationPositions,
+        stationAttachCounts: plantAttachCounts,
+        plantBase: base,
       });
       const attachPos = attachStationNodeId
         ? stationPositions.get(attachStationNodeId) ?? (AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default)
@@ -1106,6 +1146,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       });
 
       if (attachStationNodeId) {
+        plantAttachCounts.set(attachStationNodeId, (plantAttachCounts.get(attachStationNodeId) ?? 0) + 1);
         links.push({
           kind: "plant",
           source: powerNodeId,
@@ -2049,30 +2090,57 @@ function pickPlantAttachStationNodeId(args: {
   plantName: string;
   stationsByArea: Map<string, Set<string>>;
   stationPositions: Map<string, { x: number; y: number }>;
+  stationAttachCounts: Map<string, number>;
+  plantBase?: { x: number; y: number };
 }): string | null {
   const stationSet = args.stationsByArea.get(args.area);
   if (!stationSet || stationSet.size === 0) {
     return null;
   }
 
-  const candidates = Array.from(stationSet).filter((station) => !isPseudoAreaNodeName(station));
+  const candidates = Array.from(stationSet).filter(
+    (station) => !isPseudoAreaNodeName(station) && !isLineLikeNodeName(station),
+  );
   if (candidates.length === 0) {
     return null;
   }
-  const base = resolveStationGeoBase(args.area, args.plantName) ?? (AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default);
+  const base = args.plantBase ?? resolvePlantGeoBase(args.area, args.plantName) ?? (AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default);
 
-  let bestNodeId: string | null = null;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (const station of candidates) {
-    const nodeId = buildStationNodeId(args.area, station);
-    const point = args.stationPositions.get(nodeId) ?? (AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default);
-    const distance = Math.hypot(point.x - base.x, point.y - base.y);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestNodeId = nodeId;
+  const scoreCandidateStations = (stations: string[]): string | null => {
+    let bestNodeId: string | null = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (const station of stations) {
+      const nodeId = buildStationNodeId(args.area, station);
+      const point = args.stationPositions.get(nodeId) ?? (AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default);
+      const distance = Math.hypot(point.x - base.x, point.y - base.y);
+      const attachedCount = args.stationAttachCounts.get(nodeId) ?? 0;
+      const score = distance + attachedCount * 22;
+      if (score < bestScore) {
+        bestScore = score;
+        bestNodeId = nodeId;
+      }
+    }
+    return bestNodeId;
+  };
+
+  const normalizedPlant = normalizeStationName(args.plantName);
+  const attachHints = PLANT_ATTACH_HINTS_BY_AREA[args.area] ?? [];
+  const matchedHint = attachHints
+    .filter((hint) => normalizedPlant.includes(normalizeStationName(hint.plantKeyword)))
+    .sort((a, b) => normalizeStationName(b.plantKeyword).length - normalizeStationName(a.plantKeyword).length)[0];
+
+  if (matchedHint) {
+    const hintedStations = candidates.filter((station) => {
+      const normalizedStation = normalizeStationName(station);
+      return matchedHint.stationKeywords.some((keyword) => normalizedStation.includes(normalizeStationName(keyword)));
+    });
+    const hintedStationNodeId = scoreCandidateStations(hintedStations);
+    if (hintedStationNodeId) {
+      return hintedStationNodeId;
     }
   }
-  return bestNodeId;
+
+  return scoreCandidateStations(candidates);
 }
 
 function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<string, { x: number; y: number }> {
@@ -2127,6 +2195,28 @@ function resolveStationGeoBase(area: string, station: string): { x: number; y: n
   return {
     x: clamp(point.x + directionalNudge.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
     y: clamp(point.y + directionalNudge.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+  };
+}
+
+function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: number } | null {
+  const normalized = normalizeStationName(plantName);
+  const hints = PLANT_GEO_HINTS_BY_AREA[area] ?? [];
+  let matched: PlantGeoHint | null = null;
+  for (const hint of hints) {
+    if (!normalized.includes(normalizeStationName(hint.keyword))) {
+      continue;
+    }
+    if (!matched || hint.keyword.length > matched.keyword.length) {
+      matched = hint;
+    }
+  }
+  if (!matched) {
+    return resolveStationGeoBase(area, plantName);
+  }
+  const point = geoToCanvas(matched.lat, matched.lon);
+  return {
+    x: clamp(point.x, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+    y: clamp(point.y, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
   };
 }
 
