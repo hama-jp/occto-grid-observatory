@@ -85,6 +85,25 @@ const FLOW_AREA_NAME_SET = new Set<string>([
   "沖縄",
 ]);
 
+type DashboardSectionId =
+  | "summary"
+  | "areaCards"
+  | "generation"
+  | "totals"
+  | "network"
+  | "diagnostics"
+  | "rankings";
+
+const DASHBOARD_SECTION_OPTIONS: Array<{ id: DashboardSectionId; label: string }> = [
+  { id: "summary", label: "全国サマリー" },
+  { id: "areaCards", label: "エリア需給" },
+  { id: "generation", label: "発電トレンド" },
+  { id: "totals", label: "発電・連系概要" },
+  { id: "network", label: "ネットワーク" },
+  { id: "diagnostics", label: "潮流詳細" },
+  { id: "rankings", label: "ランキング" },
+];
+
 type GeoHint = {
   keyword: string;
   lat: number;
@@ -487,12 +506,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const [selectedArea, setSelectedArea] = useState<string>("全エリア");
   const [generationTrendArea, setGenerationTrendArea] = useState<string>("全エリア");
   const [sourceDonutArea, setSourceDonutArea] = useState<string>("全エリア");
+  const [visibleSectionIds, setVisibleSectionIds] = useState<DashboardSectionId[]>(
+    DASHBOARD_SECTION_OPTIONS.map((item) => item.id),
+  );
   const flowSlotLabels = data.meta.slotLabels.flow ?? [];
   const maxFlowSlotIndex = Math.max(flowSlotLabels.length - 1, 0);
   const [networkFlowSlotIndex, setNetworkFlowSlotIndex] = useState<number>(maxFlowSlotIndex);
   const clampedNetworkFlowSlotIndex = clamp(Math.round(networkFlowSlotIndex), 0, maxFlowSlotIndex);
   const selectedFlowSlotLabel = flowSlotLabels[clampedNetworkFlowSlotIndex] ?? "-";
   const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
+  const visibleSectionSet = useMemo(() => new Set<DashboardSectionId>(visibleSectionIds), [visibleSectionIds]);
 
   const sourceTotalsByArea = useMemo(() => {
     const byArea: Record<string, Array<{ source: string; totalKwh: number }>> = {};
@@ -521,58 +544,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     [data.generation.topUnits, selectedArea],
   );
 
-  const filteredTopPlants = useMemo(() => {
+  const allPlantSummaries = useMemo(() => {
     if (data.generation.plantSummaries && data.generation.plantSummaries.length > 0) {
-      return data.generation.plantSummaries
-        .filter((plant) => (selectedArea === "全エリア" ? true : plant.area === selectedArea))
-        .sort((a, b) => b.dailyKwh - a.dailyKwh);
+      return [...data.generation.plantSummaries].sort((a, b) => b.dailyKwh - a.dailyKwh);
     }
 
     const fallback = new Map<
       string,
       { area: string; plantName: string; sourceType: string; dailyKwh: number; maxOutputManKw: number }
     >();
-    data.generation.topUnits
-      .filter((unit) => (selectedArea === "全エリア" ? true : unit.area === selectedArea))
-      .forEach((unit) => {
-        const key = `${unit.area}::${unit.plantName}`;
-        const current = fallback.get(key) ?? {
-          area: unit.area,
-          plantName: unit.plantName,
-          sourceType: unit.sourceType,
-          dailyKwh: 0,
-          maxOutputManKw: 0,
-        };
-        current.dailyKwh += unit.dailyKwh;
-        current.maxOutputManKw = Math.max(current.maxOutputManKw, unit.maxOutputManKw ?? 0);
-        if (!current.sourceType && unit.sourceType) {
-          current.sourceType = unit.sourceType;
-        }
-        fallback.set(key, current);
-      });
-
-    return Array.from(fallback.values()).sort((a, b) => b.dailyKwh - a.dailyKwh);
-  }, [data.generation.plantSummaries, data.generation.topUnits, selectedArea]);
-
-  const networkPowerPlants = useMemo(() => {
-    if (data.generation.plantSummaries && data.generation.plantSummaries.length > 0) {
-      return data.generation.plantSummaries
-        .filter((plant) => isNetworkPowerPlantSource(plant.sourceType))
-        .map((plant) => ({
-          area: plant.area,
-          plantName: plant.plantName,
-          sourceType: plant.sourceType,
-          dailyKwh: plant.dailyKwh,
-          avgOutputMw: plant.dailyKwh / 24 / 1000,
-          maxOutputManKw: plant.maxOutputManKw,
-        }));
-    }
-
-    const fallback = new Map<string, { area: string; plantName: string; sourceType: string; dailyKwh: number; maxOutputManKw: number }>();
     data.generation.topUnits.forEach((unit) => {
-      if (!isNetworkPowerPlantSource(unit.sourceType)) {
-        return;
-      }
       const key = `${unit.area}::${unit.plantName}`;
       const current = fallback.get(key) ?? {
         area: unit.area,
@@ -583,17 +564,38 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       };
       current.dailyKwh += unit.dailyKwh;
       current.maxOutputManKw = Math.max(current.maxOutputManKw, unit.maxOutputManKw ?? 0);
+      if (!current.sourceType && unit.sourceType) {
+        current.sourceType = unit.sourceType;
+      }
       fallback.set(key, current);
     });
-    return Array.from(fallback.values()).map((plant) => ({
-      area: plant.area,
-      plantName: plant.plantName,
-      sourceType: plant.sourceType,
-      dailyKwh: plant.dailyKwh,
-      avgOutputMw: plant.dailyKwh / 24 / 1000,
-      maxOutputManKw: plant.maxOutputManKw,
-    }));
+
+    return Array.from(fallback.values()).sort((a, b) => b.dailyKwh - a.dailyKwh);
   }, [data.generation.plantSummaries, data.generation.topUnits]);
+
+  const filteredTopPlants = useMemo(
+    () =>
+      allPlantSummaries.filter((plant) =>
+        selectedArea === "全エリア" ? true : plant.area === selectedArea,
+      ),
+    [allPlantSummaries, selectedArea],
+  );
+
+  const networkPowerPlants = useMemo(() => {
+    if (allPlantSummaries.length > 0) {
+      return allPlantSummaries
+        .filter((plant) => isNetworkPowerPlantSource(plant.sourceType))
+        .map((plant) => ({
+          area: plant.area,
+          plantName: plant.plantName,
+          sourceType: plant.sourceType,
+          dailyKwh: plant.dailyKwh,
+          avgOutputMw: plant.dailyKwh / 24 / 1000,
+          maxOutputManKw: plant.maxOutputManKw,
+        }));
+    }
+    return [];
+  }, [allPlantSummaries]);
 
   const filteredLines = useMemo(
     () =>
@@ -1270,6 +1272,165 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       .slice(0, rowLimit);
   }, [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, data.flows.intertieSeries, isMobileViewport, selectedArea]);
 
+  const nationalSummaryCards = useMemo(() => {
+    const totalGenerationKwh = data.generation.areaTotals.reduce((sum, item) => sum + item.totalKwh, 0);
+    const topSource = data.generation.sourceTotals[0];
+    const topSourceShare = topSource && totalGenerationKwh > 0 ? (topSource.totalKwh / totalGenerationKwh) * 100 : 0;
+
+    const netIntertieByArea = new Map<string, number>();
+    (data.flows.intertieSeries ?? []).forEach((row) => {
+      const value = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
+      netIntertieByArea.set(row.sourceArea, (netIntertieByArea.get(row.sourceArea) ?? 0) - value);
+      netIntertieByArea.set(row.targetArea, (netIntertieByArea.get(row.targetArea) ?? 0) + value);
+    });
+
+    const netIntertieRows = Array.from(netIntertieByArea.entries()).map(([area, mw]) => ({ area, mw }));
+    const strongestImportArea =
+      netIntertieRows.filter((item) => item.mw > 0).sort((a, b) => b.mw - a.mw)[0] ?? null;
+    const strongestExportArea =
+      netIntertieRows.filter((item) => item.mw < 0).sort((a, b) => a.mw - b.mw)[0] ?? null;
+
+    const hottestIntertie = interAreaFlowTextRows[0] ?? null;
+    const topPlant = allPlantSummaries[0] ?? null;
+    const strongestImportValue = strongestImportArea?.area ?? "-";
+    const strongestImportDetail = strongestImportArea
+      ? `${decimalFmt.format(strongestImportArea.mw)} MW`
+      : "データなし";
+    const strongestExportValue = strongestExportArea?.area ?? "-";
+    const strongestExportDetail = strongestExportArea
+      ? `${decimalFmt.format(Math.abs(strongestExportArea.mw))} MW`
+      : "データなし";
+
+    return [
+      {
+        label: "全国発電量",
+        value: formatCompactEnergy(totalGenerationKwh),
+        detail: `${data.generation.areaTotals.length} エリア合計`,
+      },
+      {
+        label: "主力電源",
+        value: topSource ? normalizeSourceName(topSource.source) : "-",
+        detail: topSource ? `${topSourceShare.toFixed(1)}% / ${formatCompactEnergy(topSource.totalKwh)}` : "データなし",
+      },
+      {
+        label: "最大連系潮流",
+        value: hottestIntertie
+          ? `${hottestIntertie.sourceArea} ⇄ ${hottestIntertie.targetArea}`
+          : "-",
+        detail: hottestIntertie
+          ? `${decimalFmt.format(hottestIntertie.magnitudeMw)} MW / ${selectedFlowDateTimeLabel}`
+          : "連系線データなし",
+      },
+      {
+        label: "受電超過",
+        value: strongestImportValue,
+        detail: strongestImportDetail,
+      },
+      {
+        label: "送電超過",
+        value: strongestExportValue,
+        detail: strongestExportDetail,
+      },
+      {
+        label: "最大発電所",
+        value: topPlant ? topPlant.plantName : "-",
+        detail: topPlant ? `${topPlant.area} / ${formatCompactEnergy(topPlant.dailyKwh)}` : "データなし",
+      },
+    ];
+  }, [
+    allPlantSummaries,
+    clampedNetworkFlowSlotIndex,
+    data.flows.intertieSeries,
+    data.generation.areaTotals,
+    data.generation.sourceTotals,
+    interAreaFlowTextRows,
+    selectedFlowDateTimeLabel,
+  ]);
+
+  const areaSupplyCards = useMemo(() => {
+    const totalGenerationKwh = data.generation.areaTotals.reduce((sum, item) => sum + item.totalKwh, 0);
+    const areaBalanceMap = new Map(data.insights.areaBalance.map((item) => [item.area, item]));
+    const areaFlowSummaryMap = new Map(data.flows.areaSummaries.map((item) => [item.area, item]));
+    const netIntertieByArea = new Map<string, number>();
+    const strongestPeerByArea = new Map<
+      string,
+      {
+        counterpart: string;
+        signedMw: number;
+        magnitudeMw: number;
+      }
+    >();
+
+    (data.flows.intertieSeries ?? []).forEach((row) => {
+      const value = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
+      netIntertieByArea.set(row.sourceArea, (netIntertieByArea.get(row.sourceArea) ?? 0) - value);
+      netIntertieByArea.set(row.targetArea, (netIntertieByArea.get(row.targetArea) ?? 0) + value);
+
+      const sourceMagnitude = Math.abs(value);
+      const sourceExisting = strongestPeerByArea.get(row.sourceArea);
+      if (!sourceExisting || sourceMagnitude > sourceExisting.magnitudeMw) {
+        strongestPeerByArea.set(row.sourceArea, {
+          counterpart: row.targetArea,
+          signedMw: -value,
+          magnitudeMw: sourceMagnitude,
+        });
+      }
+
+      const targetMagnitude = Math.abs(value);
+      const targetExisting = strongestPeerByArea.get(row.targetArea);
+      if (!targetExisting || targetMagnitude > targetExisting.magnitudeMw) {
+        strongestPeerByArea.set(row.targetArea, {
+          counterpart: row.sourceArea,
+          signedMw: value,
+          magnitudeMw: targetMagnitude,
+        });
+      }
+    });
+
+    const primaryPlantByArea = new Map<string, (typeof allPlantSummaries)[number]>();
+    allPlantSummaries.forEach((plant) => {
+      if (!primaryPlantByArea.has(plant.area)) {
+        primaryPlantByArea.set(plant.area, plant);
+      }
+    });
+
+    const rows = data.generation.areaTotals.map((item) => {
+      const topSource = sourceTotalsByArea[item.area]?.[0];
+      const netIntertieMw = netIntertieByArea.get(item.area) ?? 0;
+      const balance = areaBalanceMap.get(item.area);
+      const flowSummary = areaFlowSummaryMap.get(item.area);
+      const peer = strongestPeerByArea.get(item.area);
+      const primaryPlant = primaryPlantByArea.get(item.area);
+      return {
+        area: item.area,
+        totalKwh: item.totalKwh,
+        sharePercent: totalGenerationKwh > 0 ? (item.totalKwh / totalGenerationKwh) * 100 : 0,
+        topSource: topSource?.source ?? "不明",
+        topSourceShare:
+          topSource && item.totalKwh > 0 ? (topSource.totalKwh / item.totalKwh) * 100 : 0,
+        netIntertieMw,
+        peer,
+        primaryPlant,
+        stressIndex: balance?.stressIndex ?? 0,
+        peakAbsMw: flowSummary?.peakAbsMw ?? 0,
+      };
+    });
+
+    const filteredRows =
+      selectedArea === "全エリア" ? rows : rows.filter((item) => item.area === selectedArea);
+
+    return filteredRows.sort((a, b) => b.totalKwh - a.totalKwh);
+  }, [
+    allPlantSummaries,
+    clampedNetworkFlowSlotIndex,
+    data.flows.areaSummaries,
+    data.flows.intertieSeries,
+    data.generation.areaTotals,
+    data.insights.areaBalance,
+    selectedArea,
+    sourceTotalsByArea,
+  ]);
+
   const interAreaFlowOption = useMemo(() => {
     const rows = interAreaFlowTextRows.map((row) => {
       const signedMw = roundTo(row.upMw - row.downMw, 1);
@@ -1558,163 +1719,330 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </div>
           </div>
         </header>
-
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <Panel title="発電方式別 30分推移" className="lg:col-span-7">
-            <div className="mb-2 flex justify-end">
-              <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
-                表示エリア
-              </label>
-              <select
-                id="generation-area"
-                className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
-                value={generationTrendArea}
-                onChange={(event) => setGenerationTrendArea(event.target.value)}
+        <section className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-slate-800">表示するパネル</h2>
+              <p className="text-sm text-slate-600">必要な情報だけ残して、全国俯瞰と深掘りを切り替えられます。</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700"
+                onClick={() => setVisibleSectionIds(DASHBOARD_SECTION_OPTIONS.map((item) => item.id))}
               >
-                {generationAreas.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <ReactECharts option={generationLineOption} style={{ height: 360 }} />
-          </Panel>
-          <Panel title="発電方式 構成比" className="lg:col-span-5">
-            <div className="mb-2 flex justify-end">
-              <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
-                表示エリア
-              </label>
-              <select
-                id="source-donut-area"
-                className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
-                value={sourceDonutArea}
-                onChange={(event) => setSourceDonutArea(event.target.value)}
+                すべて表示
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700"
+                onClick={() => setVisibleSectionIds(["summary", "areaCards", "network"])}
               >
-                {generationAreas.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
-              </select>
+                俯瞰モード
+              </button>
             </div>
-            <ReactECharts option={sourceDonutOption} style={{ height: 360 }} />
-          </Panel>
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Panel title="エリア別 日量発電">
-            <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
-          </Panel>
-          <Panel title="連系線潮流トレンド（時系列）">
-            <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
-          </Panel>
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2">
-            <div className="mb-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-                <span>表示日時: {selectedFlowDateTimeLabel}</span>
-                <span>
-                  スロット {flowSlotLabels.length === 0 ? 0 : clampedNetworkFlowSlotIndex + 1} / {flowSlotLabels.length}
-                </span>
-              </div>
-              <input
-                aria-label="ネットワーク潮流の表示時刻"
-                type="range"
-                min={0}
-                max={maxFlowSlotIndex}
-                step={1}
-                value={clampedNetworkFlowSlotIndex}
-                onChange={(event) => setNetworkFlowSlotIndex(Number(event.target.value))}
-                disabled={flowSlotLabels.length === 0}
-                className="w-full accent-teal-600"
-              />
-              <div className="mt-1 flex justify-between text-[11px] text-slate-500">
-                <span>{flowSlotLabels[0] ?? "-"}</span>
-                <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
-              </div>
-              <p className="mt-2 text-[11px] text-slate-600">
-                注: この図は公開CSVで端点が確定できる地域内送電線のみ表示します。連系線と発電所-SS接続は推定が必要なため描画していません。
-              </p>
-            </div>
-            <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
-          </Panel>
-          <Panel title="エリア間連系潮流（実績）">
-            <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-            <ReactECharts option={interAreaFlowOption} style={{ height: isMobileViewport ? 520 : 594 }} />
-          </Panel>
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Panel title="主要線路の潮流ヒートマップ" className="lg:col-span-2">
-            <ReactECharts option={flowHeatmapOption} style={{ height: 420 }} />
-          </Panel>
-          <Panel title="エリア負荷バランス">
-            <ReactECharts option={areaBalanceOption} style={{ height: 420 }} />
-          </Panel>
-        </section>
-
-        <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold">高発電ユニット上位</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                  <th className="py-2 pr-3">エリア</th>
-                  <th className="py-2 pr-3">発電所</th>
-                  <th className="py-2 pr-3">ユニット</th>
-                  <th className="py-2 pr-3">方式</th>
-                  <th className="py-2 text-right">最大出力(万kW)</th>
-                  <th className="py-2 text-right">日量(kWh)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTopUnits.slice(0, 24).map((unit) => (
-                  <tr key={`${unit.area}-${unit.plantName}-${unit.unitName}`} className="border-b border-slate-100">
-                    <td className="py-2 pr-3">{unit.area}</td>
-                    <td className="py-2 pr-3">{unit.plantName}</td>
-                    <td className="py-2 pr-3">{unit.unitName}</td>
-                    <td className="py-2 pr-3">{unit.sourceType}</td>
-                    <td className="py-2 text-right">
-                      {typeof unit.maxOutputManKw === "number" ? manKwFmt.format(unit.maxOutputManKw) : "-"}
-                    </td>
-                    <td className="py-2 text-right">{numberFmt.format(unit.dailyKwh)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
-
-          <h3 className="mb-3 mt-6 text-lg font-semibold">高発電発電所上位（ユニット合計）</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                  <th className="py-2 pr-3">エリア</th>
-                  <th className="py-2 pr-3">発電所</th>
-                  <th className="py-2 pr-3">方式</th>
-                  <th className="py-2 text-right">最大出力(万kW)</th>
-                  <th className="py-2 text-right">日量(kWh)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTopPlants.slice(0, 24).map((plant) => (
-                  <tr key={`${plant.area}-${plant.plantName}`} className="border-b border-slate-100">
-                    <td className="py-2 pr-3">{plant.area}</td>
-                    <td className="py-2 pr-3">{plant.plantName}</td>
-                    <td className="py-2 pr-3">{plant.sourceType || "不明"}</td>
-                    <td className="py-2 text-right">
-                      {typeof plant.maxOutputManKw === "number" ? manKwFmt.format(plant.maxOutputManKw) : "-"}
-                    </td>
-                    <td className="py-2 text-right">{numberFmt.format(plant.dailyKwh)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {DASHBOARD_SECTION_OPTIONS.map((item) => {
+              const active = visibleSectionSet.has(item.id);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                    active
+                      ? "border-teal-500 bg-teal-600 text-white shadow-sm"
+                      : "border-slate-300 bg-white text-slate-700 hover:border-teal-400 hover:text-teal-700"
+                  }`}
+                  onClick={() =>
+                    setVisibleSectionIds((current) => {
+                      if (current.includes(item.id)) {
+                        return current.filter((id) => id !== item.id);
+                      }
+                      return [...current, item.id];
+                    })
+                  }
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
         </section>
+
+        {visibleSectionSet.has("summary") ? (
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+            {nationalSummaryCards.map((card) => (
+              <article
+                key={card.label}
+                className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{card.label}</p>
+                <p className="mt-2 text-xl font-semibold leading-tight text-slate-900">{card.value}</p>
+                <p className="mt-2 text-sm text-slate-600">{card.detail}</p>
+              </article>
+            ))}
+          </section>
+        ) : null}
+
+        {visibleSectionSet.has("areaCards") ? (
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm">
+            <div className="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">エリア別需給カード</h2>
+                <p className="text-sm text-slate-600">
+                  {selectedArea === "全エリア"
+                    ? `全${areaSupplyCards.length}エリアの発電・連系・主力電源を一覧表示`
+                    : `${selectedArea} の発電・連系・主力電源を表示`}
+                </p>
+              </div>
+              <p className="text-xs text-slate-500">連系値は {selectedFlowDateTimeLabel} 時点</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {areaSupplyCards.map((card) => {
+                const areaColor = FLOW_AREA_COLORS[card.area] ?? FLOW_AREA_COLORS.default;
+                const netDirection =
+                  card.netIntertieMw > 0 ? "受電超過" : card.netIntertieMw < 0 ? "送電超過" : "概ね均衡";
+                const peerDirection =
+                  (card.peer?.signedMw ?? 0) > 0 ? "受電" : (card.peer?.signedMw ?? 0) < 0 ? "送電" : "均衡";
+                return (
+                  <article
+                    key={card.area}
+                    className="overflow-hidden rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(244,248,247,0.96))] shadow-sm"
+                  >
+                    <div className="h-1.5" style={{ backgroundColor: areaColor }} />
+                    <div className="p-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="inline-flex h-3 w-3 rounded-full"
+                              style={{ backgroundColor: areaColor }}
+                            />
+                            <h3 className="text-xl font-semibold text-slate-900">{card.area}</h3>
+                          </div>
+                          <p className="mt-1 text-sm text-slate-600">
+                            全国比 {card.sharePercent.toFixed(1)}% / ストレス指数 {decimalFmt.format(card.stressIndex)}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-slate-900 px-4 py-3 text-white shadow-sm">
+                          <p className="text-xs tracking-[0.16em] text-slate-300">日量発電</p>
+                          <p className="mt-1 text-2xl font-semibold">{formatCompactEnergy(card.totalKwh)}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <MetricTile
+                          label="主力電源"
+                          value={normalizeSourceName(card.topSource)}
+                          detail={`${card.topSourceShare.toFixed(1)}%`}
+                        />
+                        <MetricTile
+                          label="連系収支"
+                          value={netDirection}
+                          detail={`${decimalFmt.format(Math.abs(card.netIntertieMw))} MW`}
+                        />
+                        <MetricTile
+                          label="最大相手先"
+                          value={card.peer ? card.peer.counterpart : "-"}
+                          detail={
+                            card.peer
+                              ? `${peerDirection} ${decimalFmt.format(Math.abs(card.peer.signedMw))} MW`
+                              : "連系データなし"
+                          }
+                        />
+                        <MetricTile
+                          label="地域内ピーク"
+                          value={`${decimalFmt.format(card.peakAbsMw)} MW`}
+                          detail="地内送電線の最大|潮流|"
+                        />
+                      </div>
+
+                      <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+                        <p className="text-xs tracking-[0.16em] text-slate-500">主要発電所</p>
+                        <p className="mt-1 text-base font-semibold text-slate-900">
+                          {card.primaryPlant?.plantName ?? "-"}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {card.primaryPlant
+                            ? `${card.primaryPlant.sourceType || "不明"} / ${formatCompactEnergy(card.primaryPlant.dailyKwh)}`
+                            : "発電所データなし"}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
+
+        {visibleSectionSet.has("generation") ? (
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <Panel title="発電方式別 30分推移" className="lg:col-span-7">
+              <div className="mb-2 flex justify-end">
+                <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
+                  表示エリア
+                </label>
+                <select
+                  id="generation-area"
+                  className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+                  value={generationTrendArea}
+                  onChange={(event) => setGenerationTrendArea(event.target.value)}
+                >
+                  {generationAreas.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <ReactECharts option={generationLineOption} style={{ height: 360 }} />
+            </Panel>
+            <Panel title="発電方式 構成比" className="lg:col-span-5">
+              <div className="mb-2 flex justify-end">
+                <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
+                  表示エリア
+                </label>
+                <select
+                  id="source-donut-area"
+                  className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+                  value={sourceDonutArea}
+                  onChange={(event) => setSourceDonutArea(event.target.value)}
+                >
+                  {generationAreas.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <ReactECharts option={sourceDonutOption} style={{ height: 360 }} />
+            </Panel>
+          </section>
+        ) : null}
+
+        {visibleSectionSet.has("totals") ? (
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Panel title="エリア別 日量発電">
+              <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
+            </Panel>
+            <Panel title="連系線潮流トレンド（時系列）">
+              <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
+            </Panel>
+          </section>
+        ) : null}
+
+        {visibleSectionSet.has("network") ? (
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2">
+              <div className="mb-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+                  <span>表示日時: {selectedFlowDateTimeLabel}</span>
+                  <span>
+                    スロット {flowSlotLabels.length === 0 ? 0 : clampedNetworkFlowSlotIndex + 1} / {flowSlotLabels.length}
+                  </span>
+                </div>
+                <input
+                  aria-label="ネットワーク潮流の表示時刻"
+                  type="range"
+                  min={0}
+                  max={maxFlowSlotIndex}
+                  step={1}
+                  value={clampedNetworkFlowSlotIndex}
+                  onChange={(event) => setNetworkFlowSlotIndex(Number(event.target.value))}
+                  disabled={flowSlotLabels.length === 0}
+                  className="w-full accent-teal-600"
+                />
+                <div className="mt-1 flex justify-between text-[11px] text-slate-500">
+                  <span>{flowSlotLabels[0] ?? "-"}</span>
+                  <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
+                </div>
+                <p className="mt-2 text-[11px] text-slate-600">
+                  注: この図は公開CSVで端点が確定できる地域内送電線のみ表示します。連系線と発電所-SS接続は推定が必要なため描画していません。
+                </p>
+              </div>
+              <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
+            </Panel>
+            <Panel title="エリア間連系潮流（実績）">
+              <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
+              <ReactECharts option={interAreaFlowOption} style={{ height: isMobileViewport ? 520 : 594 }} />
+            </Panel>
+          </section>
+        ) : null}
+
+        {visibleSectionSet.has("diagnostics") ? (
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <Panel title="主要線路の潮流ヒートマップ" className="lg:col-span-2">
+              <ReactECharts option={flowHeatmapOption} style={{ height: 420 }} />
+            </Panel>
+            <Panel title="エリア負荷バランス">
+              <ReactECharts option={areaBalanceOption} style={{ height: 420 }} />
+            </Panel>
+          </section>
+        ) : null}
+
+        {visibleSectionSet.has("rankings") ? (
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm">
+            <h2 className="mb-3 text-lg font-semibold">高発電ユニット上位</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
+                    <th className="py-2 pr-3">エリア</th>
+                    <th className="py-2 pr-3">発電所</th>
+                    <th className="py-2 pr-3">ユニット</th>
+                    <th className="py-2 pr-3">方式</th>
+                    <th className="py-2 text-right">最大出力(万kW)</th>
+                    <th className="py-2 text-right">日量(kWh)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTopUnits.slice(0, 24).map((unit) => (
+                    <tr key={`${unit.area}-${unit.plantName}-${unit.unitName}`} className="border-b border-slate-100">
+                      <td className="py-2 pr-3">{unit.area}</td>
+                      <td className="py-2 pr-3">{unit.plantName}</td>
+                      <td className="py-2 pr-3">{unit.unitName}</td>
+                      <td className="py-2 pr-3">{unit.sourceType}</td>
+                      <td className="py-2 text-right">
+                        {typeof unit.maxOutputManKw === "number" ? manKwFmt.format(unit.maxOutputManKw) : "-"}
+                      </td>
+                      <td className="py-2 text-right">{numberFmt.format(unit.dailyKwh)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="mb-3 mt-6 text-lg font-semibold">高発電発電所上位（ユニット合計）</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
+                    <th className="py-2 pr-3">エリア</th>
+                    <th className="py-2 pr-3">発電所</th>
+                    <th className="py-2 pr-3">方式</th>
+                    <th className="py-2 text-right">最大出力(万kW)</th>
+                    <th className="py-2 text-right">日量(kWh)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTopPlants.slice(0, 24).map((plant) => (
+                    <tr key={`${plant.area}-${plant.plantName}`} className="border-b border-slate-100">
+                      <td className="py-2 pr-3">{plant.area}</td>
+                      <td className="py-2 pr-3">{plant.plantName}</td>
+                      <td className="py-2 pr-3">{plant.sourceType || "不明"}</td>
+                      <td className="py-2 text-right">
+                        {typeof plant.maxOutputManKw === "number" ? manKwFmt.format(plant.maxOutputManKw) : "-"}
+                      </td>
+                      <td className="py-2 text-right">{numberFmt.format(plant.dailyKwh)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );
@@ -1734,6 +2062,24 @@ function Panel({
       <h2 className="mb-2 text-base font-semibold text-slate-800">{title}</h2>
       {children}
     </section>
+  );
+}
+
+function MetricTile({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+      <p className="text-xs tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-1 text-base font-semibold text-slate-900">{value}</p>
+      <p className="mt-1 text-sm text-slate-600">{detail}</p>
+    </div>
   );
 }
 
@@ -2007,6 +2353,19 @@ function hashSeed(input: string): number {
 function normalizeSourceName(source: string): string {
   const trimmed = source.trim();
   return trimmed.length > 0 ? trimmed : "不明";
+}
+
+function formatCompactEnergy(kwh: number): string {
+  if (Math.abs(kwh) >= 1_000_000_000) {
+    return `${decimalFmt.format(kwh / 1_000_000_000)} TWh`;
+  }
+  if (Math.abs(kwh) >= 1_000_000) {
+    return `${decimalFmt.format(kwh / 1_000_000)} GWh`;
+  }
+  if (Math.abs(kwh) >= 1_000) {
+    return `${decimalFmt.format(kwh / 1_000)} MWh`;
+  }
+  return `${numberFmt.format(Math.round(kwh))} kWh`;
 }
 
 function formatVoltageKv(voltage: string | undefined): string {
