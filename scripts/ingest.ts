@@ -635,7 +635,7 @@ function buildDashboardData(args: {
   const hourlyByAreaSourceMap = new Map<string, Map<string, number[]>>();
   const plantSummaryMap = new Map<
     string,
-    { area: string; plantName: string; sourceType: string; dailyKwh: number; maxSlotKwh: number }
+    { area: string; plantName: string; sourceType: string; dailyKwh: number; slotTotals: number[] }
   >();
 
   for (const row of args.generationRows) {
@@ -662,13 +662,12 @@ function buildDashboardData(args: {
       plantName: row.plantName,
       sourceType: row.sourceType,
       dailyKwh: 0,
-      maxSlotKwh: 0,
+      slotTotals: new Array(slotCount).fill(0),
     };
     currentPlant.dailyKwh += row.dailyKwh;
-    currentPlant.maxSlotKwh = Math.max(
-      currentPlant.maxSlotKwh,
-      row.values.reduce((max, value) => Math.max(max, value), 0),
-    );
+    for (let i = 0; i < slotCount; i += 1) {
+      currentPlant.slotTotals[i] += row.values[i] ?? 0;
+    }
     if (!currentPlant.sourceType && row.sourceType) {
       currentPlant.sourceType = row.sourceType;
     }
@@ -811,7 +810,7 @@ function buildDashboardData(args: {
       plantName: row.plantName,
       sourceType: row.sourceType,
       dailyKwh: roundTo(row.dailyKwh, 0),
-      maxOutputManKw: roundTo(row.maxSlotKwh / 5000, 2),
+      maxOutputManKw: roundTo(row.slotTotals.reduce((max, value) => Math.max(max, value), 0) / 5000, 2),
     }))
     .sort((a, b) => b.dailyKwh - a.dailyKwh);
 

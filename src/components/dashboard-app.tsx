@@ -551,7 +551,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
     const fallback = new Map<
       string,
-      { area: string; plantName: string; sourceType: string; dailyKwh: number; maxOutputManKw: number }
+      {
+        area: string;
+        plantName: string;
+        sourceType: string;
+        dailyKwh: number;
+        maxOutputManKw: number;
+        summedUnitMaxOutputManKw: number;
+      }
     >();
     data.generation.topUnits.forEach((unit) => {
       const key = `${unit.area}::${unit.plantName}`;
@@ -561,9 +568,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         sourceType: unit.sourceType,
         dailyKwh: 0,
         maxOutputManKw: 0,
+        summedUnitMaxOutputManKw: 0,
       };
       current.dailyKwh += unit.dailyKwh;
-      current.maxOutputManKw = Math.max(current.maxOutputManKw, unit.maxOutputManKw ?? 0);
+      current.summedUnitMaxOutputManKw += unit.maxOutputManKw ?? 0;
+      current.maxOutputManKw = current.summedUnitMaxOutputManKw;
       if (!current.sourceType && unit.sourceType) {
         current.sourceType = unit.sourceType;
       }
