@@ -42,3 +42,4 @@ next-env.d.ts
 
 # ingestion artifacts
 /data/raw/
+/public/data/normalized/

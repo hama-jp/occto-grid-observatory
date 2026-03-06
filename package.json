@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "npm run sync-public-data && next dev",
+    "build": "npm run sync-public-data && next build",
     "start": "next start",
     "lint": "eslint",
-    "ingest": "tsx scripts/ingest.ts"
+    "ingest": "tsx scripts/ingest.ts",
+    "sync-public-data": "tsx scripts/sync-public-data.ts"
   },
   "dependencies": {
     "csv-parse": "^6.1.0",

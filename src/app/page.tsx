@@ -3,16 +3,31 @@ import path from "node:path";
 import { DashboardApp } from "@/components/dashboard-app";
 import type { DashboardData } from "@/lib/dashboard-types";
 
+const NORMALIZED_DIR = path.join(process.cwd(), "data", "normalized");
+
 async function loadLatestDashboardData(): Promise<DashboardData> {
-  const filePath = path.join(process.cwd(), "data", "normalized", "dashboard-latest.json");
+  const filePath = path.join(NORMALIZED_DIR, "dashboard-latest.json");
   const content = await fs.readFile(filePath, "utf-8");
   return JSON.parse(content) as DashboardData;
+}
+
+async function loadAvailableDashboardDates(): Promise<string[]> {
+  const entries = await fs.readdir(NORMALIZED_DIR, { withFileTypes: true });
+  const dateStamps = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name.match(/^dashboard-(\d{8})\.json$/)?.[1] ?? null)
+    .filter((stamp): stamp is string => stamp !== null);
+
+  return Array.from(new Set(dateStamps))
+    .sort((a, b) => b.localeCompare(a, "en"))
+    .map((stamp) => `${stamp.slice(0, 4)}/${stamp.slice(4, 6)}/${stamp.slice(6, 8)}`);
 }
 
 async function loadLatestDashboardDataSafe(): Promise<
   | {
       ok: true;
       data: DashboardData;
+      availableDates: string[];
     }
   | {
       ok: false;
@@ -20,8 +35,8 @@ async function loadLatestDashboardDataSafe(): Promise<
     }
 > {
   try {
-    const data = await loadLatestDashboardData();
-    return { ok: true, data };
+    const [data, availableDates] = await Promise.all([loadLatestDashboardData(), loadAvailableDashboardDates()]);
+    return { ok: true, data, availableDates };
   } catch (error: unknown) {
     return {
       ok: false,
@@ -47,5 +62,5 @@ export default async function Home() {
     );
   }
 
-  return <DashboardApp data={result.data} />;
+  return <DashboardApp initialData={result.data} availableDates={result.availableDates} />;
 }

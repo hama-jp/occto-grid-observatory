@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { DashboardData } from "@/lib/dashboard-types";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
@@ -11,7 +11,8 @@ const decimalFmt = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 1 });
 const manKwFmt = new Intl.NumberFormat("ja-JP", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 type DashboardAppProps = {
-  data: DashboardData;
+  initialData: DashboardData;
+  availableDates: string[];
 };
 
 const SOURCE_COLORS = [
@@ -406,7 +407,58 @@ const INTERTIE_STATION_HINTS: Record<string, Record<string, string[]>> = {
   },
 };
 
-export function DashboardApp({ data }: DashboardAppProps) {
+export function DashboardApp({ initialData, availableDates }: DashboardAppProps) {
+  const [data, setData] = useState<DashboardData>(initialData);
+  const [selectedDate, setSelectedDate] = useState<string>(initialData.meta.targetDate);
+  const [isDateLoading, setIsDateLoading] = useState<boolean>(false);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const selectableDates = useMemo(() => {
+    const merged = new Set<string>([...availableDates, initialData.meta.targetDate, data.meta.targetDate]);
+    return Array.from(merged).sort((a, b) => toDateStamp(b).localeCompare(toDateStamp(a), "en"));
+  }, [availableDates, data.meta.targetDate, initialData.meta.targetDate]);
+
+  useEffect(() => {
+    if (selectedDate === data.meta.targetDate) {
+      return;
+    }
+
+    let cancelled = false;
+    const previousDate = data.meta.targetDate;
+
+    const fetchByDate = async (): Promise<void> => {
+      setIsDateLoading(true);
+      setDateError(null);
+
+      try {
+        const dateStamp = toDateStamp(selectedDate);
+        const response = await fetch(`data/normalized/dashboard-${dateStamp}.json`, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`data not found for ${selectedDate}`);
+        }
+        const nextData = (await response.json()) as DashboardData;
+        if (cancelled) {
+          return;
+        }
+        setData(nextData);
+      } catch (error: unknown) {
+        if (cancelled) {
+          return;
+        }
+        setDateError(error instanceof Error ? error.message : "対象日のデータを読み込めませんでした");
+        setSelectedDate(previousDate);
+      } finally {
+        if (!cancelled) {
+          setIsDateLoading(false);
+        }
+      }
+    };
+
+    void fetchByDate();
+    return () => {
+      cancelled = true;
+    };
+  }, [data.meta.targetDate, selectedDate]);
+
   const areas = useMemo(() => {
     const set = new Set<string>();
     data.generation.areaTotals.forEach((item) => set.add(item.area));
@@ -1487,22 +1539,47 @@ export function DashboardApp({ data }: DashboardAppProps) {
                 {new Date(data.meta.fetchedAt).toLocaleString("ja-JP")}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="area" className="text-sm font-medium text-slate-600">
-                エリア
-              </label>
-              <select
-                id="area"
-                className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
-                value={selectedArea}
-                onChange={(event) => setSelectedArea(event.target.value)}
-              >
-                {areas.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-col items-start gap-2 md:items-end">
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="dashboard-date" className="text-sm font-medium text-slate-600">
+                  対象日
+                </label>
+                <select
+                  id="dashboard-date"
+                  className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+                  value={selectedDate}
+                  onChange={(event) => {
+                    setDateError(null);
+                    setSelectedDate(event.target.value);
+                  }}
+                  disabled={isDateLoading}
+                >
+                  {selectableDates.map((date) => (
+                    <option key={date} value={date}>
+                      {date}
+                    </option>
+                  ))}
+                </select>
+                {isDateLoading ? <span className="text-xs text-teal-700">読み込み中...</span> : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="area" className="text-sm font-medium text-slate-600">
+                  エリア
+                </label>
+                <select
+                  id="area"
+                  className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+                  value={selectedArea}
+                  onChange={(event) => setSelectedArea(event.target.value)}
+                >
+                  {areas.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {dateError ? <p className="text-xs text-rose-700">{dateError}</p> : null}
             </div>
           </div>
         </header>
@@ -1680,6 +1757,10 @@ function Panel({
       {children}
     </section>
   );
+}
+
+function toDateStamp(dateText: string): string {
+  return dateText.trim().replaceAll("/", "").replaceAll("-", "");
 }
 
 function parseDirection(
