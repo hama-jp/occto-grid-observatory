@@ -1,50 +1,12 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
-import { PNG } from "pngjs";
-
-const AREA_ORDER = ["北海道", "東北", "東京", "中部", "北陸", "関西", "中国", "四国", "九州", "沖縄"];
-
-async function getSelectOptions(locator: Locator): Promise<string[]> {
-  return locator.locator("option").evaluateAll((options) =>
-    options.map((option) => (option.textContent ?? "").trim()).filter(Boolean),
-  );
-}
-
-async function waitForChartSurface(locator: Locator): Promise<void> {
-  await expect(locator).toBeVisible();
-  await expect(locator.locator("canvas, svg").first()).toBeVisible();
-}
-
-async function waitForDashboardReady(page: Page): Promise<void> {
-  await page.goto("./");
-  await expect(page.getByRole("heading", { level: 1, name: "送電潮流 × ユニット発電実績 ダッシュボード" })).toBeVisible();
-  await waitForChartSurface(page.getByTestId("generation-trend-chart"));
-  await waitForChartSurface(page.getByTestId("source-composition-chart"));
-  await waitForChartSurface(page.getByTestId("area-total-generation-chart"));
-  await waitForChartSurface(page.getByTestId("inter-area-flow-chart"));
-}
-
-async function expectLocatorToContainChartSignal(locator: Locator, minimumSignalRatio: number): Promise<void> {
-  const image = PNG.sync.read(await locator.screenshot({ animations: "disabled" }));
-  const totalPixels = image.width * image.height;
-  let signalPixels = 0;
-
-  for (let offset = 0; offset < image.data.length; offset += 4) {
-    const red = image.data[offset];
-    const green = image.data[offset + 1];
-    const blue = image.data[offset + 2];
-    const alpha = image.data[offset + 3];
-    const brightest = Math.max(red, green, blue);
-    const darkest = Math.min(red, green, blue);
-    const hasColorContrast = brightest - darkest > 20;
-    const isNotNearWhite = brightest < 242;
-
-    if (alpha > 0 && (hasColorContrast || isNotNearWhite)) {
-      signalPixels += 1;
-    }
-  }
-
-  expect(signalPixels / totalPixels).toBeGreaterThan(minimumSignalRatio);
-}
+import { expect, test } from "@playwright/test";
+import {
+  AREA_ORDER,
+  buildMockDashboardDatePayload,
+  expectLocatorToContainChartSignal,
+  getSelectOptions,
+  waitForChartSurface,
+  waitForDashboardReady,
+} from "./helpers/dashboard";
 
 test("dashboard smoke renders key sections", async ({ page }) => {
   await waitForDashboardReady(page);
@@ -110,4 +72,39 @@ test("donut and bar chart panels keep visible chart signal", async ({ page }) =>
   await expectLocatorToContainChartSignal(page.getByTestId("source-composition-panel"), 0.035);
   await expectLocatorToContainChartSignal(page.getByTestId("area-total-generation-panel"), 0.04);
   await expectLocatorToContainChartSignal(page.getByTestId("inter-area-flow-panel"), 0.045);
+});
+
+test("date selector reloads dashboard data for another day", async ({ page }) => {
+  const targetDate = "2026/03/03";
+  const targetStamp = "20260303";
+
+  await page.route(`**/data/normalized/dashboard-${targetStamp}.json`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json; charset=utf-8",
+      body: buildMockDashboardDatePayload(targetDate),
+    });
+  });
+
+  await waitForDashboardReady(page);
+
+  const dateSelect = page.getByLabel("対象日", { exact: true });
+  const headerSummary = page.getByText(/対象日:/);
+
+  await dateSelect.evaluate((element, value) => {
+    const select = element as HTMLSelectElement;
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.append(option);
+  }, targetDate);
+
+  await dateSelect.selectOption(targetDate);
+
+  await expect(page.getByText("読み込み中...")).toBeVisible();
+  await expect(headerSummary).toContainText(targetDate);
+  await expect(dateSelect).toHaveValue(targetDate);
+  await expect(page.getByText("読み込み中...")).toHaveCount(0);
+  await expect(page.getByText(/対象日: 2026\/03\/03/)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "エリア別需給カード" })).toBeVisible();
 });

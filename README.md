@@ -65,7 +65,9 @@ npm run test:ui:public
   - エリア選択の並び順確認
   - 俯瞰モードでの表示制御確認
   - 時間スライダーの回帰確認
+  - 対象日切替時のデータ再読込確認
   - 円グラフ・棒グラフの描画信号確認
+  - モバイル viewport での操作性と横溢れ確認
 
 ## 運用フロー（Linear + GitHub）
 - [LINEAR_GITHUB_WORKFLOW.md](docs/LINEAR_GITHUB_WORKFLOW.md)
@@ -80,6 +82,7 @@ PR / push 時に以下を実行:
 別ワークフロー `UI Monitor` で公開URLに対する定期監視も実行:
 - 対象: `https://hama-jp.github.io/occto-grid-observatory/`
 - 実行: 毎日 `09:30 / 15:30 / 21:30 / 03:30 JST`
+- 失敗時: open issue を自動作成し、既存 issue があればコメント追記
 
 `.github` 配下に Issue / PR テンプレートを用意しています。
 
