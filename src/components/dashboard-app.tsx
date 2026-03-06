@@ -664,99 +664,57 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     };
   }, [data.generation.hourlyBySource, data.generation.hourlyBySourceByArea, data.meta.slotLabels.generation, generationTrendArea]);
 
-  const sourceDonutOption = useMemo(() => {
+  const sourceCompositionItems = useMemo(() => {
     const rows =
       sourceDonutArea === "全エリア"
         ? data.generation.sourceTotals
         : (sourceTotalsByArea[sourceDonutArea] ?? []);
     const totalKwh = rows.reduce((sum, item) => sum + item.totalKwh, 0);
-    let cumulativePercent = 0;
-    const rightLegend: string[] = [];
-    const leftLegend: string[] = [];
+    return rows.map((item, idx) => ({
+      name: normalizeSourceName(item.source),
+      totalKwh: item.totalKwh,
+      percent: totalKwh > 0 ? (item.totalKwh / totalKwh) * 100 : 0,
+      color: SOURCE_COLORS[idx % SOURCE_COLORS.length],
+    }));
+  }, [data.generation.sourceTotals, sourceDonutArea, sourceTotalsByArea]);
 
-    rows.forEach((item) => {
-      const percent = totalKwh > 0 ? (item.totalKwh / totalKwh) * 100 : 0;
-      cumulativePercent += percent;
-      const name = normalizeSourceName(item.source);
-      if (cumulativePercent <= 50) {
-        rightLegend.push(name);
-      } else {
-        leftLegend.push(name);
-      }
-    });
-
-    const legend = useSplitDonutLegends
-      ? [
-          {
-            type: "scroll",
-            orient: "vertical",
-            left: "2%",
-            top: "middle",
-            width: "30%",
-            align: "left",
-            itemGap: 8,
-            textStyle: { color: "#264653", fontSize: 11 },
-            data: leftLegend,
-          },
-          {
-            type: "scroll",
-            orient: "vertical",
-            right: "2%",
-            top: "middle",
-            width: "30%",
-            align: "left",
-            itemGap: 8,
-            textStyle: { color: "#264653", fontSize: 11 },
-            data: rightLegend,
-          },
-        ]
-      : [
-          {
-            type: "scroll",
-            orient: "horizontal",
-            left: "center",
-            bottom: 0,
-            width: "88%",
-            itemGap: 10,
-            textStyle: { color: "#264653", fontSize: 11 },
-            data: rows.map((item) => normalizeSourceName(item.source)),
-          },
-        ];
-
+  const sourceDonutOption = useMemo(() => {
     return {
       tooltip: { trigger: "item" },
-      legend,
       series: [
         {
           name: "発電方式",
           type: "pie",
-          radius: useSplitDonutLegends ? ["33%", "55%"] : ["38%", "60%"],
-          center: useSplitDonutLegends ? ["50%", "52%"] : ["50%", "42%"],
+          radius: useSplitDonutLegends ? ["40%", "68%"] : ["38%", "60%"],
+          center: useSplitDonutLegends ? ["50%", "50%"] : ["50%", "42%"],
           avoidLabelOverlap: true,
           label: {
-            formatter: (params: { percent?: number; name: string }) => {
-              const percent = params.percent ?? 0;
-              if (percent < (isMobileViewport ? 7 : 4)) {
-                return "";
-              }
-              return `${normalizeSourceName(params.name)}\n${percent.toFixed(0)}%`;
-            },
+            show: false,
             color: "#1b3a4b",
             fontSize: useSplitDonutLegends ? 12 : 11,
           },
           labelLine: {
-            length: 10,
-            length2: 8,
+            show: false,
           },
-          data: rows.map((item, idx) => ({
-            name: normalizeSourceName(item.source),
+          emphasis: {
+            scale: true,
+            label: {
+              show: true,
+              formatter: (params: { percent?: number; name: string }) =>
+                `${normalizeSourceName(params.name)}\n${decimalFmt.format(params.percent ?? 0)}%`,
+              fontSize: 13,
+              fontWeight: 600,
+            },
+          },
+          data: sourceCompositionItems.map((item) => ({
+            name: item.name,
             value: item.totalKwh,
-            itemStyle: { color: SOURCE_COLORS[idx % SOURCE_COLORS.length] },
+            itemStyle: { color: item.color },
           })),
         },
       ],
     };
-  }, [data.generation.sourceTotals, isMobileViewport, sourceDonutArea, sourceTotalsByArea, useSplitDonutLegends]);
+  }, [sourceCompositionItems, useSplitDonutLegends]);
 
   const areaTotalsOption = useMemo(
     () => {
@@ -1917,7 +1875,30 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   ))}
                 </select>
               </div>
-              <ReactECharts option={sourceDonutOption} style={{ height: 360 }} />
+              <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {sourceCompositionItems.map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2"
+                  >
+                    <div className="min-w-0 pr-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 shrink-0 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                          aria-hidden="true"
+                        />
+                        <span className="truncate text-sm font-medium text-slate-800">{item.name}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">{formatCompactEnergy(item.totalKwh)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-base font-semibold text-slate-900">{decimalFmt.format(item.percent)}%</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </Panel>
           </section>
         ) : null}
