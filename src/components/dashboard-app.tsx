@@ -1216,11 +1216,12 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               )} MW`;
             }
             if (params.data.kind === "intra") {
+              const voltageText = formatVoltageKv(params.data.voltageKv);
               return `${params.data.area} | ${params.data.lineName}<br/>区分: 地域内送電線<br/>定義方向: ${
                 params.data.positiveDirection
               }<br/>表示時刻: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(params.data.value)} MW<br/>最大|潮流|: ${numberFmt.format(
                 params.data.peakAbsMw ?? 0,
-              )} MW<br/>電圧: ${params.data.voltageKv}`;
+              )} MW${voltageText ? `<br/>電圧: ${voltageText}` : ""}`;
             }
             return "";
           }
@@ -2122,6 +2123,17 @@ function hashSeed(input: string): number {
 function normalizeSourceName(source: string): string {
   const trimmed = source.trim();
   return trimmed.length > 0 ? trimmed : "不明";
+}
+
+function formatVoltageKv(voltage: string | undefined): string {
+  const trimmed = (voltage ?? "").trim();
+  if (!trimmed) {
+    return "";
+  }
+  if (/[vVＶ]/.test(trimmed)) {
+    return trimmed.replace(/kv/gi, "kV");
+  }
+  return `${trimmed}kV`;
 }
 
 function isNetworkPowerPlantSource(sourceType: string): boolean {
