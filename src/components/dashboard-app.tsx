@@ -1420,6 +1420,102 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       .slice(0, selectedArea === "全エリア" ? 14 : 22);
   }, [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, data.flows.intertieSeries, selectedArea]);
 
+  const interAreaFlowOption = useMemo(() => {
+    const rows = interAreaFlowTextRows.map((row) => {
+      const signedMw = roundTo(row.upMw - row.downMw, 1);
+      return {
+        ...row,
+        signedMw,
+        absMw: Math.abs(signedMw),
+      };
+    });
+    const hasData = rows.length > 0;
+    const maxAbsSignedMw = Math.max(...rows.map((row) => row.absMw), 1);
+    const axisLimit = Math.max(10, Math.ceil(maxAbsSignedMw * 1.12));
+
+    return {
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: Array<{ data: { row: (typeof rows)[number] } }>) => {
+          const row = params[0]?.data?.row;
+          if (!row) {
+            return "";
+          }
+          return `${row.sourceArea} ⇄ ${row.targetArea}<br/>表示日時: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(
+            row.signedMw,
+          )} MW<br/>${decimalFmt.format(row.upMw)}MW ↑ / ${decimalFmt.format(
+            row.downMw,
+          )}MW ↓<br/>連系線: ${row.intertieNames.join(" / ")}`;
+        },
+      },
+      grid: { top: 20, left: 130, right: 24, bottom: 46 },
+      xAxis: {
+        type: "value",
+        min: -axisLimit,
+        max: axisLimit,
+        splitNumber: 6,
+        axisLabel: {
+          formatter: (value: number) => `${Math.round(value)} MW`,
+          rotate: 26,
+          hideOverlap: true,
+        },
+      },
+      yAxis: {
+        type: "category",
+        inverse: true,
+        data: rows.map((row) => `${row.sourceArea} ⇄ ${row.targetArea}`),
+        axisLabel: { color: "#334155", fontSize: 11 },
+      },
+      graphic: hasData
+        ? undefined
+        : [
+            {
+              type: "text",
+              left: "center",
+              top: "middle",
+              style: {
+                text: "連系線潮流実績データが未取得です",
+                fill: "#475569",
+                font: "14px sans-serif",
+              },
+              silent: true,
+            },
+          ],
+      series: [
+        {
+          type: "bar",
+          barWidth: 14,
+          data: rows.map((row) => ({
+            value: row.signedMw,
+            row,
+            itemStyle: {
+              color:
+                row.signedMw >= 0
+                  ? (FLOW_AREA_COLORS[row.sourceArea] ?? FLOW_AREA_COLORS.default)
+                  : (FLOW_AREA_COLORS[row.targetArea] ?? FLOW_AREA_COLORS.default),
+              borderRadius: row.signedMw >= 0 ? [0, 5, 5, 0] : [5, 0, 0, 5],
+            },
+          })),
+          label: {
+            show: true,
+            position: (params: { value: number }) => (params.value >= 0 ? "right" : "left"),
+            formatter: (params: { data: { row: (typeof rows)[number] } }) =>
+              `${decimalFmt.format(params.data.row.upMw)}MW ↑  ${decimalFmt.format(params.data.row.downMw)}MW ↓`,
+            color: "#334155",
+            fontSize: 10,
+          },
+          markLine: {
+            silent: true,
+            symbol: ["none", "none"],
+            lineStyle: { color: "#64748b", type: "dashed", width: 1 },
+            data: [{ xAxis: 0 }],
+          },
+        },
+      ],
+    };
+  }, [interAreaFlowTextRows, selectedFlowDateTimeLabel]);
+
   const intertieTrendOption = useMemo(() => {
     const scopedSeries = (data.flows.intertieSeries ?? []).filter((row) =>
       selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
@@ -1684,35 +1780,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           </Panel>
           <Panel title="エリア間連系潮流（実績）">
             <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-            <div className="h-[594px] space-y-2 overflow-y-auto pr-1">
-              {interAreaFlowTextRows.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                  連系線潮流実績データが未取得です
-                </div>
-              ) : (
-                interAreaFlowTextRows.map((row) => (
-                  <article
-                    key={`${row.sourceArea}-${row.targetArea}`}
-                    className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-slate-800">
-                        {row.sourceArea} ⇄ {row.targetArea}
-                      </p>
-                      <p className="text-xs text-slate-500">{row.intertieNames.length}線路</p>
-                    </div>
-                    <p className="mt-1 font-mono text-sm">
-                      <span className="text-emerald-700">{decimalFmt.format(row.upMw)}MW ↑</span>
-                      <span className="mx-2 text-slate-400">|</span>
-                      <span className="text-rose-700">{decimalFmt.format(row.downMw)}MW ↓</span>
-                    </p>
-                    <p className="mt-1 truncate text-[11px] text-slate-500" title={row.intertieNames.join(" / ")}>
-                      {row.intertieNames.join(" / ")}
-                    </p>
-                  </article>
-                ))
-              )}
-            </div>
+            <ReactECharts option={interAreaFlowOption} style={{ height: 594 }} />
           </Panel>
         </section>
 
