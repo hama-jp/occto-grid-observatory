@@ -1035,7 +1035,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       });
     });
 
-    const stationPositions = buildStationLayout(stationsByArea);
+    const stationPositions = buildStationLayout(stationsByArea, links, nodeDegree);
 
     if (visibleAreas.size === 0) {
       data.flows.areaSummaries.forEach((row) => visibleAreas.add(row.area));
@@ -1138,14 +1138,17 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       1,
     );
 
+    const linkCurveness = buildLinkCurvenessMap(links, stationPositions);
+
     const renderedLinks = links.map((line) => {
       const ratio = line.absAvgMw / maxAbsIntra;
+      const curveness = linkCurveness.get(`${line.source}=>${line.target}`) ?? 0.04;
       return {
         ...line,
         lineStyle: {
           width: 0.7 + ratio * 2.8,
           opacity: 0.58,
-          curveness: 0.06,
+          curveness,
           color: line.value >= 0 ? "rgba(249,115,22,0.9)" : "rgba(30,64,175,0.9)",
         },
         z: 2,
@@ -1169,10 +1172,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           return null;
         }
         return {
-          coords: [
-            [from.x, from.y],
-            [to.x, to.y],
-          ],
+          coords: buildCurvedLineCoords(from, to, line.lineStyle.curveness),
           lineStyle: {
             color: line.lineStyle.color,
             width: 0,
@@ -1297,7 +1297,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         {
           type: "lines",
           coordinateSystem: "none",
-          polyline: false,
+          polyline: true,
           silent: true,
           z: 7,
           data: animatedFlowLines,
@@ -2335,8 +2335,13 @@ function buildPowerNodeId(area: string, plantName: string): string {
   return `power::${area.trim()}::${plantName.trim()}`;
 }
 
-function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<string, { x: number; y: number }> {
+function buildStationLayout(
+  stationsByArea: Map<string, Set<string>>,
+  links: Array<{ source: string; target: string }>,
+  nodeDegree: Map<string, number>,
+): Map<string, { x: number; y: number }> {
   const positions = new Map<string, { x: number; y: number }>();
+  const basePositions = new Map<string, { x: number; y: number }>();
   const occupiedCells = new Set<string>();
 
   stationsByArea.forEach((stations, area) => {
@@ -2350,11 +2355,13 @@ function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<strin
         x: anchor.x + ((hashSeed(seed) % 13) - 6),
         y: anchor.y + (((hashSeed(seed + "-y") % 13) - 6) * 0.85),
       };
+      basePositions.set(buildStationNodeId(area, station), base);
       const placed = placePointAvoidingOverlap(base, seed, occupiedCells);
       positions.set(buildStationNodeId(area, station), placed);
     });
   });
 
+  relaxStationLayout(positions, basePositions, stationsByArea, links, nodeDegree);
   return positions;
 }
 
@@ -2526,7 +2533,7 @@ function placePointAvoidingOverlap(
   seedText: string,
   occupiedCells: Set<string>,
 ): { x: number; y: number } {
-  const cellSize = 7;
+  const cellSize = 12;
   const maxTry = 42;
   const hash = hashSeed(seedText);
 
@@ -2546,6 +2553,165 @@ function placePointAvoidingOverlap(
     x: clamp(base.x, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
     y: clamp(base.y, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
   };
+}
+
+function relaxStationLayout(
+  positions: Map<string, { x: number; y: number }>,
+  basePositions: Map<string, { x: number; y: number }>,
+  stationsByArea: Map<string, Set<string>>,
+  links: Array<{ source: string; target: string }>,
+  nodeDegree: Map<string, number>,
+): void {
+  const adjacency = new Map<string, Set<string>>();
+  links.forEach((link) => {
+    const sourceNeighbors = adjacency.get(link.source) ?? new Set<string>();
+    sourceNeighbors.add(link.target);
+    adjacency.set(link.source, sourceNeighbors);
+
+    const targetNeighbors = adjacency.get(link.target) ?? new Set<string>();
+    targetNeighbors.add(link.source);
+    adjacency.set(link.target, targetNeighbors);
+  });
+
+  stationsByArea.forEach((stations, area) => {
+    const nodeIds = Array.from(stations)
+      .map((station) => buildStationNodeId(area, station))
+      .filter((nodeId) => positions.has(nodeId));
+
+    for (let iteration = 0; iteration < 32; iteration += 1) {
+      const deltas = new Map<string, { dx: number; dy: number }>();
+      nodeIds.forEach((nodeId) => deltas.set(nodeId, { dx: 0, dy: 0 }));
+
+      for (let i = 0; i < nodeIds.length; i += 1) {
+        const aId = nodeIds[i];
+        const aPos = positions.get(aId);
+        if (!aPos) {
+          continue;
+        }
+
+        for (let j = i + 1; j < nodeIds.length; j += 1) {
+          const bId = nodeIds[j];
+          const bPos = positions.get(bId);
+          if (!bPos) {
+            continue;
+          }
+
+          const dx = bPos.x - aPos.x;
+          const dy = bPos.y - aPos.y;
+          const distance = Math.hypot(dx, dy) || 0.001;
+          const connected =
+            adjacency.get(aId)?.has(bId) ||
+            adjacency.get(bId)?.has(aId) ||
+            false;
+          const preferredDistance = connected
+            ? 26 + Math.max(nodeDegree.get(aId) ?? 0, nodeDegree.get(bId) ?? 0) * 1.6
+            : 18 + Math.max(nodeDegree.get(aId) ?? 0, nodeDegree.get(bId) ?? 0) * 0.8;
+
+          if (distance >= preferredDistance) {
+            continue;
+          }
+
+          const push = (preferredDistance - distance) * (connected ? 0.12 : 0.19);
+          const unitX = dx / distance;
+          const unitY = dy / distance;
+
+          const aDelta = deltas.get(aId);
+          const bDelta = deltas.get(bId);
+          if (!aDelta || !bDelta) {
+            continue;
+          }
+
+          aDelta.dx -= unitX * push;
+          aDelta.dy -= unitY * push;
+          bDelta.dx += unitX * push;
+          bDelta.dy += unitY * push;
+        }
+      }
+
+      nodeIds.forEach((nodeId) => {
+        const delta = deltas.get(nodeId);
+        const position = positions.get(nodeId);
+        const base = basePositions.get(nodeId);
+        if (!delta || !position || !base) {
+          return;
+        }
+
+        const degree = nodeDegree.get(nodeId) ?? 0;
+        delta.dx += (base.x - position.x) * (0.12 + Math.min(degree, 6) * 0.01);
+        delta.dy += (base.y - position.y) * (0.12 + Math.min(degree, 6) * 0.01);
+
+        position.x = clamp(position.x + delta.dx, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding);
+        position.y = clamp(position.y + delta.dy, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding);
+      });
+    }
+  });
+}
+
+function buildLinkCurvenessMap(
+  links: Array<{ source: string; target: string }>,
+  positions: Map<string, { x: number; y: number }>,
+): Map<string, number> {
+  const offsetsByNode = new Map<string, Map<string, number>>();
+
+  const registerNodeOffsets = (nodeId: string, sortAngle: (link: { source: string; target: string }) => number): void => {
+    const incidentLinks = links.filter((link) => link.source === nodeId || link.target === nodeId);
+    const nodePosition = positions.get(nodeId);
+    if (!nodePosition || incidentLinks.length === 0) {
+      return;
+    }
+
+    incidentLinks.sort((a, b) => sortAngle(a) - sortAngle(b));
+    const offsets = new Map<string, number>();
+    const center = (incidentLinks.length - 1) / 2;
+    incidentLinks.forEach((link, index) => {
+      const key = `${link.source}=>${link.target}`;
+      offsets.set(key, (index - center) * 0.034);
+    });
+    offsetsByNode.set(nodeId, offsets);
+  };
+
+  positions.forEach((_position, nodeId) => {
+    registerNodeOffsets(nodeId, (link) => {
+      const from = positions.get(nodeId);
+      const other = positions.get(link.source === nodeId ? link.target : link.source);
+      if (!from || !other) {
+        return 0;
+      }
+      return Math.atan2(other.y - from.y, other.x - from.x);
+    });
+  });
+
+  const curvenessByLink = new Map<string, number>();
+  links.forEach((link) => {
+    const key = `${link.source}=>${link.target}`;
+    const sourceOffset = offsetsByNode.get(link.source)?.get(key) ?? 0;
+    const targetOffset = offsetsByNode.get(link.target)?.get(key) ?? 0;
+    const curveness = clamp((sourceOffset - targetOffset) * 0.85, -0.22, 0.22);
+    const adjusted = Math.abs(curveness) < 0.018 ? (curveness < 0 ? -0.018 : 0.018) : curveness;
+    curvenessByLink.set(key, adjusted);
+  });
+  return curvenessByLink;
+}
+
+function buildCurvedLineCoords(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  curveness: number,
+): Array<[number, number]> {
+  const midX = (from.x + to.x) / 2;
+  const midY = (from.y + to.y) / 2;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const normalX = -dy / length;
+  const normalY = dx / length;
+  const offset = length * curveness * 0.95;
+
+  return [
+    [from.x, from.y],
+    [midX + normalX * offset, midY + normalY * offset],
+    [to.x, to.y],
+  ];
 }
 
 function compareAreaOrder(a: string, b: string): number {
