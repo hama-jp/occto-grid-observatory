@@ -841,25 +841,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       converterPair?: boolean;
     };
 
-    const scopedInterties = (data.flows.intertieSeries ?? []).filter((row) =>
-      selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
-    );
+    const scopedInterties = data.flows.intertieSeries ?? [];
 
     const areaScope = new Set<string>();
-    if (selectedArea === "全エリア") {
+    data.flows.lineSeries.forEach((line) => areaScope.add(line.area));
+    scopedInterties.forEach((row) => {
+      areaScope.add(row.sourceArea);
+      areaScope.add(row.targetArea);
+    });
+    if (areaScope.size === 0) {
       data.flows.areaSummaries.forEach((row) => areaScope.add(row.area));
-    } else {
-      areaScope.add(selectedArea);
-      scopedInterties.forEach((row) => {
-        areaScope.add(row.sourceArea);
-        areaScope.add(row.targetArea);
-      });
     }
 
-    const networkLines =
-      selectedArea === "全エリア"
-        ? data.flows.lineSeries
-        : data.flows.lineSeries.filter((line) => areaScope.has(line.area));
+    const networkLines = data.flows.lineSeries;
 
     const visibleAreas = new Set<string>();
     const stationsByArea = new Map<string, Set<string>>();
@@ -964,20 +958,17 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       });
     });
 
-    if (selectedArea === "全エリア" && visibleAreas.size === 0) {
+    if (visibleAreas.size === 0) {
       data.flows.areaSummaries.forEach((row) => visibleAreas.add(row.area));
-    }
-    if (selectedArea !== "全エリア") {
-      visibleAreas.add(selectedArea);
     }
 
     const areaCategories = Array.from(visibleAreas).sort(compareAreaOrder);
     const categoryIndex = new Map(areaCategories.map((area, index) => [area, index]));
     const stationLabelIds = new Set(
       Array.from(nodeDegree.entries())
-        .filter(([nodeId, degree]) => nodeId.startsWith("station::") && degree >= (selectedArea === "全エリア" ? 3 : 2))
+        .filter(([nodeId, degree]) => nodeId.startsWith("station::") && degree >= 3)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, selectedArea === "全エリア" ? 70 : 110)
+        .slice(0, 70)
         .map(([nodeId]) => nodeId),
     );
 
@@ -1057,7 +1048,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         sourceType: plant.sourceType,
         dailyKwh: plant.dailyKwh,
         maxOutputManKw: roundTo(plant.maxOutputManKw, 2),
-        shouldLabel: ratio >= (selectedArea === "全エリア" ? 0.5 : 0.3),
+        shouldLabel: ratio >= 0.5,
         x: position.x,
         y: position.y,
         symbol: "rect",
@@ -1387,7 +1378,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     data.flows.lineSeries,
     clampedNetworkFlowSlotIndex,
     networkPowerPlants,
-    selectedArea,
     selectedFlowDateTimeLabel,
   ]);
 
