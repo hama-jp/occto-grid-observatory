@@ -6,6 +6,7 @@ import { parse } from "csv-parse/sync";
 import type {
   AreaBalance,
   AreaFlowSummary,
+  AreaReserveSeries,
   DashboardData,
   FlowRow,
   GenerationRow,
@@ -33,6 +34,8 @@ const FLOW_AREAS = [
   { code: "10", name: "沖縄" },
 ] as const;
 
+const AREA_ORDER_INDEX = new Map<string, number>(FLOW_AREAS.map((item, index) => [item.name, index]));
+
 type CliArgs = {
   mode: "daily" | "now" | "backfill";
   targetDates: string[];
@@ -44,6 +47,7 @@ type DownloadResult = {
   generationCsv: string;
   flowCsvByArea: string[];
   intertieCsvByLine: string[];
+  reserveJson: string;
 };
 
 type IntertieFlowRow = {
@@ -105,15 +109,18 @@ async function main(): Promise<void> {
     const generationRows = await parseGenerationCsv(downloadResult.generationCsv);
     const flowRows = await parseFlowCsv(downloadResult.flowCsvByArea);
     const intertieRows = await parseIntertieCsv(downloadResult.intertieCsvByLine);
+    const reserveRows = await parseReserveJson(downloadResult.reserveJson);
 
     const dashboard = buildDashboardData({
       targetDate,
       generationRows,
       flowRows,
       intertieRows,
+      reserveRows,
       generationCsvName: path.basename(downloadResult.generationCsv),
       flowCsvName: downloadResult.flowCsvByArea.map((file) => path.basename(file)).join(","),
       intertieCsvName: downloadResult.intertieCsvByLine.map((file) => path.basename(file)).join(","),
+      reserveJsonName: path.basename(downloadResult.reserveJson),
     });
 
     const payload = JSON.stringify(dashboard, null, 2);
@@ -124,7 +131,7 @@ async function main(): Promise<void> {
     updatedCount += 1;
 
     console.log(
-      `[ingest] generated ${targetDate}: generation=${generationRows.length}, flow=${flowRows.length}, intertie=${intertieRows.length}`,
+      `[ingest] generated ${targetDate}: generation=${generationRows.length}, flow=${flowRows.length}, intertie=${intertieRows.length}, reserve=${reserveRows.length}`,
     );
     console.log(`[ingest] wrote ${datedOutputPath}`);
 
@@ -398,7 +405,8 @@ async function downloadCsvFiles(targetDate: string, rawDir: string): Promise<Dow
   const generationCsv = await downloadGenerationCsv(targetDate, rawDir);
   const flowCsvByArea = await downloadFlowCsvByArea(targetDate, rawDir);
   const intertieCsvByLine = await downloadIntertieCsvByLine(targetDate, rawDir);
-  return { generationCsv, flowCsvByArea, intertieCsvByLine };
+  const reserveJson = await downloadReserveJson(targetDate, rawDir);
+  return { generationCsv, flowCsvByArea, intertieCsvByLine, reserveJson };
 }
 
 async function downloadGenerationCsv(targetDate: string, rawDir: string): Promise<string> {
@@ -579,6 +587,25 @@ async function downloadIntertieCsvByLine(targetDate: string, rawDir: string): Pr
   });
 }
 
+async function downloadReserveJson(targetDate: string, rawDir: string): Promise<string> {
+  return retryOperation(`reserve ${targetDate}`, async () => {
+    const encodedDate = encodeURIComponent(targetDate);
+    const response = await fetch(`https://web-kohyo.occto.or.jp/kks-web-public/home/dailyData?inputDate=${encodedDate}`, {
+      headers: {
+        accept: "application/json, text/plain, */*",
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`reserve endpoint returned ${response.status}`);
+    }
+
+    const text = await response.text();
+    const outputPath = path.join(rawDir, `reserve-${targetDate.replaceAll("/", "")}.json`);
+    await fs.writeFile(outputPath, text, "utf-8");
+    return outputPath;
+  });
+}
+
 async function captureDownload(
   page: Page,
   trigger: () => Promise<void>,
@@ -694,6 +721,53 @@ async function parseIntertieCsv(filePaths: string[]): Promise<IntertieFlowRow[]>
   return parsed;
 }
 
+async function parseReserveJson(filePath: string): Promise<AreaReserveSeries[]> {
+  const content = await fs.readFile(filePath, "utf-8");
+  const payload = JSON.parse(content) as {
+    todayAreaRsvRateList?: Array<{
+      areaCd: string;
+      areaRsvRateItems?: Array<{
+        koikJyyu?: number;
+        koikKyu?: number;
+        koikRsv?: number;
+        koikRsvRate?: number;
+        koikSyuRate?: number;
+        areaJyyu?: number;
+        areaKyu?: number;
+        areaRsv?: number;
+        areaRsvRate?: number;
+        areaSyuRate?: number;
+      }>;
+    }>;
+  };
+
+  const areaCodeMap = new Map<string, string>(FLOW_AREAS.map((item) => [item.code, item.name]));
+
+  const rows = (payload.todayAreaRsvRateList ?? []).flatMap((row) => {
+      const area = areaCodeMap.get(row.areaCd);
+      if (!area || !row.areaRsvRateItems || row.areaRsvRateItems.length === 0) {
+        return [];
+      }
+
+      const series: AreaReserveSeries = {
+        area,
+        demandMw: row.areaRsvRateItems.map((item) => roundTo(item.areaJyyu ?? 0, 3)),
+        supplyMw: row.areaRsvRateItems.map((item) => roundTo(item.areaKyu ?? 0, 3)),
+        reserveMw: row.areaRsvRateItems.map((item) => roundTo(item.areaRsv ?? 0, 3)),
+        reserveRate: row.areaRsvRateItems.map((item) => roundTo(item.areaRsvRate ?? 0, 2)),
+        usageRate: row.areaRsvRateItems.map((item) => roundTo(item.areaSyuRate ?? 0, 2)),
+        blockDemandMw: row.areaRsvRateItems.map((item) => roundTo(item.koikJyyu ?? 0, 3)),
+        blockSupplyMw: row.areaRsvRateItems.map((item) => roundTo(item.koikKyu ?? 0, 3)),
+        blockReserveMw: row.areaRsvRateItems.map((item) => roundTo(item.koikRsv ?? 0, 3)),
+        blockReserveRate: row.areaRsvRateItems.map((item) => roundTo(item.koikRsvRate ?? 0, 2)),
+        blockUsageRate: row.areaRsvRateItems.map((item) => roundTo(item.koikSyuRate ?? 0, 2)),
+      };
+      return [series];
+    });
+
+  return rows.sort((a, b) => compareAreaOrder(a.area, b.area));
+}
+
 function parseNumber(raw: string | undefined): number {
   if (!raw) {
     return 0;
@@ -717,14 +791,25 @@ function sanitizeFilePart(value: string): string {
   return cleaned.length > 0 ? cleaned : "intertie";
 }
 
+function compareAreaOrder(a: string, b: string): number {
+  const aIndex = AREA_ORDER_INDEX.get(a) ?? Number.MAX_SAFE_INTEGER;
+  const bIndex = AREA_ORDER_INDEX.get(b) ?? Number.MAX_SAFE_INTEGER;
+  if (aIndex !== bIndex) {
+    return aIndex - bIndex;
+  }
+  return a.localeCompare(b, "ja");
+}
+
 function buildDashboardData(args: {
   targetDate: string;
   generationRows: GenerationRow[];
   flowRows: FlowRow[];
   intertieRows: IntertieFlowRow[];
+  reserveRows: AreaReserveSeries[];
   generationCsvName: string;
   flowCsvName: string;
   intertieCsvName: string;
+  reserveJsonName: string;
 }): DashboardData {
   const generationSlotCount = args.generationRows[0]?.values.length ?? 48;
   const flowSlotCount = args.flowRows[0]?.values.length ?? 48;
@@ -953,6 +1038,7 @@ function buildDashboardData(args: {
         generationCsv: args.generationCsvName,
         flowCsv: args.flowCsvName,
         intertieCsv: args.intertieCsvName,
+        reserveJson: args.reserveJsonName,
       },
     },
     generation: {
@@ -963,6 +1049,9 @@ function buildDashboardData(args: {
       hourlyTotalByArea,
       topUnits,
       plantSummaries,
+    },
+    reserves: {
+      areaSeries: args.reserveRows,
     },
     flows: {
       areaSummaries,

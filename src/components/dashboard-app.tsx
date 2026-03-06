@@ -89,6 +89,7 @@ type DashboardSectionId =
   | "summary"
   | "areaCards"
   | "generation"
+  | "reserve"
   | "totals"
   | "network"
   | "diagnostics"
@@ -98,6 +99,7 @@ const DASHBOARD_SECTION_OPTIONS: Array<{ id: DashboardSectionId; label: string }
   { id: "summary", label: "全国サマリー" },
   { id: "areaCards", label: "エリア需給" },
   { id: "generation", label: "発電トレンド" },
+  { id: "reserve", label: "需要・予備率" },
   { id: "totals", label: "発電・連系概要" },
   { id: "network", label: "ネットワーク" },
   { id: "diagnostics", label: "潮流詳細" },
@@ -516,6 +518,153 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const selectedFlowSlotLabel = flowSlotLabels[clampedNetworkFlowSlotIndex] ?? "-";
   const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
   const visibleSectionSet = useMemo(() => new Set<DashboardSectionId>(visibleSectionIds), [visibleSectionIds]);
+  const reserveAreaSeries = useMemo(() => data.reserves?.areaSeries ?? [], [data.reserves?.areaSeries]);
+  const reserveAreaMap = useMemo(
+    () => new Map(reserveAreaSeries.map((item) => [item.area, item])),
+    [reserveAreaSeries],
+  );
+  const reserveCurrentRows = useMemo(() => {
+    const rows = reserveAreaSeries.map((item) => ({
+      area: item.area,
+      demandMw: item.demandMw[clampedNetworkFlowSlotIndex] ?? 0,
+      supplyMw: item.supplyMw[clampedNetworkFlowSlotIndex] ?? 0,
+      reserveMw: item.reserveMw[clampedNetworkFlowSlotIndex] ?? 0,
+      reserveRate: item.reserveRate[clampedNetworkFlowSlotIndex] ?? 0,
+      usageRate: item.usageRate[clampedNetworkFlowSlotIndex] ?? 0,
+      blockReserveRate: item.blockReserveRate[clampedNetworkFlowSlotIndex] ?? 0,
+    }));
+    return rows.sort((a, b) => a.reserveRate - b.reserveRate);
+  }, [clampedNetworkFlowSlotIndex, reserveAreaSeries]);
+  const reserveTrendOption = useMemo(() => {
+    const scopedSeries =
+      selectedArea === "全エリア"
+        ? reserveAreaSeries
+        : reserveAreaSeries.filter((item) => item.area === selectedArea);
+    const hasData = scopedSeries.length > 0;
+
+    return {
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (value: number) => `${decimalFmt.format(value)} %`,
+      },
+      legend: {
+        top: 8,
+        type: "scroll",
+        textStyle: { color: "#334155" },
+      },
+      grid: { top: 48, left: 52, right: 18, bottom: 34 },
+      xAxis: {
+        type: "category",
+        data: data.meta.slotLabels.generation,
+        axisLabel: { interval: 3 },
+      },
+      yAxis: {
+        type: "value",
+        name: "予備率(%)",
+        axisLabel: {
+          formatter: (value: number) => decimalFmt.format(value),
+        },
+      },
+      graphic: hasData
+        ? undefined
+        : [
+            {
+              type: "text",
+              left: "center",
+              top: "middle",
+              style: {
+                text: "予備率データが未取得です",
+                fill: "#475569",
+                font: "14px sans-serif",
+              },
+              silent: true,
+            },
+          ],
+      series: scopedSeries.map((item) => ({
+        name: item.area,
+        type: "line",
+        smooth: true,
+        symbol: "none",
+        lineStyle: {
+          width: selectedArea === "全エリア" ? 2.1 : 3,
+          color: FLOW_AREA_COLORS[item.area] ?? FLOW_AREA_COLORS.default,
+        },
+        data: item.reserveRate,
+      })),
+    };
+  }, [data.meta.slotLabels.generation, reserveAreaSeries, selectedArea]);
+  const reserveCurrentOption = useMemo(() => {
+    const rows = (selectedArea === "全エリア"
+      ? reserveCurrentRows
+      : reserveCurrentRows.filter((item) => item.area === selectedArea)
+    ).sort((a, b) => a.reserveRate - b.reserveRate);
+    const hasData = rows.length > 0;
+
+    return {
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: Array<{ data: { row: (typeof rows)[number] } }>) => {
+          const row = params[0]?.data?.row;
+          if (!row) {
+            return "";
+          }
+          return `${row.area}<br/>表示日時: ${selectedFlowDateTimeLabel}<br/>需要: ${decimalFmt.format(
+            row.demandMw,
+          )} MW<br/>供給力: ${decimalFmt.format(row.supplyMw)} MW<br/>予備力: ${decimalFmt.format(
+            row.reserveMw,
+          )} MW<br/>予備率: ${decimalFmt.format(row.reserveRate)}%`;
+        },
+      },
+      grid: { top: 18, left: 74, right: 18, bottom: 30 },
+      xAxis: {
+        type: "value",
+        name: "%",
+      },
+      yAxis: {
+        type: "category",
+        inverse: true,
+        data: rows.map((item) => item.area),
+      },
+      graphic: hasData
+        ? undefined
+        : [
+            {
+              type: "text",
+              left: "center",
+              top: "middle",
+              style: {
+                text: "予備率データが未取得です",
+                fill: "#475569",
+                font: "14px sans-serif",
+              },
+              silent: true,
+            },
+          ],
+      series: [
+        {
+          type: "bar",
+          barWidth: 14,
+          data: rows.map((row) => ({
+            value: row.reserveRate,
+            row,
+            itemStyle: {
+              color: (FLOW_AREA_COLORS[row.area] ?? FLOW_AREA_COLORS.default),
+              borderRadius: [0, 6, 6, 0],
+            },
+          })),
+          label: {
+            show: true,
+            position: "right",
+            formatter: (params: { data: { row: (typeof rows)[number] } }) =>
+              `${decimalFmt.format(params.data.row.demandMw)}MW / ${decimalFmt.format(params.data.row.reserveMw)}MW`,
+            fontSize: 10,
+            color: "#334155",
+          },
+        },
+      ],
+    };
+  }, [reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
 
   const sourceTotalsByArea = useMemo(() => {
     const byArea: Record<string, Array<{ source: string; totalKwh: number }>> = {};
@@ -1243,6 +1392,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const totalGenerationKwh = data.generation.areaTotals.reduce((sum, item) => sum + item.totalKwh, 0);
     const topSource = data.generation.sourceTotals[0];
     const topSourceShare = topSource && totalGenerationKwh > 0 ? (topSource.totalKwh / totalGenerationKwh) * 100 : 0;
+    const lowestReserveArea = reserveCurrentRows[0] ?? null;
+    const peakDemandArea =
+      [...reserveCurrentRows].sort((a, b) => b.demandMw - a.demandMw)[0] ?? null;
 
     const netIntertieByArea = new Map<string, number>();
     (data.flows.intertieSeries ?? []).forEach((row) => {
@@ -1280,6 +1432,18 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         detail: topSource ? `${topSourceShare.toFixed(1)}% / ${formatCompactEnergy(topSource.totalKwh)}` : "データなし",
       },
       {
+        label: "最低予備率",
+        value: lowestReserveArea ? lowestReserveArea.area : "-",
+        detail: lowestReserveArea
+          ? `${decimalFmt.format(lowestReserveArea.reserveRate)}% / ${selectedFlowDateTimeLabel}`
+          : "予備率データなし",
+      },
+      {
+        label: "最大需要",
+        value: peakDemandArea ? peakDemandArea.area : "-",
+        detail: peakDemandArea ? `${decimalFmt.format(peakDemandArea.demandMw)} MW` : "需要データなし",
+      },
+      {
         label: "最大連系潮流",
         value: hottestIntertie
           ? `${hottestIntertie.sourceArea} ⇄ ${hottestIntertie.targetArea}`
@@ -1311,6 +1475,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     data.generation.areaTotals,
     data.generation.sourceTotals,
     interAreaFlowTextRows,
+    reserveCurrentRows,
     selectedFlowDateTimeLabel,
   ]);
 
@@ -1368,6 +1533,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       const flowSummary = areaFlowSummaryMap.get(item.area);
       const peer = strongestPeerByArea.get(item.area);
       const primaryPlant = primaryPlantByArea.get(item.area);
+      const reserve = reserveAreaMap.get(item.area);
       return {
         area: item.area,
         totalKwh: item.totalKwh,
@@ -1380,6 +1546,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         primaryPlant,
         stressIndex: balance?.stressIndex ?? 0,
         peakAbsMw: flowSummary?.peakAbsMw ?? 0,
+        demandMw: reserve?.demandMw[clampedNetworkFlowSlotIndex] ?? 0,
+        supplyMw: reserve?.supplyMw[clampedNetworkFlowSlotIndex] ?? 0,
+        reserveMw: reserve?.reserveMw[clampedNetworkFlowSlotIndex] ?? 0,
+        reserveRate: reserve?.reserveRate[clampedNetworkFlowSlotIndex] ?? 0,
       };
     });
 
@@ -1394,6 +1564,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     data.flows.intertieSeries,
     data.generation.areaTotals,
     data.insights.areaBalance,
+    reserveAreaMap,
     selectedArea,
     sourceTotalsByArea,
   ]);
@@ -1798,7 +1969,17 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                         </div>
                       </div>
 
-                      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        <MetricTile
+                          label="需要"
+                          value={`${decimalFmt.format(card.demandMw)} MW`}
+                          detail={`${selectedFlowSlotLabel} 時点`}
+                        />
+                        <MetricTile
+                          label="予備率"
+                          value={`${decimalFmt.format(card.reserveRate)}%`}
+                          detail={`予備力 ${decimalFmt.format(card.reserveMw)} MW`}
+                        />
                         <MetricTile
                           label="主力電源"
                           value={normalizeSourceName(card.topSource)}
@@ -1911,6 +2092,25 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                     </div>
                   </div>
                 ))}
+              </div>
+            </Panel>
+          </section>
+        ) : null}
+
+        {visibleSectionSet.has("reserve") ? (
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <Panel title="エリア予備率（30分推移）" className="lg:col-span-7" testId="reserve-trend-panel">
+              <div className="mb-2 text-xs text-slate-600">
+                公式値ベース。{selectedArea === "全エリア" ? "全エリア" : `${selectedArea}`} / {data.meta.targetDate}
+              </div>
+              <div data-testid="reserve-trend-chart">
+                <ReactECharts option={reserveTrendOption} style={{ height: 320 }} />
+              </div>
+            </Panel>
+            <Panel title="エリア需要・予備力（表示時刻）" className="lg:col-span-5" testId="reserve-current-panel">
+              <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
+              <div data-testid="reserve-current-chart">
+                <ReactECharts option={reserveCurrentOption} style={{ height: 320 }} />
               </div>
             </Panel>
           </section>

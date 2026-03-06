@@ -31,6 +31,8 @@ export async function waitForDashboardReady(page: Page): Promise<void> {
   await page.goto("./");
   await expect(page.getByRole("heading", { level: 1, name: "送電潮流 × ユニット発電実績 ダッシュボード" })).toBeVisible();
   await waitForChartSurface(page.getByTestId("generation-trend-chart"));
+  await waitForChartSurface(page.getByTestId("reserve-trend-chart"));
+  await waitForChartSurface(page.getByTestId("reserve-current-chart"));
   await waitForChartSurface(page.getByTestId("source-composition-chart"));
   await waitForChartSurface(page.getByTestId("area-total-generation-chart"));
   await waitForChartSurface(page.getByTestId("inter-area-flow-chart"));

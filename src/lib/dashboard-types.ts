@@ -106,6 +106,20 @@ export type AreaBalance = {
   stressIndex: number;
 };
 
+export type AreaReserveSeries = {
+  area: string;
+  demandMw: number[];
+  supplyMw: number[];
+  reserveMw: number[];
+  reserveRate: number[];
+  usageRate: number[];
+  blockDemandMw: number[];
+  blockSupplyMw: number[];
+  blockReserveMw: number[];
+  blockReserveRate: number[];
+  blockUsageRate: number[];
+};
+
 export type DashboardData = {
   meta: {
     targetDate: string;
@@ -121,6 +135,7 @@ export type DashboardData = {
       generationCsv: string;
       flowCsv: string;
       intertieCsv?: string;
+      reserveJson?: string;
     };
   };
   generation: {
@@ -131,6 +146,9 @@ export type DashboardData = {
     hourlyTotalByArea: HourlyAreaPoint[];
     topUnits: TopUnit[];
     plantSummaries?: PlantSummary[];
+  };
+  reserves?: {
+    areaSeries: AreaReserveSeries[];
   };
   flows: {
     areaSummaries: AreaFlowSummary[];

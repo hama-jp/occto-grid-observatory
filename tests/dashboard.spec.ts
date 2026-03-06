@@ -13,6 +13,7 @@ test("dashboard smoke renders key sections", async ({ page }) => {
 
   await expect(page.getByText("全国発電量")).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "エリア別需給カード" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "エリア予備率（30分推移）" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "発電方式 構成比" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "エリアネットワーク潮流（地域内送電線）" })).toBeVisible();
 });

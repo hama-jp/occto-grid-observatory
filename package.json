@@ -10,6 +10,7 @@
     "test:ui": "npm run build && playwright test",
     "test:ui:public": "playwright test",
     "ingest": "tsx scripts/ingest.ts",
+    "enrich:reserve": "tsx scripts/enrich-reserve.ts",
     "sync-public-data": "tsx scripts/sync-public-data.ts"
   },
   "dependencies": {
