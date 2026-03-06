@@ -65,7 +65,7 @@ const AREA_ANCHORS: Record<string, { x: number; y: number }> = {
   default: { x: 610, y: 300 },
 };
 
-const MAP_CORRIDOR_ORDER = ["沖縄", "九州", "中国", "関西", "中部", "東京", "東北", "北海道"];
+const AREA_DISPLAY_ORDER = ["北海道", "東北", "東京", "中部", "北陸", "関西", "中国", "四国", "九州", "沖縄"];
 const MAP_VIEWBOX = {
   width: 920,
   height: 560,
@@ -496,10 +496,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const set = new Set<string>();
     data.generation.areaTotals.forEach((item) => set.add(item.area));
     data.flows.areaSummaries.forEach((item) => set.add(item.area));
-    return ["全エリア", ...Array.from(set)];
+    return ["全エリア", ...Array.from(set).sort(compareAreaOrder)];
   }, [data]);
   const generationAreas = useMemo(
-    () => ["全エリア", ...data.generation.areaTotals.map((item) => item.area)],
+    () => ["全エリア", ...data.generation.areaTotals.map((item) => item.area).sort(compareAreaOrder)],
     [data.generation.areaTotals],
   );
 
@@ -2313,8 +2313,8 @@ function placePointAvoidingOverlap(
 }
 
 function compareAreaOrder(a: string, b: string): number {
-  const aIndex = MAP_CORRIDOR_ORDER.indexOf(a);
-  const bIndex = MAP_CORRIDOR_ORDER.indexOf(b);
+  const aIndex = AREA_DISPLAY_ORDER.indexOf(a);
+  const bIndex = AREA_DISPLAY_ORDER.indexOf(b);
   if (aIndex === -1 && bIndex === -1) {
     return a.localeCompare(b, "ja-JP");
   }
