@@ -9,6 +9,16 @@ const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 const numberFmt = new Intl.NumberFormat("ja-JP");
 const decimalFmt = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 1 });
 const manKwFmt = new Intl.NumberFormat("ja-JP", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const jstDateTimeFmt = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
 
 type DashboardAppProps = {
   initialData: DashboardData;
@@ -412,6 +422,23 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const [selectedDate, setSelectedDate] = useState<string>(initialData.meta.targetDate);
   const [isDateLoading, setIsDateLoading] = useState<boolean>(false);
   const [dateError, setDateError] = useState<string | null>(null);
+  const [viewportWidth, setViewportWidth] = useState<number>(1280);
+  const isMobileViewport = viewportWidth < 768;
+  const useSplitDonutLegends = viewportWidth >= 1200;
+  const fetchedAtLabel = useMemo(() => formatJstDateTime(data.meta.fetchedAt), [data.meta.fetchedAt]);
+
+  useEffect(() => {
+    const updateViewportWidth = (): void => {
+      setViewportWidth(window.innerWidth);
+    };
+
+    updateViewportWidth();
+    window.addEventListener("resize", updateViewportWidth);
+    return () => {
+      window.removeEventListener("resize", updateViewportWidth);
+    };
+  }, []);
+
   const selectableDates = useMemo(() => {
     const merged = new Set<string>([...availableDates, initialData.meta.targetDate, data.meta.targetDate]);
     return Array.from(merged).sort((a, b) => toDateStamp(b).localeCompare(toDateStamp(a), "en"));
@@ -669,48 +696,64 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       }
     });
 
+    const legend = useSplitDonutLegends
+      ? [
+          {
+            type: "scroll",
+            orient: "vertical",
+            left: "2%",
+            top: "middle",
+            width: "30%",
+            align: "left",
+            itemGap: 8,
+            textStyle: { color: "#264653", fontSize: 11 },
+            data: leftLegend,
+          },
+          {
+            type: "scroll",
+            orient: "vertical",
+            right: "2%",
+            top: "middle",
+            width: "30%",
+            align: "left",
+            itemGap: 8,
+            textStyle: { color: "#264653", fontSize: 11 },
+            data: rightLegend,
+          },
+        ]
+      : [
+          {
+            type: "scroll",
+            orient: "horizontal",
+            left: "center",
+            bottom: 0,
+            width: "88%",
+            itemGap: 10,
+            textStyle: { color: "#264653", fontSize: 11 },
+            data: rows.map((item) => normalizeSourceName(item.source)),
+          },
+        ];
+
     return {
       tooltip: { trigger: "item" },
-      legend: [
-        {
-          type: "scroll",
-          orient: "vertical",
-          left: 0,
-          top: "middle",
-          width: "24%",
-          align: "left",
-          itemGap: 8,
-          textStyle: { color: "#264653" },
-          data: leftLegend,
-        },
-        {
-          type: "scroll",
-          orient: "vertical",
-          right: 0,
-          top: "middle",
-          width: "24%",
-          align: "left",
-          itemGap: 8,
-          textStyle: { color: "#264653" },
-          data: rightLegend,
-        },
-      ],
+      legend,
       series: [
         {
           name: "発電方式",
           type: "pie",
-          radius: ["40%", "60%"],
-          center: ["50%", "50%"],
+          radius: useSplitDonutLegends ? ["33%", "55%"] : ["38%", "60%"],
+          center: useSplitDonutLegends ? ["50%", "52%"] : ["50%", "42%"],
           avoidLabelOverlap: true,
           label: {
             formatter: (params: { percent?: number; name: string }) => {
               const percent = params.percent ?? 0;
-              if (percent < 4) {
+              if (percent < (isMobileViewport ? 7 : 4)) {
                 return "";
               }
               return `${normalizeSourceName(params.name)}\n${percent.toFixed(0)}%`;
             },
             color: "#1b3a4b",
+            fontSize: useSplitDonutLegends ? 12 : 11,
           },
           labelLine: {
             length: 10,
@@ -724,7 +767,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         },
       ],
     };
-  }, [data.generation.sourceTotals, sourceDonutArea, sourceTotalsByArea]);
+  }, [data.generation.sourceTotals, isMobileViewport, sourceDonutArea, sourceTotalsByArea, useSplitDonutLegends]);
 
   const areaTotalsOption = useMemo(
     () => {
@@ -1382,6 +1425,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   ]);
 
   const interAreaFlowTextRows = useMemo(() => {
+    const rowLimit = selectedArea === "全エリア" ? (isMobileViewport ? 10 : 14) : (isMobileViewport ? 16 : 22);
     const scopedInterties = (data.flows.intertieSeries ?? []).filter((row) =>
       selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
     );
@@ -1425,7 +1469,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     }));
 
     if (rows.length > 0) {
-      return rows.sort((a, b) => b.magnitudeMw - a.magnitudeMw).slice(0, selectedArea === "全エリア" ? 14 : 22);
+      return rows.sort((a, b) => b.magnitudeMw - a.magnitudeMw).slice(0, rowLimit);
     }
 
     return (data.flows.interAreaFlows ?? [])
@@ -1441,8 +1485,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         intertieNames: row.intertieNames,
       }))
       .sort((a, b) => b.magnitudeMw - a.magnitudeMw)
-      .slice(0, selectedArea === "全エリア" ? 14 : 22);
-  }, [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, data.flows.intertieSeries, selectedArea]);
+      .slice(0, rowLimit);
+  }, [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, data.flows.intertieSeries, isMobileViewport, selectedArea]);
 
   const interAreaFlowOption = useMemo(() => {
     const rows = interAreaFlowTextRows.map((row) => {
@@ -1456,6 +1500,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const hasData = rows.length > 0;
     const maxAbsSignedMw = Math.max(...rows.map((row) => row.absMw), 1);
     const axisLimit = Math.max(10, Math.ceil(maxAbsSignedMw * 1.12));
+    const showDirectionLabels = !isMobileViewport;
 
     return {
       tooltip: {
@@ -1473,23 +1518,33 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           )}MW ↓<br/>連系線: ${row.intertieNames.join(" / ")}`;
         },
       },
-      grid: { top: 20, left: 130, right: 24, bottom: 46 },
+      grid: {
+        top: 20,
+        left: isMobileViewport ? 88 : 124,
+        right: isMobileViewport ? 12 : 20,
+        bottom: isMobileViewport ? 56 : 40,
+      },
       xAxis: {
         type: "value",
         min: -axisLimit,
         max: axisLimit,
-        splitNumber: 6,
+        splitNumber: isMobileViewport ? 4 : 6,
+        name: "MW",
+        nameLocation: "middle",
+        nameGap: isMobileViewport ? 34 : 28,
+        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
         axisLabel: {
-          formatter: (value: number) => `${Math.round(value)} MW`,
-          rotate: 26,
+          formatter: (value: number) => `${Math.round(value)}`,
+          rotate: isMobileViewport ? 28 : 18,
           hideOverlap: true,
+          fontSize: isMobileViewport ? 10 : 11,
         },
       },
       yAxis: {
         type: "category",
         inverse: true,
         data: rows.map((row) => `${row.sourceArea} ⇄ ${row.targetArea}`),
-        axisLabel: { color: "#334155", fontSize: 11 },
+        axisLabel: { color: "#334155", fontSize: isMobileViewport ? 10 : 11 },
       },
       graphic: hasData
         ? undefined
@@ -1522,7 +1577,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             },
           })),
           label: {
-            show: true,
+            show: showDirectionLabels,
             position: (params: { value: number }) => (params.value >= 0 ? "right" : "left"),
             formatter: (params: { data: { row: (typeof rows)[number] } }) =>
               `${decimalFmt.format(params.data.row.upMw)}MW ↑  ${decimalFmt.format(params.data.row.downMw)}MW ↓`,
@@ -1538,7 +1593,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         },
       ],
     };
-  }, [interAreaFlowTextRows, selectedFlowDateTimeLabel]);
+  }, [interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel]);
 
   const intertieTrendOption = useMemo(() => {
     const scopedSeries = (data.flows.intertieSeries ?? []).filter((row) =>
@@ -1674,8 +1729,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 送電潮流 × ユニット発電実績 ダッシュボード
               </h1>
               <p className="text-sm text-slate-600">
-                対象日: {data.meta.targetDate} / 最終取り込み:{" "}
-                {new Date(data.meta.fetchedAt).toLocaleString("ja-JP")}
+                対象日: {data.meta.targetDate} / 最終取り込み: {fetchedAtLabel}
               </p>
             </div>
             <div className="flex flex-col items-start gap-2 md:items-end">
@@ -1723,8 +1777,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           </div>
         </header>
 
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Panel title="発電方式別 30分推移" className="lg:col-span-2">
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          <Panel title="発電方式別 30分推移" className="lg:col-span-7">
             <div className="mb-2 flex justify-end">
               <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
                 表示エリア
@@ -1744,7 +1798,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </div>
             <ReactECharts option={generationLineOption} style={{ height: 360 }} />
           </Panel>
-          <Panel title="発電方式 構成比">
+          <Panel title="発電方式 構成比" className="lg:col-span-5">
             <div className="mb-2 flex justify-end">
               <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
                 表示エリア
@@ -1804,7 +1858,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           </Panel>
           <Panel title="エリア間連系潮流（実績）">
             <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-            <ReactECharts option={interAreaFlowOption} style={{ height: 594 }} />
+            <ReactECharts option={interAreaFlowOption} style={{ height: isMobileViewport ? 520 : 594 }} />
           </Panel>
         </section>
 
@@ -2254,6 +2308,14 @@ function formatVoltageKv(voltage: string | undefined): string {
     return trimmed.replace(/kv/gi, "kV");
   }
   return `${trimmed}kV`;
+}
+
+function formatJstDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return jstDateTimeFmt.format(date);
 }
 
 function isNetworkPowerPlantSource(sourceType: string): boolean {
