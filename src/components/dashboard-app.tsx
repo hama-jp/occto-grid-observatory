@@ -507,6 +507,39 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     [data.generation.topUnits, selectedArea],
   );
 
+  const filteredTopPlants = useMemo(() => {
+    if (data.generation.plantSummaries && data.generation.plantSummaries.length > 0) {
+      return data.generation.plantSummaries
+        .filter((plant) => (selectedArea === "全エリア" ? true : plant.area === selectedArea))
+        .sort((a, b) => b.dailyKwh - a.dailyKwh);
+    }
+
+    const fallback = new Map<
+      string,
+      { area: string; plantName: string; sourceType: string; dailyKwh: number; maxOutputManKw: number }
+    >();
+    data.generation.topUnits
+      .filter((unit) => (selectedArea === "全エリア" ? true : unit.area === selectedArea))
+      .forEach((unit) => {
+        const key = `${unit.area}::${unit.plantName}`;
+        const current = fallback.get(key) ?? {
+          area: unit.area,
+          plantName: unit.plantName,
+          sourceType: unit.sourceType,
+          dailyKwh: 0,
+          maxOutputManKw: 0,
+        };
+        current.dailyKwh += unit.dailyKwh;
+        current.maxOutputManKw = Math.max(current.maxOutputManKw, unit.maxOutputManKw ?? 0);
+        if (!current.sourceType && unit.sourceType) {
+          current.sourceType = unit.sourceType;
+        }
+        fallback.set(key, current);
+      });
+
+    return Array.from(fallback.values()).sort((a, b) => b.dailyKwh - a.dailyKwh);
+  }, [data.generation.plantSummaries, data.generation.topUnits, selectedArea]);
+
   const networkPowerPlants = useMemo(() => {
     if (data.generation.plantSummaries && data.generation.plantSummaries.length > 0) {
       return data.generation.plantSummaries
@@ -1819,6 +1852,34 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                       {typeof unit.maxOutputManKw === "number" ? manKwFmt.format(unit.maxOutputManKw) : "-"}
                     </td>
                     <td className="py-2 text-right">{numberFmt.format(unit.dailyKwh)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="mb-3 mt-6 text-lg font-semibold">高発電発電所上位（ユニット合計）</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
+                  <th className="py-2 pr-3">エリア</th>
+                  <th className="py-2 pr-3">発電所</th>
+                  <th className="py-2 pr-3">方式</th>
+                  <th className="py-2 text-right">最大出力(万kW)</th>
+                  <th className="py-2 text-right">日量(kWh)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTopPlants.slice(0, 24).map((plant) => (
+                  <tr key={`${plant.area}-${plant.plantName}`} className="border-b border-slate-100">
+                    <td className="py-2 pr-3">{plant.area}</td>
+                    <td className="py-2 pr-3">{plant.plantName}</td>
+                    <td className="py-2 pr-3">{plant.sourceType || "不明"}</td>
+                    <td className="py-2 text-right">
+                      {typeof plant.maxOutputManKw === "number" ? manKwFmt.format(plant.maxOutputManKw) : "-"}
+                    </td>
+                    <td className="py-2 text-right">{numberFmt.format(plant.dailyKwh)}</td>
                   </tr>
                 ))}
               </tbody>
