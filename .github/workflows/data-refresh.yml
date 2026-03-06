@@ -30,7 +30,9 @@ on:
         default: false
         type: boolean
   schedule:
-    # 16:10 JST (07:10 UTC) every day
+    # 09:10 / 12:10 / 15:10 / 18:10 JST: keep same-day partial snapshots
+    - cron: "10 0,3,6,9 * * *"
+    # 16:10 JST (07:10 UTC): refresh previous day as the daily fixed dataset
     - cron: "10 7 * * *"
 
 permissions:
@@ -65,8 +67,13 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "Scheduled daily refresh"
-            npm run ingest -- --mode=daily --force=true
+            if [ "${{ github.event.schedule }}" = "10 7 * * *" ]; then
+              echo "Scheduled daily refresh for previous day"
+              npm run ingest -- --mode=daily --force=true
+            else
+              echo "Scheduled intraday refresh for current day"
+              npm run ingest -- --mode=now --force=true
+            fi
           else
             MODE="${{ github.event.inputs.mode }}"
             DATE="${{ github.event.inputs.date }}"

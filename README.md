@@ -58,9 +58,11 @@ PR / push 時に以下を実行:
 
 ## データ更新の自動化（GitHub Actions）
 - ワークフロー: [data-refresh.yml](.github/workflows/data-refresh.yml)
-- 定時実行: 毎日 **16:10 JST**（= **07:10 UTC**）
+- 定時実行:
+  1. **09:10 / 12:10 / 15:10 / 18:10 JST** に `mode=now` を実行して、当日分の途中経過を保存
+  2. **16:10 JST**（= **07:10 UTC**）に `mode=daily` を実行して、前日分の確定版を保存
 - 処理内容:
-  1. schedule時は `npm run ingest -- --mode=daily --force=true`
+  1. schedule時は `mode=now` または `mode=daily` を時刻ごとに切り替えて実行
   2. 発電実績 + 地内基幹送電線 + 地域間連系線のCSVを取得して正規化
   3. `data/normalized` に差分があれば自動コミット＆push
   4. `main` へのpushをトリガーに Pages デプロイが走る
@@ -71,6 +73,13 @@ PR / push 時に以下を実行:
     - `daily`: 前日分更新
     - `backfill`: `from/to` 範囲を一括取得
   - `force=true` で既存JSONを上書き更新
+  - Pages の日付セレクタに過去日を増やしたい場合は、最初に `backfill` を数日から数週間分だけ流して `dashboard-YYYYMMDD.json` を作成しておく
+
+例:
+```bash
+# 直近7日分をまとめて保持
+npm run ingest -- --mode=backfill --from=2026-02-27 --to=2026-03-04
+```
 
 ## GitHub Pages 公開
 - ワークフロー: [deploy-pages.yml](.github/workflows/deploy-pages.yml)
