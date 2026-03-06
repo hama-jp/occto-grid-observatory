@@ -396,10 +396,10 @@ const PLANT_GEO_HINTS_BY_AREA: Record<string, PlantGeoHint[]> = {
 
 const PLANT_ATTACH_HINTS_BY_AREA: Record<string, PlantAttachHint[]> = {
   四国: [
-    { plantKeyword: "伊方", stationKeywords: ["大洲", "川内", "西条"] },
-    { plantKeyword: "坂出", stationKeywords: ["讃岐", "香川", "高松"] },
-    { plantKeyword: "橘湾", stationKeywords: ["阿南", "阿波", "鳴門"] },
-    { plantKeyword: "阿南", stationKeywords: ["阿南", "阿波"] },
+    { plantKeyword: "伊方", stationKeywords: ["大洲", "川内"] },
+    { plantKeyword: "坂出", stationKeywords: ["讃岐", "高松"] },
+    { plantKeyword: "橘湾", stationKeywords: ["阿南"] },
+    { plantKeyword: "阿南", stationKeywords: ["阿南"] },
     { plantKeyword: "西条", stationKeywords: ["西条", "東予"] },
     { plantKeyword: "新居浜", stationKeywords: ["東予", "西条"] },
     { plantKeyword: "壬生川", stationKeywords: ["東予", "西条"] },
@@ -2106,7 +2106,12 @@ function pickPlantAttachStationNodeId(args: {
   }
   const base = args.plantBase ?? resolvePlantGeoBase(args.area, args.plantName) ?? (AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default);
 
-  const scoreCandidateStations = (stations: string[]): string | null => {
+  const scoreCandidateStations = (
+    stations: string[],
+    options?: {
+      strongHint?: boolean;
+    },
+  ): string | null => {
     let bestNodeId: string | null = null;
     let bestScore = Number.POSITIVE_INFINITY;
     for (const station of stations) {
@@ -2114,7 +2119,7 @@ function pickPlantAttachStationNodeId(args: {
       const point = args.stationPositions.get(nodeId) ?? (AREA_ANCHORS[args.area] ?? AREA_ANCHORS.default);
       const distance = Math.hypot(point.x - base.x, point.y - base.y);
       const attachedCount = args.stationAttachCounts.get(nodeId) ?? 0;
-      const score = distance + attachedCount * 22;
+      const score = distance + attachedCount * (options?.strongHint ? 1.5 : 9);
       if (score < bestScore) {
         bestScore = score;
         bestNodeId = nodeId;
@@ -2134,7 +2139,7 @@ function pickPlantAttachStationNodeId(args: {
       const normalizedStation = normalizeStationName(station);
       return matchedHint.stationKeywords.some((keyword) => normalizedStation.includes(normalizeStationName(keyword)));
     });
-    const hintedStationNodeId = scoreCandidateStations(hintedStations);
+    const hintedStationNodeId = scoreCandidateStations(hintedStations, { strongHint: true });
     if (hintedStationNodeId) {
       return hintedStationNodeId;
     }
