@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   AREA_ORDER,
+  expectLocatorToContainMotion,
   buildMockDashboardDatePayload,
   expectLocatorToContainChartSignal,
   getSelectOptions,
@@ -67,6 +68,64 @@ test("time slider updates the network timestamp and keeps charts rendered", asyn
   await expect.poll(async () => (await timestamp.textContent())?.trim()).not.toBe(firstTimestamp);
   await waitForChartSurface(page.getByTestId("network-flow-chart"));
   await waitForChartSurface(page.getByTestId("inter-area-flow-chart"));
+});
+
+test("network flow chart keeps visible motion on major lines", async ({ page }) => {
+  await waitForDashboardReady(page);
+
+  const chart = page.getByTestId("network-flow-chart");
+  await waitForChartSurface(chart);
+  await expectLocatorToContainMotion(chart, 0.0025);
+});
+
+test("network overlay tracks graph roam transforms", async ({ page }) => {
+  await waitForDashboardReady(page);
+
+  const chart = page.getByTestId("network-flow-chart");
+  const overlayRoam = page.getByTestId("network-flow-overlay-roam");
+
+  await waitForChartSurface(chart);
+  await expect(overlayRoam).toBeVisible();
+  await page.waitForTimeout(1200);
+
+  const beforePanTransform = await overlayRoam.getAttribute("transform");
+  expect(beforePanTransform).toBeTruthy();
+
+  await chart.evaluate((node) => {
+    const chartNode = node as HTMLDivElement & {
+      __occtoDispatchGraphRoam?: (payload: {
+        dx?: number;
+        dy?: number;
+        zoom?: number;
+        originX?: number;
+        originY?: number;
+      }) => void;
+    };
+    chartNode.__occtoDispatchGraphRoam?.({ dx: 96, dy: -42 });
+  });
+
+  await expect.poll(async () => await overlayRoam.getAttribute("transform")).not.toBe(beforePanTransform);
+  const beforeZoomTransform = await overlayRoam.getAttribute("transform");
+
+  await chart.evaluate((node) => {
+    const chartNode = node as HTMLDivElement & {
+      __occtoDispatchGraphRoam?: (payload: {
+        dx?: number;
+        dy?: number;
+        zoom?: number;
+        originX?: number;
+        originY?: number;
+      }) => void;
+    };
+    const rect = chartNode.getBoundingClientRect();
+    chartNode.__occtoDispatchGraphRoam?.({
+      zoom: 1.12,
+      originX: rect.width / 2,
+      originY: rect.height / 2,
+    });
+  });
+
+  await expect.poll(async () => await overlayRoam.getAttribute("transform")).not.toBe(beforeZoomTransform);
 });
 
 test("donut and bar chart panels keep visible chart signal", async ({ page }) => {

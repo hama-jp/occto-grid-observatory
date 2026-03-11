@@ -61,6 +61,33 @@ export async function expectLocatorToContainChartSignal(locator: Locator, minimu
   expect(signalPixels / totalPixels).toBeGreaterThan(minimumSignalRatio);
 }
 
+export async function expectLocatorToContainMotion(locator: Locator, minimumMotionRatio: number, frameDelayMs = 900): Promise<void> {
+  await locator.page().waitForTimeout(1600);
+  const firstFrame = PNG.sync.read(await locator.screenshot({ animations: "allow" }));
+  await locator.page().waitForTimeout(frameDelayMs);
+  const secondFrame = PNG.sync.read(await locator.screenshot({ animations: "allow" }));
+
+  expect(firstFrame.width).toBe(secondFrame.width);
+  expect(firstFrame.height).toBe(secondFrame.height);
+
+  const totalPixels = firstFrame.width * firstFrame.height;
+  let movingPixels = 0;
+
+  for (let offset = 0; offset < firstFrame.data.length; offset += 4) {
+    const redDiff = Math.abs(firstFrame.data[offset] - secondFrame.data[offset]);
+    const greenDiff = Math.abs(firstFrame.data[offset + 1] - secondFrame.data[offset + 1]);
+    const blueDiff = Math.abs(firstFrame.data[offset + 2] - secondFrame.data[offset + 2]);
+    const alphaMax = Math.max(firstFrame.data[offset + 3], secondFrame.data[offset + 3]);
+    const colorDiff = redDiff + greenDiff + blueDiff;
+
+    if (alphaMax > 0 && colorDiff > 42) {
+      movingPixels += 1;
+    }
+  }
+
+  expect(movingPixels / totalPixels).toBeGreaterThan(minimumMotionRatio);
+}
+
 export function buildMockDashboardDatePayload(targetDate: string): string {
   const fixture = JSON.parse(readFileSync(FIXTURE_FILE, "utf-8")) as DashboardFixture;
   const dateStamp = targetDate.replaceAll("/", "-");

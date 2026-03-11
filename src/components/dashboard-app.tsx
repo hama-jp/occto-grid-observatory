@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { DashboardData } from "@/lib/dashboard-types";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
@@ -85,6 +85,7 @@ const MAP_VIEWBOX = {
   height: 560,
   padding: 30,
 };
+const MAX_ANIMATED_FLOW_LINES_PER_AREA = 10;
 
 const FLOW_AREA_NAME_SET = new Set<string>([
   "北海道",
@@ -112,6 +113,47 @@ type BarListItem = {
   percent: number;
   color: string;
   note?: string;
+};
+
+type NetworkAnimationPath = {
+  id: string;
+  d: string;
+  strokeWidth: number;
+  durationSeconds: number;
+  delaySeconds: number;
+};
+
+type NetworkOverlayTransformPart = {
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+};
+
+type NetworkOverlayViewport = {
+  width: number;
+  height: number;
+  raw: NetworkOverlayTransformPart;
+  roam: NetworkOverlayTransformPart;
+};
+
+type GraphRoamPayload = {
+  dx?: number;
+  dy?: number;
+  zoom?: number;
+  originX?: number;
+  originY?: number;
+};
+
+type NetworkFlowChartHostElement = HTMLDivElement & {
+  __occtoDispatchGraphRoam?: (payload: GraphRoamPayload) => void;
+};
+
+const DEFAULT_NETWORK_OVERLAY_VIEWPORT: NetworkOverlayViewport = {
+  width: MAP_VIEWBOX.width,
+  height: MAP_VIEWBOX.height,
+  raw: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
+  roam: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
 };
 
 type DashboardSectionId =
@@ -587,15 +629,40 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const [visibleSectionIds, setVisibleSectionIds] = useState<DashboardSectionId[]>(
     DASHBOARD_SECTION_OPTIONS.map((item) => item.id),
   );
+  const networkFlowChartHostRef = useRef<NetworkFlowChartHostElement | null>(null);
   const flowSlotLabels = data.meta.slotLabels.flow ?? [];
   const maxFlowSlotIndex = Math.max(flowSlotLabels.length - 1, 0);
   const [networkFlowSlotIndex, setNetworkFlowSlotIndex] = useState<number>(maxFlowSlotIndex);
+  const [networkOverlayViewport, setNetworkOverlayViewport] = useState<NetworkOverlayViewport>(
+    DEFAULT_NETWORK_OVERLAY_VIEWPORT,
+  );
   const clampedNetworkFlowSlotIndex = clamp(Math.round(networkFlowSlotIndex), 0, maxFlowSlotIndex);
   const selectedFlowSlotLabel = flowSlotLabels[clampedNetworkFlowSlotIndex] ?? "-";
   const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
   const visibleSectionSet = useMemo(() => new Set<DashboardSectionId>(visibleSectionIds), [visibleSectionIds]);
   const showGenerationTrend = visibleSectionSet.has("generation");
   const showSourceComposition = visibleSectionSet.has("composition");
+  const syncNetworkOverlayViewport = (chart: unknown): void => {
+    const nextViewport = readNetworkOverlayViewport(chart);
+    if (!nextViewport) {
+      return;
+    }
+    setNetworkOverlayViewport((currentViewport) =>
+      areNetworkOverlayViewportsEqual(currentViewport, nextViewport) ? currentViewport : nextViewport,
+    );
+  };
+  const registerNetworkFlowChart = (chart: unknown): void => {
+    attachNetworkFlowChartRoamHook(chart, networkFlowChartHostRef.current);
+    syncNetworkOverlayViewport(chart);
+  };
+  useEffect(() => {
+    const chartHost = networkFlowChartHostRef.current;
+    return () => {
+      if (chartHost) {
+        delete chartHost.__occtoDispatchGraphRoam;
+      }
+    };
+  }, []);
   const reserveAreaSeries = useMemo(() => data.reserves?.areaSeries ?? [], [data.reserves?.areaSeries]);
   const reserveAreaMap = useMemo(
     () => new Map(reserveAreaSeries.map((item) => [item.area, item])),
@@ -1357,7 +1424,21 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         nodePointById.set(id, { x, y });
       }
     });
-    const animatedFlowLines = renderedLinks
+    const animatedFlowLines = Array.from(
+      renderedLinks.reduce((lineGroups, line) => {
+        const area = line.area ?? "不明";
+        const group = lineGroups.get(area) ?? [];
+        group.push(line);
+        lineGroups.set(area, group);
+        return lineGroups;
+      }, new Map<string, typeof renderedLinks>()),
+    )
+      .sort(([leftArea], [rightArea]) => compareAreaOrder(leftArea, rightArea))
+      .flatMap(([, linesByArea]) =>
+        linesByArea
+          .sort((a, b) => b.absAvgMw - a.absAvgMw)
+          .slice(0, MAX_ANIMATED_FLOW_LINES_PER_AREA),
+      )
       .map((line) => {
         const from = nodePointById.get(String(line.source));
         const to = nodePointById.get(String(line.target));
@@ -1367,20 +1448,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         return {
           coords: buildCurvedLineCoords(from, to, line.lineStyle.curveness),
           lineStyle: {
-            color: line.lineStyle.color,
-            width: 0,
-            opacity: 0,
+            color: "rgba(125,211,252,0.42)",
+            width: Math.max(2.6, line.lineStyle.width * 1.1),
+            opacity: 0.34,
           },
         };
       })
       .filter((item) => item !== null);
-    const animatedIntertieLines = intertieBridgeLines.map((line) => ({
-      coords: line.coords,
-      lineStyle: {
-        color: line.lineStyle.color,
-        width: 0,
-        opacity: 0,
-      },
+    const majorFlowAnimationPaths: NetworkAnimationPath[] = animatedFlowLines.map((line, index) => ({
+      id: `major-flow-${index}`,
+      d: buildSvgQuadraticPath(line.coords),
+      strokeWidth: Math.max(3.6, line.lineStyle.width + 0.8),
+      durationSeconds: roundTo(1.7 + (index % 4) * 0.18, 2),
+      delaySeconds: roundTo((index % 5) * 0.12, 2),
     }));
     const maxAbsIntertieFacility = Math.max(...Array.from(intertieFacilityMap.values()).map((item) => item.absMw), 1);
     const intertieFacilityLines = Array.from(intertieFacilityMap.values())
@@ -1405,19 +1485,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         };
       })
       .filter((item) => item !== null);
-    const animatedIntertieFacilityLines = intertieFacilityLines.map((line) => ({
-      coords: line.coords,
-      lineStyle: {
-        color: line.lineStyle.color,
-        width: 0,
-        opacity: 0,
-      },
-    }));
-
     const guideGraphics = buildJapanGuideGraphics();
 
     return {
       animationDurationUpdate: 360,
+      __majorFlowAnimationPaths: majorFlowAnimationPaths,
       tooltip: {
         trigger: "item",
         confine: true,
@@ -1547,8 +1619,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             name,
             itemStyle: { color: FLOW_AREA_COLORS[name] ?? FLOW_AREA_COLORS.default },
           })),
-          edgeSymbol: ["none", "arrow"],
-          edgeSymbolSize: [0, 8],
           lineStyle: {
             opacity: 0.72,
           },
@@ -1583,66 +1653,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             },
           },
         },
-        {
-          type: "lines",
-          coordinateSystem: "none",
-          polyline: true,
-          silent: true,
-          z: 7,
-          data: animatedFlowLines,
-          effect: {
-            show: true,
-            constantSpeed: 26,
-            trailLength: 0,
-            symbol: "arrow",
-            symbolSize: 6,
-            color: "rgba(15,23,42,0.9)",
-          },
-          lineStyle: {
-            width: 0,
-            opacity: 0,
-          },
-        },
-        {
-          type: "lines",
-          coordinateSystem: "none",
-          polyline: true,
-          silent: true,
-          z: 7,
-          data: animatedIntertieFacilityLines,
-          effect: {
-            show: true,
-            constantSpeed: 24,
-            trailLength: 0,
-            symbol: "arrow",
-            symbolSize: 7,
-            color: "rgba(15,23,42,0.82)",
-          },
-          lineStyle: {
-            width: 0,
-            opacity: 0,
-          },
-        },
-        {
-          type: "lines",
-          coordinateSystem: "none",
-          polyline: true,
-          silent: true,
-          z: 6,
-          data: animatedIntertieLines,
-          effect: {
-            show: true,
-            constantSpeed: 22,
-            trailLength: 0,
-            symbol: "arrow",
-            symbolSize: 7,
-            color: "rgba(15,23,42,0.72)",
-          },
-          lineStyle: {
-            width: 0,
-            opacity: 0,
-          },
-        },
       ],
     };
   }, [
@@ -1653,6 +1663,15 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     networkPowerPlants,
     selectedFlowDateTimeLabel,
   ]);
+  const majorFlowAnimationPaths = useMemo(
+    () =>
+      (
+        flowNetworkOption as {
+          __majorFlowAnimationPaths?: NetworkAnimationPath[];
+        }
+      ).__majorFlowAnimationPaths ?? [],
+    [flowNetworkOption],
+  );
 
   const interAreaFlowTextRows = useMemo(() => {
     const rowLimit = selectedArea === "全エリア" ? (isMobileViewport ? 10 : 14) : (isMobileViewport ? 16 : 22);
@@ -2690,9 +2709,61 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 <p className="mt-2 text-[11px] text-slate-600">
                   注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンクとして、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
                 </p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  各エリアの主要潮流を最大10本ずつ、水色の破線アニメーションで表示しています。
+                </p>
               </div>
-              <div data-testid="network-flow-chart">
-                <ReactECharts option={flowNetworkOption} style={{ height: 620 }} />
+              <div data-testid="network-flow-chart" className="relative" ref={networkFlowChartHostRef}>
+                <ReactECharts
+                  option={flowNetworkOption}
+                  style={{ height: 620 }}
+                  onChartReady={registerNetworkFlowChart}
+                  onEvents={{
+                    finished: (_event: unknown, chart: unknown) => registerNetworkFlowChart(chart),
+                    graphRoam: (_event: unknown, chart: unknown) => registerNetworkFlowChart(chart),
+                  }}
+                />
+                {majorFlowAnimationPaths.length > 0 ? (
+                  <svg
+                    data-testid="network-flow-overlay-svg"
+                    className="pointer-events-none absolute inset-0 z-10"
+                    viewBox={`0 0 ${networkOverlayViewport.width} ${networkOverlayViewport.height}`}
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
+                    <g
+                      data-testid="network-flow-overlay-roam"
+                      transform={formatSvgMatrixTransform(networkOverlayViewport.roam)}
+                    >
+                      <g transform={formatSvgMatrixTransform(networkOverlayViewport.raw)}>
+                        {majorFlowAnimationPaths.map((path) => (
+                          <g key={path.id}>
+                            <path
+                              d={path.d}
+                              fill="none"
+                              stroke="rgba(56,189,248,0.38)"
+                              strokeWidth={path.strokeWidth + 2.2}
+                              strokeLinecap="round"
+                            />
+                            <path
+                              d={path.d}
+                              fill="none"
+                              stroke="rgba(255,255,255,0.96)"
+                              strokeWidth={path.strokeWidth + 0.8}
+                              strokeLinecap="round"
+                              strokeDasharray="22 20"
+                              style={{
+                                animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
+                                animationDelay: `-${path.delaySeconds}s`,
+                                filter: "drop-shadow(0 0 2px rgba(56,189,248,0.95))",
+                              }}
+                            />
+                          </g>
+                        ))}
+                      </g>
+                    </g>
+                  </svg>
+                ) : null}
               </div>
             </Panel>
             <Panel title="エリア間連系潮流（実績）" testId="inter-area-flow-panel">
@@ -2973,6 +3044,16 @@ function SupplyDemandMeter({
         <span>供給力</span>
         <span>予備力</span>
       </div>
+      <style jsx global>{`
+        @keyframes network-flow-dash {
+          from {
+            stroke-dashoffset: 0;
+          }
+          to {
+            stroke-dashoffset: -34;
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -3564,6 +3645,157 @@ function buildCurvedLineCoords(
     [midX + normalX * offset, midY + normalY * offset],
     [to.x, to.y],
   ];
+}
+
+function buildSvgQuadraticPath(coords: Array<[number, number]>): string {
+  if (coords.length < 3) {
+    return "";
+  }
+  const [[startX, startY], [controlX, controlY], [endX, endY]] = coords;
+  return `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`;
+}
+
+function formatSvgMatrixTransform(transform: NetworkOverlayTransformPart): string {
+  return `matrix(${transform.scaleX} 0 0 ${transform.scaleY} ${transform.x} ${transform.y})`;
+}
+
+function attachNetworkFlowChartRoamHook(chart: unknown, element: NetworkFlowChartHostElement | null): void {
+  type GraphSeriesModelLike = {
+    subType?: string;
+    id?: string;
+    componentIndex?: number;
+  };
+
+  type EChartsInstanceLike = {
+    dispatchAction?: (payload: Record<string, unknown>) => void;
+    getModel?: () => {
+      getSeries?: () => GraphSeriesModelLike[];
+    };
+  };
+
+  if (!element) {
+    return;
+  }
+
+  const instance = chart as EChartsInstanceLike | null;
+  if (!instance?.dispatchAction || !instance.getModel) {
+    return;
+  }
+
+  const graphSeries = instance.getModel()?.getSeries?.()?.find((series) => series.subType === "graph");
+  if (!graphSeries) {
+    return;
+  }
+
+  element.__occtoDispatchGraphRoam = (payload: GraphRoamPayload) => {
+    instance.dispatchAction?.({
+      type: "graphRoam",
+      ...(typeof graphSeries.id === "string" ? { seriesId: graphSeries.id } : { seriesIndex: graphSeries.componentIndex }),
+      ...payload,
+    });
+  };
+}
+
+function readNetworkOverlayViewport(chart: unknown): NetworkOverlayViewport | null {
+  type GraphSeriesModelLike = {
+    subType?: string;
+  };
+
+  type EChartsInstanceLike = {
+    getWidth?: () => number;
+    getHeight?: () => number;
+    getModel?: () => {
+      getSeries?: () => GraphSeriesModelLike[];
+    };
+    getViewOfSeriesModel?: (seriesModel: GraphSeriesModelLike) => {
+      group?: {
+        childAt?: (index: number) => {
+          x?: number;
+          y?: number;
+          scaleX?: number;
+          scaleY?: number;
+        } | null;
+      };
+      _mainGroup?: {
+        x?: number;
+        y?: number;
+        scaleX?: number;
+        scaleY?: number;
+      };
+    } | null;
+  };
+
+  const instance = chart as EChartsInstanceLike | null;
+  if (!instance?.getWidth || !instance.getHeight || !instance.getModel) {
+    return null;
+  }
+
+  const width = instance.getWidth();
+  const height = instance.getHeight();
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  const graphSeries = instance.getModel()?.getSeries?.()?.find((series) => series.subType === "graph");
+  if (!graphSeries || !instance.getViewOfSeriesModel) {
+    return null;
+  }
+
+  const graphView = instance.getViewOfSeriesModel(graphSeries);
+  const mainGroup = graphView?._mainGroup ?? graphView?.group?.childAt?.(0);
+  if (!mainGroup) {
+    return null;
+  }
+
+  return {
+    width,
+    height,
+    raw: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
+    roam: normalizeNetworkOverlayTransformPart(mainGroup),
+  };
+}
+
+function normalizeNetworkOverlayTransformPart(
+  transform: Partial<NetworkOverlayTransformPart> | undefined,
+): NetworkOverlayTransformPart {
+  const x = transform?.x;
+  const y = transform?.y;
+  const scaleX = transform?.scaleX;
+  const scaleY = transform?.scaleY;
+  return {
+    x: Number.isFinite(x) ? Number(x) : 0,
+    y: Number.isFinite(y) ? Number(y) : 0,
+    scaleX: Number.isFinite(scaleX) ? Number(scaleX) : 1,
+    scaleY: Number.isFinite(scaleY) ? Number(scaleY) : 1,
+  };
+}
+
+function areNetworkOverlayViewportsEqual(
+  left: NetworkOverlayViewport,
+  right: NetworkOverlayViewport,
+): boolean {
+  return (
+    areCloseEnough(left.width, right.width) &&
+    areCloseEnough(left.height, right.height) &&
+    areNetworkOverlayTransformPartsEqual(left.raw, right.raw) &&
+    areNetworkOverlayTransformPartsEqual(left.roam, right.roam)
+  );
+}
+
+function areNetworkOverlayTransformPartsEqual(
+  left: NetworkOverlayTransformPart,
+  right: NetworkOverlayTransformPart,
+): boolean {
+  return (
+    areCloseEnough(left.x, right.x) &&
+    areCloseEnough(left.y, right.y) &&
+    areCloseEnough(left.scaleX, right.scaleX) &&
+    areCloseEnough(left.scaleY, right.scaleY)
+  );
+}
+
+function areCloseEnough(left: number, right: number): boolean {
+  return Math.abs(left - right) < 0.01;
 }
 
 function buildAreaBridgeEndpoints(
