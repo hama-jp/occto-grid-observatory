@@ -32,7 +32,7 @@ on:
   schedule:
     # 09:10 / 12:10 / 15:10 / 18:10 JST: keep same-day partial snapshots
     - cron: "10 0,3,6,9 * * *"
-    # 16:10 JST (07:10 UTC): refresh previous day as the daily fixed dataset
+    # 16:10 JST (07:10 UTC): refresh recent fixed datasets, retrying yesterday if publication was delayed
     - cron: "10 7 * * *"
 
 permissions:
@@ -68,8 +68,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "schedule" ]; then
             if [ "${{ github.event.schedule }}" = "10 7 * * *" ]; then
-              echo "Scheduled daily refresh for previous day"
-              npm run ingest -- --mode=daily --force=true
+              FROM="$(date -u -d '2 days ago' '+%Y-%m-%d')"
+              TO="$(date -u -d '1 day ago' '+%Y-%m-%d')"
+              echo "Scheduled fixed-data refresh for recent dates: ${FROM}..${TO}"
+              npm run ingest -- --mode=backfill --from="${FROM}" --to="${TO}" --sample=daily --force=true
             else
               echo "Scheduled intraday refresh for current day"
               npm run ingest -- --mode=now --force=true

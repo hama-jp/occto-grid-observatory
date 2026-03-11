@@ -76,6 +76,18 @@ const INTERTIE_AREA_MAP: Record<string, IntertieAreaDefinition> = {
   北陸フェンス: { sourceArea: "中部", targetArea: "北陸" },
 };
 
+class NoDataAvailableError extends Error {
+  source: string;
+  targetDate: string;
+
+  constructor(source: string, targetDate: string, message?: string) {
+    super(message ?? `${source} data is not available for ${targetDate}`);
+    this.name = "NoDataAvailableError";
+    this.source = source;
+    this.targetDate = targetDate;
+  }
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const normalizedDir = path.join(process.cwd(), "data", "normalized");
@@ -90,6 +102,7 @@ async function main(): Promise<void> {
   let latestDate = "";
   let updatedCount = 0;
   let skippedCount = 0;
+  let noDataCount = 0;
   const newestRequestedDate = args.targetDates[args.targetDates.length - 1] ?? "";
 
   for (let i = 0; i < args.targetDates.length; i += 1) {
@@ -105,7 +118,17 @@ async function main(): Promise<void> {
     }
 
     await fs.mkdir(rawDir, { recursive: true });
-    const downloadResult = await downloadCsvFiles(targetDate, rawDir);
+    let downloadResult: DownloadResult;
+    try {
+      downloadResult = await downloadCsvFiles(targetDate, rawDir);
+    } catch (error: unknown) {
+      if (error instanceof NoDataAvailableError) {
+        noDataCount += 1;
+        console.log(`[ingest] skip unpublished date ${targetDate}: ${error.message}`);
+        continue;
+      }
+      throw error;
+    }
     const generationRows = await parseGenerationCsv(downloadResult.generationCsv);
     const flowRows = await parseFlowCsv(downloadResult.flowCsvByArea);
     const intertieRows = await parseIntertieCsv(downloadResult.intertieCsvByLine);
@@ -167,7 +190,7 @@ async function main(): Promise<void> {
     console.log("[ingest] no new data generated");
   }
 
-  console.log(`[ingest] summary: updated=${updatedCount}, skipped=${skippedCount}`);
+  console.log(`[ingest] summary: updated=${updatedCount}, skipped=${skippedCount}, noData=${noDataCount}`);
 }
 
 function parseArgs(args: string[]): CliArgs {
@@ -432,7 +455,7 @@ async function downloadGenerationCsv(targetDate: string, rawDir: string): Promis
       await page.fill('input[name="tgtDateDateTo"]', targetDate);
 
       await page.locator("#search_btn").click();
-      await page.waitForSelector("#csv_btn:not([disabled])", { timeout: 120_000 });
+      await waitForGenerationCsvAvailability(page, targetDate);
 
       const download = await captureDownload(page, async () => {
         await page.locator("#csv_btn").click();
@@ -616,6 +639,30 @@ async function captureDownload(
   return downloadPromise;
 }
 
+async function waitForGenerationCsvAvailability(page: Page, targetDate: string): Promise<void> {
+  const stateHandle = await page.waitForFunction(() => {
+    const csvButton = document.querySelector("#csv_btn");
+    const bodyText = document.body.innerText;
+    const isCsvReady =
+      csvButton instanceof HTMLButtonElement
+        ? !csvButton.disabled
+        : !!csvButton && !csvButton.hasAttribute("disabled");
+
+    if (isCsvReady) {
+      return { status: "ready" as const };
+    }
+    if (/対象データがありません。?/.test(bodyText)) {
+      return { status: "no-data" as const };
+    }
+    return false;
+  }, { timeout: 120_000 });
+
+  const state = (await stateHandle.jsonValue()) as { status: "ready" | "no-data" };
+  if (state.status === "no-data") {
+    throw new NoDataAvailableError("generation", targetDate, `generation data is not published yet for ${targetDate}`);
+  }
+}
+
 async function retryOperation<T>(label: string, action: () => Promise<T>, attempts = 3): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -626,6 +673,9 @@ async function retryOperation<T>(label: string, action: () => Promise<T>, attemp
       return await action();
     } catch (error: unknown) {
       lastError = error;
+      if (error instanceof NoDataAvailableError) {
+        throw error;
+      }
       if (attempt === attempts) {
         throw error;
       }
