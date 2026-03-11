@@ -1951,7 +1951,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const filteredRows =
       selectedArea === "全エリア" ? rows : rows.filter((item) => item.area === selectedArea);
 
-    return filteredRows.sort((a, b) => b.totalKwh - a.totalKwh);
+    return filteredRows.sort((a, b) => compareAreaOrder(a.area, b.area));
   }, [
     allPlantSummaries,
     clampedNetworkFlowSlotIndex,

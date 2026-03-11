@@ -36,6 +36,19 @@ test("area selectors use utility-area ordering by default", async ({ page }) => 
   await expect(await getSelectOptions(donutAreaSelect)).toEqual(["全エリア", ...AREA_ORDER]);
 });
 
+test("area supply cards use utility-area ordering by default", async ({ page }) => {
+  await waitForDashboardReady(page);
+
+  const areaCardHeadings = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { level: 2, name: "エリア別需給カード" }) })
+    .locator("article h3");
+
+  await expect(areaCardHeadings).toHaveCount(AREA_ORDER.length);
+  await expect(areaCardHeadings.first()).toHaveText("北海道");
+  await expect(areaCardHeadings.last()).toHaveText("沖縄");
+});
+
 test("overview mode hides deep-dive sections", async ({ page }) => {
   await waitForDashboardReady(page);
 
