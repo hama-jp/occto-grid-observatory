@@ -1058,8 +1058,8 @@ function buildDashboardData(args: {
     const flow = areaSummaries.find((item) => item.area === generation.area);
     const peakAbsMw = flow?.peakAbsMw ?? 0;
     const lineCount = flow?.lineCount ?? 0;
-    const baseMw = generation.totalKwh / 1000 / 48;
-    const stress = baseMw === 0 ? 0 : peakAbsMw / baseMw;
+    const averageGenerationMw = generation.totalKwh / 24 / 1000;
+    const stress = averageGenerationMw === 0 ? 0 : peakAbsMw / averageGenerationMw;
 
     return {
       area: generation.area,

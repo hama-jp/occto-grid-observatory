@@ -99,6 +99,21 @@ const FLOW_AREA_NAME_SET = new Set<string>([
   "沖縄",
 ]);
 
+type ShareSegment = {
+  label: string;
+  value: number;
+  percent: number;
+  color: string;
+};
+
+type BarListItem = {
+  label: string;
+  valueLabel: string;
+  percent: number;
+  color: string;
+  note?: string;
+};
+
 type DashboardSectionId =
   | "summary"
   | "areaCards"
@@ -747,6 +762,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
     return byArea;
   }, [data.generation.hourlyBySourceByArea]);
+  const sourceColorByName = useMemo(
+    () =>
+      new Map(
+        data.generation.sourceTotals.map((item, idx) => [
+          item.source,
+          SOURCE_COLORS[idx % SOURCE_COLORS.length],
+        ]),
+      ),
+    [data.generation.sourceTotals],
+  );
 
   const filteredTopUnits = useMemo(
     () =>
@@ -895,9 +920,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       name: normalizeSourceName(item.source),
       totalKwh: item.totalKwh,
       percent: totalKwh > 0 ? (item.totalKwh / totalKwh) * 100 : 0,
-      color: SOURCE_COLORS[idx % SOURCE_COLORS.length],
+      color: sourceColorByName.get(item.source) ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
     }));
-  }, [data.generation.sourceTotals, sourceDonutArea, sourceTotalsByArea]);
+  }, [data.generation.sourceTotals, sourceColorByName, sourceDonutArea, sourceTotalsByArea]);
 
   const sourceDonutOption = useMemo(() => {
     return {
@@ -1693,13 +1718,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       .slice(0, rowLimit);
   }, [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, data.flows.intertieSeries, isMobileViewport, selectedArea]);
 
-  const nationalSummaryCards = useMemo(() => {
+  const dashboardHighlights = useMemo(() => {
     const totalGenerationKwh = data.generation.areaTotals.reduce((sum, item) => sum + item.totalKwh, 0);
+    const totalDemandMw = reserveCurrentRows.reduce((sum, row) => sum + row.demandMw, 0);
     const topSource = data.generation.sourceTotals[0];
     const topSourceShare = topSource && totalGenerationKwh > 0 ? (topSource.totalKwh / totalGenerationKwh) * 100 : 0;
     const lowestReserveArea = reserveCurrentRows[0] ?? null;
-    const peakDemandArea =
-      [...reserveCurrentRows].sort((a, b) => b.demandMw - a.demandMw)[0] ?? null;
+    const demandLeadersRaw = [...reserveCurrentRows].sort((a, b) => b.demandMw - a.demandMw);
+    const peakDemandArea = demandLeadersRaw[0] ?? null;
 
     const netIntertieByArea = new Map<string, number>();
     (data.flows.intertieSeries ?? []).forEach((row) => {
@@ -1728,62 +1754,89 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const strongestExportDetail = strongestExportArea
       ? `${decimalFmt.format(Math.abs(strongestExportArea.mw))} MW`
       : "データなし";
+    const areaShareSegments = buildTopShareSegments(
+      data.generation.areaTotals,
+      totalGenerationKwh,
+      5,
+      (item) => item.area,
+      (item) => item.totalKwh,
+      (item) => FLOW_AREA_COLORS[item.area] ?? FLOW_AREA_COLORS.default,
+    );
+    const sourceShareSegments = buildTopShareSegments(
+      data.generation.sourceTotals,
+      totalGenerationKwh,
+      5,
+      (item) => normalizeSourceName(item.source),
+      (item) => item.totalKwh,
+      (item, idx) => sourceColorByName.get(item.source) ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
+    );
+    const reserveWatchItems: BarListItem[] = reserveCurrentRows.slice(0, 4).map((row) => ({
+      label: row.area,
+      valueLabel: `${decimalFmt.format(row.reserveRate)}%`,
+      percent: clamp((row.reserveRate / 20) * 100, 0, 100),
+      color: FLOW_AREA_COLORS[row.area] ?? FLOW_AREA_COLORS.default,
+      note: `予備力 ${decimalFmt.format(row.reserveMw)} MW`,
+    }));
+    const maxDemandMw = Math.max(...demandLeadersRaw.map((row) => row.demandMw), 1);
+    const demandLeaderItems: BarListItem[] = demandLeadersRaw.slice(0, 4).map((row) => ({
+      label: row.area,
+      valueLabel: `${decimalFmt.format(row.demandMw)} MW`,
+      percent: clamp((row.demandMw / maxDemandMw) * 100, 0, 100),
+      color: FLOW_AREA_COLORS[row.area] ?? FLOW_AREA_COLORS.default,
+      note: `全国需要比 ${totalDemandMw > 0 ? decimalFmt.format((row.demandMw / totalDemandMw) * 100) : "0"}%`,
+    }));
+    const maxIntertieMw = Math.max(...interAreaFlowTextRows.map((row) => row.magnitudeMw), 1);
+    const intertieWatchItems: BarListItem[] = interAreaFlowTextRows.slice(0, 4).map((row) => ({
+      label: `${row.sourceArea} ⇄ ${row.targetArea}`,
+      valueLabel: `${decimalFmt.format(row.magnitudeMw)} MW`,
+      percent: clamp((row.magnitudeMw / maxIntertieMw) * 100, 0, 100),
+      color:
+        FLOW_AREA_COLORS[row.upMw >= row.downMw ? row.sourceArea : row.targetArea] ?? FLOW_AREA_COLORS.default,
+      note: row.intertieNames.join(" / "),
+    }));
+    const unitLeadersRaw = [...data.generation.topUnits]
+      .sort((a, b) => b.maxOutputManKw - a.maxOutputManKw || b.dailyKwh - a.dailyKwh)
+      .slice(0, 3);
+    const maxUnitOutput = Math.max(...unitLeadersRaw.map((item) => item.maxOutputManKw), 1);
+    const unitLeaderItems: BarListItem[] = unitLeadersRaw.map((item) => ({
+      label: `${item.plantName} ${item.unitName}`,
+      valueLabel: `${manKwFmt.format(item.maxOutputManKw)} 万kW`,
+      percent: clamp((item.maxOutputManKw / maxUnitOutput) * 100, 0, 100),
+      color: FLOW_AREA_COLORS[item.area] ?? FLOW_AREA_COLORS.default,
+      note: item.area,
+    }));
+    const plantLeadersRaw = allPlantSummaries.slice(0, 3);
+    const maxPlantEnergy = Math.max(...plantLeadersRaw.map((item) => item.dailyKwh), 1);
+    const plantLeaderItems: BarListItem[] = plantLeadersRaw.map((item) => ({
+      label: item.plantName,
+      valueLabel: formatCompactEnergy(item.dailyKwh),
+      percent: clamp((item.dailyKwh / maxPlantEnergy) * 100, 0, 100),
+      color: FLOW_AREA_COLORS[item.area] ?? FLOW_AREA_COLORS.default,
+      note: item.area,
+    }));
 
-    return [
-      {
-        label: "全国発電量",
-        value: formatCompactEnergy(totalGenerationKwh),
-        detail: `${data.generation.areaTotals.length} エリア合計`,
-      },
-      {
-        label: "主力電源",
-        value: topSource ? normalizeSourceName(topSource.source) : "-",
-        detail: topSource ? `${topSourceShare.toFixed(1)}% / ${formatCompactEnergy(topSource.totalKwh)}` : "データなし",
-      },
-      {
-        label: "最低予備率",
-        value: lowestReserveArea ? lowestReserveArea.area : "-",
-        detail: lowestReserveArea
-          ? `${decimalFmt.format(lowestReserveArea.reserveRate)}% / ${selectedFlowDateTimeLabel}`
-          : "予備率データなし",
-      },
-      {
-        label: "最大需要",
-        value: peakDemandArea ? peakDemandArea.area : "-",
-        detail: peakDemandArea ? `${decimalFmt.format(peakDemandArea.demandMw)} MW` : "需要データなし",
-      },
-      {
-        label: "最大連系潮流",
-        value: hottestIntertie
-          ? `${hottestIntertie.sourceArea} ⇄ ${hottestIntertie.targetArea}`
-          : "-",
-        detail: hottestIntertie
-          ? `${decimalFmt.format(hottestIntertie.magnitudeMw)} MW / ${selectedFlowDateTimeLabel}`
-          : "連系線データなし",
-      },
-      {
-        label: "受電超過",
-        value: strongestImportValue,
-        detail: strongestImportDetail,
-      },
-      {
-        label: "送電超過",
-        value: strongestExportValue,
-        detail: strongestExportDetail,
-      },
-      {
-        label: "最大ユニット",
-        value: largestUnit ? `${largestUnit.plantName} ${largestUnit.unitName}` : "-",
-        detail: largestUnit
-          ? `${largestUnit.area} / ${manKwFmt.format(largestUnit.maxOutputManKw)} 万kW`
-          : "データなし",
-      },
-      {
-        label: "最大発電所",
-        value: topPlant ? topPlant.plantName : "-",
-        detail: topPlant ? `${topPlant.area} / ${formatCompactEnergy(topPlant.dailyKwh)}` : "データなし",
-      },
-    ];
+    return {
+      totalGenerationKwh,
+      totalDemandMw,
+      topSource,
+      topSourceShare,
+      lowestReserveArea,
+      peakDemandArea,
+      hottestIntertie,
+      strongestImportValue,
+      strongestImportDetail,
+      strongestExportValue,
+      strongestExportDetail,
+      largestUnit,
+      topPlant,
+      areaShareSegments,
+      sourceShareSegments,
+      reserveWatchItems,
+      demandLeaderItems,
+      intertieWatchItems,
+      unitLeaderItems,
+      plantLeaderItems,
+    };
   }, [
     allPlantSummaries,
     clampedNetworkFlowSlotIndex,
@@ -1793,12 +1846,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     data.generation.topUnits,
     interAreaFlowTextRows,
     reserveCurrentRows,
-    selectedFlowDateTimeLabel,
+    sourceColorByName,
   ]);
 
   const areaSupplyCards = useMemo(() => {
     const totalGenerationKwh = data.generation.areaTotals.reduce((sum, item) => sum + item.totalKwh, 0);
-    const areaBalanceMap = new Map(data.insights.areaBalance.map((item) => [item.area, item]));
     const areaFlowSummaryMap = new Map(data.flows.areaSummaries.map((item) => [item.area, item]));
     const netIntertieByArea = new Map<string, number>();
     const strongestPeerByArea = new Map<
@@ -1844,9 +1896,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     });
 
     const rows = data.generation.areaTotals.map((item) => {
+      const sourceMix = buildTopShareSegments(
+        sourceTotalsByArea[item.area] ?? [],
+        item.totalKwh,
+        4,
+        (source) => normalizeSourceName(source.source),
+        (source) => source.totalKwh,
+        (source, idx) => sourceColorByName.get(source.source) ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
+      );
       const topSource = sourceTotalsByArea[item.area]?.[0];
       const netIntertieMw = netIntertieByArea.get(item.area) ?? 0;
-      const balance = areaBalanceMap.get(item.area);
       const flowSummary = areaFlowSummaryMap.get(item.area);
       const peer = strongestPeerByArea.get(item.area);
       const primaryPlant = primaryPlantByArea.get(item.area);
@@ -1858,10 +1917,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         topSource: topSource?.source ?? "不明",
         topSourceShare:
           topSource && item.totalKwh > 0 ? (topSource.totalKwh / item.totalKwh) * 100 : 0,
+        sourceMix,
         netIntertieMw,
         peer,
         primaryPlant,
-        stressIndex: balance?.stressIndex ?? 0,
         peakAbsMw: flowSummary?.peakAbsMw ?? 0,
         demandMw: reserve?.demandMw[clampedNetworkFlowSlotIndex] ?? 0,
         supplyMw: reserve?.supplyMw[clampedNetworkFlowSlotIndex] ?? 0,
@@ -1880,11 +1939,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     data.flows.areaSummaries,
     data.flows.intertieSeries,
     data.generation.areaTotals,
-    data.insights.areaBalance,
     reserveAreaMap,
     selectedArea,
+    sourceColorByName,
     sourceTotalsByArea,
   ]);
+  const maxAreaNetIntertieAbsMw = useMemo(
+    () => Math.max(...areaSupplyCards.map((card) => Math.abs(card.netIntertieMw)), 1),
+    [areaSupplyCards],
+  );
+  const maxAreaPeakAbsMw = useMemo(
+    () => Math.max(...areaSupplyCards.map((card) => card.peakAbsMw), 1),
+    [areaSupplyCards],
+  );
 
   const interAreaFlowOption = useMemo(() => {
     const rows = interAreaFlowTextRows.map((row) => {
@@ -2087,40 +2154,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     };
   }, [data.flows.intertieSeries, data.meta.slotLabels.flow, selectedArea]);
 
-  const areaBalanceOption = useMemo(
-    () => ({
-      tooltip: {
-        formatter: (params: { data: [number, number, number, string] }) => {
-          const [dailyKwh, peakAbsMw, stress, area] = params.data;
-          return `${area}<br/>日量: ${numberFmt.format(dailyKwh)} kWh<br/>最大|潮流|: ${numberFmt.format(
-            peakAbsMw,
-          )} MW<br/>Stress: ${stress}`;
-        },
-      },
-      xAxis: {
-        name: "日量発電(kWh)",
-        axisLabel: { formatter: (v: number) => `${Math.round(v / 1_000_000)}M` },
-      },
-      yAxis: {
-        name: "最大|潮流|(MW)",
-      },
-      series: [
-        {
-          type: "scatter",
-          symbolSize: (value: [number, number, number]) => 12 + value[2] * 3,
-          itemStyle: { color: "#1d3557" },
-          data: data.insights.areaBalance.map((item) => [
-            item.dailyKwh,
-            item.peakAbsMw,
-            item.stressIndex,
-            item.area,
-          ]),
-        },
-      ],
-    }),
-    [data.insights.areaBalance],
-  );
-
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4f1de_0%,_#f6f8fb_38%,_#e9f5f2_100%)] text-slate-800">
       <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 py-6 md:px-8">
@@ -2191,7 +2224,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-base font-semibold text-slate-800">表示するパネル</h2>
-              <p className="text-sm text-slate-600">必要な情報だけ残して、全国俯瞰と深掘りを切り替えられます。</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -2239,17 +2271,127 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         </section>
 
         {visibleSectionSet.has("summary") ? (
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
-            {nationalSummaryCards.map((card) => (
-              <article
-                key={card.label}
-                className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm"
-              >
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{card.label}</p>
-                <p className="mt-2 text-xl font-semibold leading-tight text-slate-900">{card.value}</p>
-                <p className="mt-2 text-sm text-slate-600">{card.detail}</p>
-              </article>
-            ))}
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <SummaryCard
+              title="全国発電量"
+              value={formatCompactEnergy(dashboardHighlights.totalGenerationKwh)}
+              detail={`${data.generation.areaTotals.length} エリア合計`}
+              accentColor="#0b525b"
+            >
+              <SegmentedBar segments={dashboardHighlights.areaShareSegments} />
+              <div className="mt-3 flex flex-wrap gap-2">
+                {dashboardHighlights.areaShareSegments.slice(0, 4).map((segment) => (
+                  <DataChip
+                    key={segment.label}
+                    label={segment.label}
+                    value={`${decimalFmt.format(segment.percent)}%`}
+                    color={segment.color}
+                  />
+                ))}
+              </div>
+            </SummaryCard>
+            <SummaryCard
+              title="主力電源"
+              value={dashboardHighlights.topSource ? normalizeSourceName(dashboardHighlights.topSource.source) : "-"}
+              detail={
+                dashboardHighlights.topSource
+                  ? `${dashboardHighlights.topSourceShare.toFixed(1)}% / ${formatCompactEnergy(
+                      dashboardHighlights.topSource.totalKwh,
+                    )}`
+                  : "データなし"
+              }
+              accentColor="#197278"
+            >
+              <SegmentedBar segments={dashboardHighlights.sourceShareSegments} />
+              <MiniBarList items={dashboardHighlights.sourceShareSegments.slice(0, 4).map((segment) => ({
+                label: segment.label,
+                valueLabel: `${decimalFmt.format(segment.percent)}%`,
+                percent: segment.percent,
+                color: segment.color,
+                note: formatCompactEnergy(segment.value),
+              }))} />
+            </SummaryCard>
+            <SummaryCard
+              title="予備率監視"
+              value={
+                dashboardHighlights.lowestReserveArea
+                  ? `${dashboardHighlights.lowestReserveArea.area} ${decimalFmt.format(
+                      dashboardHighlights.lowestReserveArea.reserveRate,
+                    )}%`
+                  : "-"
+              }
+              detail={
+                dashboardHighlights.lowestReserveArea
+                  ? `表示時刻 ${selectedFlowDateTimeLabel}`
+                  : "予備率データなし"
+              }
+              accentColor="#0f766e"
+            >
+              <MiniBarList items={dashboardHighlights.reserveWatchItems} />
+            </SummaryCard>
+            <SummaryCard
+              title="需要ピーク"
+              value={dashboardHighlights.peakDemandArea ? dashboardHighlights.peakDemandArea.area : "-"}
+              detail={
+                dashboardHighlights.peakDemandArea
+                  ? `${decimalFmt.format(dashboardHighlights.peakDemandArea.demandMw)} MW / ${selectedFlowDateTimeLabel}`
+                  : "需要データなし"
+              }
+              accentColor="#f77f00"
+            >
+              <MiniBarList items={dashboardHighlights.demandLeaderItems} />
+            </SummaryCard>
+            <SummaryCard
+              title="連系潮流監視"
+              value={
+                dashboardHighlights.hottestIntertie
+                  ? `${dashboardHighlights.hottestIntertie.sourceArea} ⇄ ${dashboardHighlights.hottestIntertie.targetArea}`
+                  : "-"
+              }
+              detail={
+                dashboardHighlights.hottestIntertie
+                  ? `${decimalFmt.format(dashboardHighlights.hottestIntertie.magnitudeMw)} MW / ${selectedFlowDateTimeLabel}`
+                  : "連系線データなし"
+              }
+              accentColor="#bc4749"
+            >
+              <MiniBarList items={dashboardHighlights.intertieWatchItems} />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <CompactStatCard
+                  label="受電超過"
+                  value={dashboardHighlights.strongestImportValue}
+                  detail={dashboardHighlights.strongestImportDetail}
+                />
+                <CompactStatCard
+                  label="送電超過"
+                  value={dashboardHighlights.strongestExportValue}
+                  detail={dashboardHighlights.strongestExportDetail}
+                />
+              </div>
+            </SummaryCard>
+            <SummaryCard
+              title="発電トップ"
+              value={dashboardHighlights.largestUnit ? `${dashboardHighlights.largestUnit.plantName} ${dashboardHighlights.largestUnit.unitName}` : "-"}
+              detail={
+                dashboardHighlights.largestUnit
+                  ? `${dashboardHighlights.largestUnit.area} / ${manKwFmt.format(
+                      dashboardHighlights.largestUnit.maxOutputManKw,
+                    )} 万kW`
+                  : "データなし"
+              }
+              accentColor="#1d3557"
+            >
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500">最大ユニット</p>
+                  <MiniBarList items={dashboardHighlights.unitLeaderItems} compact />
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500">最大発電所</p>
+                  <MiniBarList items={dashboardHighlights.plantLeaderItems} compact />
+                </div>
+              </div>
+            </SummaryCard>
           </section>
         ) : null}
 
@@ -2260,8 +2402,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 <h2 className="text-lg font-semibold text-slate-900">エリア別需給カード</h2>
                 <p className="text-sm text-slate-600">
                   {selectedArea === "全エリア"
-                    ? `全${areaSupplyCards.length}エリアの発電・連系・主力電源を一覧表示`
-                    : `${selectedArea} の発電・連系・主力電源を表示`}
+                    ? `全${areaSupplyCards.length}エリアの需要、予備率、電源構成、連系収支を俯瞰`
+                    : `${selectedArea} の需要、予備率、電源構成、連系収支を表示`}
                 </p>
               </div>
               <p className="text-xs text-slate-500">連系値は {selectedFlowDateTimeLabel} 時点</p>
@@ -2281,17 +2423,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                     <div className="h-1.5" style={{ backgroundColor: areaColor }} />
                     <div className="p-4">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span
                               className="inline-flex h-3 w-3 rounded-full"
                               style={{ backgroundColor: areaColor }}
                             />
                             <h3 className="text-xl font-semibold text-slate-900">{card.area}</h3>
+                            <ReserveRateBadge reserveRate={card.reserveRate} />
                           </div>
-                          <p className="mt-1 text-sm text-slate-600">
-                            全国比 {card.sharePercent.toFixed(1)}% / ストレス指数 {decimalFmt.format(card.stressIndex)}
-                          </p>
+                          <p className="mt-1 text-sm text-slate-600">全国発電シェア {card.sharePercent.toFixed(1)}%</p>
+                          <div className="mt-2 max-w-sm">
+                            <ValueProgressBar value={card.sharePercent} max={100} color={areaColor} />
+                          </div>
                         </div>
                         <div className="rounded-2xl bg-slate-900 px-4 py-3 text-white shadow-sm">
                           <p className="text-xs tracking-[0.16em] text-slate-300">日量発電</p>
@@ -2299,28 +2443,80 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                         </div>
                       </div>
 
-                      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        <MetricTile
-                          label="需要"
-                          value={`${decimalFmt.format(card.demandMw)} MW`}
-                          detail={`${selectedFlowSlotLabel} 時点`}
-                        />
-                        <MetricTile
-                          label="予備率"
-                          value={`${decimalFmt.format(card.reserveRate)}%`}
-                          detail={`予備力 ${decimalFmt.format(card.reserveMw)} MW`}
-                        />
-                        <MetricTile
-                          label="主力電源"
-                          value={normalizeSourceName(card.topSource)}
-                          detail={`${card.topSourceShare.toFixed(1)}%`}
-                        />
-                        <MetricTile
-                          label="連系収支"
-                          value={netDirection}
-                          detail={`${decimalFmt.format(Math.abs(card.netIntertieMw))} MW`}
-                        />
-                        <MetricTile
+                      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs tracking-[0.16em] text-slate-500">需給バランス</p>
+                            <p className="text-xs text-slate-500">{selectedFlowSlotLabel} 時点</p>
+                          </div>
+                          <div className="mt-3">
+                            <SupplyDemandMeter
+                              demandMw={card.demandMw}
+                              supplyMw={card.supplyMw}
+                              reserveMw={card.reserveMw}
+                              color={areaColor}
+                            />
+                          </div>
+                          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            <CompactStatCard
+                              label="需要"
+                              value={`${decimalFmt.format(card.demandMw)} MW`}
+                              detail={`${card.supplyMw > 0 ? decimalFmt.format((card.demandMw / card.supplyMw) * 100) : "0"}%`}
+                            />
+                            <CompactStatCard
+                              label="供給力"
+                              value={`${decimalFmt.format(card.supplyMw)} MW`}
+                              detail="実供給力"
+                            />
+                            <CompactStatCard
+                              label="予備力"
+                              value={`${decimalFmt.format(card.reserveMw)} MW`}
+                              detail={`${decimalFmt.format(card.reserveRate)}%`}
+                            />
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs tracking-[0.16em] text-slate-500">電源構成</p>
+                            <p className="text-xs text-slate-500">
+                              主力 {normalizeSourceName(card.topSource)} {card.topSourceShare.toFixed(1)}%
+                            </p>
+                          </div>
+                          <div className="mt-3">
+                            <SegmentedBar segments={card.sourceMix} />
+                          </div>
+                          <div className="mt-3 space-y-2">
+                            {card.sourceMix.slice(0, 3).map((segment) => (
+                              <div key={`${card.area}-${segment.label}`} className="flex items-center justify-between gap-3 text-sm">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: segment.color }} />
+                                  <span className="truncate text-slate-700">{segment.label}</span>
+                                </div>
+                                <span className="shrink-0 text-slate-500">
+                                  {decimalFmt.format(segment.percent)}% / {formatCompactEnergy(segment.value)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+                          <p className="text-xs tracking-[0.16em] text-slate-500">連系収支</p>
+                          <div className="mt-3">
+                            <NetFlowMeter
+                              valueMw={card.netIntertieMw}
+                              maxAbsMw={maxAreaNetIntertieAbsMw}
+                              color={areaColor}
+                            />
+                          </div>
+                          <p className="mt-3 text-base font-semibold text-slate-900">{netDirection}</p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {decimalFmt.format(Math.abs(card.netIntertieMw))} MW
+                          </p>
+                        </div>
+                        <CompactStatCard
                           label="最大相手先"
                           value={card.peer ? card.peer.counterpart : "-"}
                           detail={
@@ -2328,12 +2524,18 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                               ? `${peerDirection} ${decimalFmt.format(Math.abs(card.peer.signedMw))} MW`
                               : "連系データなし"
                           }
+                          className="h-full"
                         />
-                        <MetricTile
-                          label="地域内ピーク"
-                          value={`${decimalFmt.format(card.peakAbsMw)} MW`}
-                          detail="地内送電線の最大|潮流|"
-                        />
+                        <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+                          <p className="text-xs tracking-[0.16em] text-slate-500">地域内ピーク</p>
+                          <div className="mt-3">
+                            <ValueProgressBar value={card.peakAbsMw} max={maxAreaPeakAbsMw} color={areaColor} />
+                          </div>
+                          <p className="mt-3 text-base font-semibold text-slate-900">
+                            {decimalFmt.format(card.peakAbsMw)} MW
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">地内送電線の最大|潮流|</p>
+                        </div>
                       </div>
 
                       <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
@@ -2503,12 +2705,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {visibleSectionSet.has("diagnostics") ? (
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <Panel title="主要線路の潮流ヒートマップ" className="lg:col-span-2">
+          <section className="grid grid-cols-1 gap-4">
+            <Panel title="主要線路の潮流ヒートマップ">
+              <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
               <ReactECharts option={flowHeatmapOption} style={{ height: 420 }} />
-            </Panel>
-            <Panel title="エリア負荷バランス">
-              <ReactECharts option={areaBalanceOption} style={{ height: 420 }} />
             </Panel>
           </section>
         ) : null}
@@ -2601,20 +2801,214 @@ function Panel({
   );
 }
 
-function MetricTile({
+function SummaryCard({
+  title,
+  value,
+  detail,
+  accentColor,
+  children,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  accentColor: string;
+  children: ReactNode;
+}) {
+  return (
+    <article className="rounded-3xl border border-white/70 bg-white/92 p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} />
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{title}</p>
+          </div>
+          <p className="mt-2 text-xl font-semibold leading-tight text-slate-900">{value}</p>
+          <p className="mt-2 text-sm text-slate-600">{detail}</p>
+        </div>
+      </div>
+      <div className="mt-4">{children}</div>
+    </article>
+  );
+}
+
+function CompactStatCard({
   label,
   value,
   detail,
+  className,
 }: {
   label: string;
   value: string;
   detail: string;
+  className?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+    <div className={`rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 ${className ?? ""}`}>
       <p className="text-xs tracking-[0.16em] text-slate-500">{label}</p>
       <p className="mt-1 text-base font-semibold text-slate-900">{value}</p>
       <p className="mt-1 text-sm text-slate-600">{detail}</p>
+    </div>
+  );
+}
+
+function DataChip({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color: string;
+}) {
+  return (
+    <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700">
+      <span className="mr-2 inline-flex h-2 w-2 rounded-full align-middle" style={{ backgroundColor: color }} />
+      <span>{label}</span>
+      <span className="ml-2 font-medium text-slate-900">{value}</span>
+    </div>
+  );
+}
+
+function SegmentedBar({
+  segments,
+  className,
+}: {
+  segments: ShareSegment[];
+  className?: string;
+}) {
+  return (
+    <div className={`flex h-3 overflow-hidden rounded-full bg-slate-100 ${className ?? ""}`}>
+      {segments.map((segment) => (
+        <div
+          key={`${segment.label}-${segment.color}`}
+          className="h-full"
+          style={{ width: `${Math.max(segment.percent, 1.5)}%`, backgroundColor: segment.color }}
+          title={`${segment.label}: ${decimalFmt.format(segment.percent)}%`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MiniBarList({
+  items,
+  compact = false,
+}: {
+  items: BarListItem[];
+  compact?: boolean;
+}) {
+  return (
+    <div className={compact ? "space-y-2" : "space-y-3"}>
+      {items.map((item) => (
+        <div key={`${item.label}-${item.valueLabel}`}>
+          <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+            <div className="min-w-0">
+              <p className="truncate text-slate-800">{item.label}</p>
+              {item.note ? <p className="truncate text-xs text-slate-500">{item.note}</p> : null}
+            </div>
+            <p className="shrink-0 font-medium text-slate-900">{item.valueLabel}</p>
+          </div>
+          <ValueProgressBar value={item.percent} max={100} color={item.color} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReserveRateBadge({ reserveRate }: { reserveRate: number }) {
+  const toneClass =
+    reserveRate < 8
+      ? "border-rose-200 bg-rose-50 text-rose-700"
+      : reserveRate < 12
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-emerald-200 bg-emerald-50 text-emerald-700";
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${toneClass}`}>
+      予備率 {decimalFmt.format(reserveRate)}%
+    </span>
+  );
+}
+
+function ValueProgressBar({
+  value,
+  max,
+  color,
+}: {
+  value: number;
+  max: number;
+  color: string;
+}) {
+  const percent = max <= 0 ? 0 : clamp((value / max) * 100, 0, 100);
+  return (
+    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: color }} />
+    </div>
+  );
+}
+
+function SupplyDemandMeter({
+  demandMw,
+  supplyMw,
+  reserveMw,
+  color,
+}: {
+  demandMw: number;
+  supplyMw: number;
+  reserveMw: number;
+  color: string;
+}) {
+  const demandPercent = supplyMw > 0 ? clamp((demandMw / supplyMw) * 100, 0, 100) : 0;
+  const reservePercent = supplyMw > 0 ? clamp((reserveMw / supplyMw) * 100, 0, 100) : 0;
+  return (
+    <div>
+      <div className="relative h-4 overflow-hidden rounded-full bg-slate-100">
+        <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${demandPercent}%`, backgroundColor: color }} />
+        <div
+          className="absolute inset-y-0 right-0 bg-emerald-300/80"
+          style={{ width: `${reservePercent}%` }}
+        />
+      </div>
+      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+        <span>需要</span>
+        <span>供給力</span>
+        <span>予備力</span>
+      </div>
+    </div>
+  );
+}
+
+function NetFlowMeter({
+  valueMw,
+  maxAbsMw,
+  color,
+}: {
+  valueMw: number;
+  maxAbsMw: number;
+  color: string;
+}) {
+  const positivePercent = valueMw > 0 ? clamp((Math.abs(valueMw) / maxAbsMw) * 50, 0, 50) : 0;
+  const negativePercent = valueMw < 0 ? clamp((Math.abs(valueMw) / maxAbsMw) * 50, 0, 50) : 0;
+  return (
+    <div>
+      <div className="relative h-3 overflow-hidden rounded-full bg-slate-100">
+        <div className="absolute inset-y-0 left-1/2 w-px bg-slate-300" />
+        {positivePercent > 0 ? (
+          <div
+            className="absolute inset-y-0 left-1/2 rounded-r-full"
+            style={{ width: `${positivePercent}%`, backgroundColor: color }}
+          />
+        ) : null}
+        {negativePercent > 0 ? (
+          <div
+            className="absolute inset-y-0 right-1/2 rounded-l-full bg-amber-500"
+            style={{ width: `${negativePercent}%` }}
+          />
+        ) : null}
+      </div>
+      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+        <span>送電</span>
+        <span>受電</span>
+      </div>
     </div>
   );
 }
@@ -2649,6 +3043,41 @@ function CompositionLegendList({
       ))}
     </div>
   );
+}
+
+function buildTopShareSegments<T>(
+  rows: T[],
+  total: number,
+  limit: number,
+  getLabel: (item: T) => string,
+  getValue: (item: T) => number,
+  getColor: (item: T, index: number) => string,
+): ShareSegment[] {
+  if (total <= 0 || rows.length === 0) {
+    return [];
+  }
+
+  const segments = rows.slice(0, limit).map((item, index) => {
+    const value = getValue(item);
+    return {
+      label: getLabel(item),
+      value,
+      percent: (value / total) * 100,
+      color: getColor(item, index),
+    };
+  });
+
+  const remainder = rows.slice(limit).reduce((sum, item) => sum + getValue(item), 0);
+  if (remainder > 0) {
+    segments.push({
+      label: "その他",
+      value: remainder,
+      percent: (remainder / total) * 100,
+      color: "#cbd5e1",
+    });
+  }
+
+  return segments.filter((segment) => segment.percent > 0);
 }
 
 function toDateStamp(dateText: string): string {

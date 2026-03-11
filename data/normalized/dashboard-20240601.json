@@ -37433,70 +37433,70 @@
         "dailyKwh": 49952221,
         "peakAbsMw": 1596,
         "lineCount": 29,
-        "stressIndex": 1.53
+        "stressIndex": 0.77
       },
       {
         "area": "中部",
         "dailyKwh": 134746202,
         "peakAbsMw": 3692,
         "lineCount": 81,
-        "stressIndex": 1.32
+        "stressIndex": 0.66
       },
       {
         "area": "北陸",
         "dailyKwh": 27131613,
         "peakAbsMw": 622,
         "lineCount": 10,
-        "stressIndex": 1.1
+        "stressIndex": 0.55
       },
       {
         "area": "四国",
         "dailyKwh": 66573000,
         "peakAbsMw": 1049,
         "lineCount": 25,
-        "stressIndex": 0.76
+        "stressIndex": 0.38
       },
       {
         "area": "北海道",
         "dailyKwh": 32777290,
         "peakAbsMw": 452,
         "lineCount": 40,
-        "stressIndex": 0.66
+        "stressIndex": 0.33
       },
       {
         "area": "九州",
         "dailyKwh": 138925000,
         "peakAbsMw": 1555,
         "lineCount": 71,
-        "stressIndex": 0.54
+        "stressIndex": 0.27
       },
       {
         "area": "関西",
         "dailyKwh": 243977376,
         "peakAbsMw": 2602,
         "lineCount": 54,
-        "stressIndex": 0.51
+        "stressIndex": 0.26
       },
       {
         "area": "東京",
         "dailyKwh": 349163000,
         "peakAbsMw": 3640,
         "lineCount": 83,
-        "stressIndex": 0.5
+        "stressIndex": 0.25
       },
       {
         "area": "沖縄",
         "dailyKwh": 18425200,
         "peakAbsMw": 183,
         "lineCount": 31,
-        "stressIndex": 0.48
+        "stressIndex": 0.24
       },
       {
         "area": "東北",
         "dailyKwh": 163481152,
         "peakAbsMw": 1293,
         "lineCount": 33,
-        "stressIndex": 0.38
+        "stressIndex": 0.19
       }
     ]
   },

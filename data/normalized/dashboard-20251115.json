@@ -37712,70 +37712,70 @@
         "dailyKwh": 54162000,
         "peakAbsMw": 1793,
         "lineCount": 25,
-        "stressIndex": 1.59
+        "stressIndex": 0.79
       },
       {
         "area": "北陸",
         "dailyKwh": 36499247,
         "peakAbsMw": 1165,
         "lineCount": 11,
-        "stressIndex": 1.53
+        "stressIndex": 0.77
       },
       {
         "area": "中国",
         "dailyKwh": 77943828,
         "peakAbsMw": 1491,
         "lineCount": 29,
-        "stressIndex": 0.92
+        "stressIndex": 0.46
       },
       {
         "area": "中部",
         "dailyKwh": 178732925,
         "peakAbsMw": 2322,
         "lineCount": 81,
-        "stressIndex": 0.62
+        "stressIndex": 0.31
       },
       {
         "area": "東京",
         "dailyKwh": 400103000,
         "peakAbsMw": 4290,
         "lineCount": 88,
-        "stressIndex": 0.51
+        "stressIndex": 0.26
       },
       {
         "area": "北海道",
         "dailyKwh": 46344110,
         "peakAbsMw": 468,
         "lineCount": 40,
-        "stressIndex": 0.48
-      },
-      {
-        "area": "関西",
-        "dailyKwh": 255567215,
-        "peakAbsMw": 2266,
-        "lineCount": 54,
-        "stressIndex": 0.43
-      },
-      {
-        "area": "九州",
-        "dailyKwh": 156173000,
-        "peakAbsMw": 1390,
-        "lineCount": 71,
-        "stressIndex": 0.43
+        "stressIndex": 0.24
       },
       {
         "area": "沖縄",
         "dailyKwh": 16896000,
         "peakAbsMw": 152,
         "lineCount": 31,
-        "stressIndex": 0.43
+        "stressIndex": 0.22
+      },
+      {
+        "area": "関西",
+        "dailyKwh": 255567215,
+        "peakAbsMw": 2266,
+        "lineCount": 54,
+        "stressIndex": 0.21
+      },
+      {
+        "area": "九州",
+        "dailyKwh": 156173000,
+        "peakAbsMw": 1390,
+        "lineCount": 71,
+        "stressIndex": 0.21
       },
       {
         "area": "東北",
         "dailyKwh": 252936949,
         "peakAbsMw": 1836,
         "lineCount": 33,
-        "stressIndex": 0.35
+        "stressIndex": 0.17
       }
     ]
   },
