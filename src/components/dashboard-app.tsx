@@ -465,9 +465,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const merged = new Set<string>([...availableDates, initialData.meta.targetDate, data.meta.targetDate]);
     return Array.from(merged).sort((a, b) => toDateStamp(b).localeCompare(toDateStamp(a), "en"));
   }, [availableDates, data.meta.targetDate, initialData.meta.targetDate]);
+  const availableDateSet = useMemo(() => new Set<string>(selectableDates), [selectableDates]);
+  const earliestAvailableDate = selectableDates.at(-1) ?? data.meta.targetDate;
+  const latestAvailableDate = selectableDates[0] ?? data.meta.targetDate;
+  const selectedDateIsAvailable = availableDateSet.has(selectedDate);
 
   useEffect(() => {
-    if (selectedDate === data.meta.targetDate) {
+    if (!selectedDateIsAvailable || selectedDate === data.meta.targetDate) {
       return;
     }
 
@@ -506,7 +510,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     return () => {
       cancelled = true;
     };
-  }, [data.meta.targetDate, selectedDate]);
+  }, [data.meta.targetDate, selectedDate, selectedDateIsAvailable]);
 
   const areas = useMemo(() => {
     const set = new Set<string>();
@@ -1942,24 +1946,32 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 <label htmlFor="dashboard-date" className="text-sm font-medium text-slate-600">
                   対象日
                 </label>
-                <select
+                <input
                   id="dashboard-date"
+                  type="date"
                   className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
-                  value={selectedDate}
+                  value={toInputDateValue(selectedDate)}
+                  min={toInputDateValue(earliestAvailableDate)}
                   onChange={(event) => {
+                    const nextDate = toDisplayDateValue(event.target.value);
+                    if (!nextDate) {
+                      setDateError("対象日を入力してください。");
+                      return;
+                    }
+                    setSelectedDate(nextDate);
+                    if (!availableDateSet.has(nextDate)) {
+                      setDateError(`${nextDate} の公開データはまだありません。最新は ${latestAvailableDate} です。`);
+                      return;
+                    }
                     setDateError(null);
-                    setSelectedDate(event.target.value);
                   }}
                   disabled={isDateLoading}
-                >
-                  {selectableDates.map((date) => (
-                    <option key={date} value={date}>
-                      {date}
-                    </option>
-                  ))}
-                </select>
+                />
                 {isDateLoading ? <span className="text-xs text-teal-700">読み込み中...</span> : null}
               </div>
+              <p className="text-xs text-slate-500">
+                公開データ範囲: {earliestAvailableDate} から {latestAvailableDate}
+              </p>
               <div className="flex items-center gap-2">
                 <label htmlFor="area" className="text-sm font-medium text-slate-600">
                   エリア
@@ -2435,6 +2447,25 @@ function CompositionLegendList({
 
 function toDateStamp(dateText: string): string {
   return dateText.trim().replaceAll("/", "").replaceAll("-", "");
+}
+
+function toInputDateValue(dateText: string): string {
+  const matched = dateText.trim().match(/^(\d{4})[/-](\d{2})[/-](\d{2})$/);
+  if (!matched) {
+    return "";
+  }
+  return `${matched[1]}-${matched[2]}-${matched[3]}`;
+}
+
+function toDisplayDateValue(dateText: string): string {
+  if (!dateText.trim()) {
+    return "";
+  }
+  const matched = dateText.trim().match(/^(\d{4})[/-](\d{2})[/-](\d{2})$/);
+  if (!matched) {
+    return dateText;
+  }
+  return `${matched[1]}/${matched[2]}/${matched[3]}`;
 }
 
 function parseDirection(

@@ -76,8 +76,9 @@ test("donut and bar chart panels keep visible chart signal", async ({ page }) =>
 });
 
 test("date selector reloads dashboard data for another day", async ({ page }) => {
-  const targetDate = "2026/03/03";
-  const targetStamp = "20260303";
+  const targetDate = "2026/03/09";
+  const targetInputDate = "2026-03-09";
+  const targetStamp = "20260309";
 
   await page.route(`**/data/normalized/dashboard-${targetStamp}.json`, async (route) => {
     await route.fulfill({
@@ -89,23 +90,27 @@ test("date selector reloads dashboard data for another day", async ({ page }) =>
 
   await waitForDashboardReady(page);
 
-  const dateSelect = page.getByLabel("対象日", { exact: true });
+  const dateInput = page.getByLabel("対象日", { exact: true });
   const headerSummary = page.getByText(/対象日:/);
 
-  await dateSelect.evaluate((element, value) => {
-    const select = element as HTMLSelectElement;
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = value;
-    select.append(option);
-  }, targetDate);
+  await dateInput.fill(targetInputDate);
 
-  await dateSelect.selectOption(targetDate);
-
-  await expect(page.getByText("読み込み中...")).toBeVisible();
   await expect(headerSummary).toContainText(targetDate);
-  await expect(dateSelect).toHaveValue(targetDate);
+  await expect(dateInput).toHaveValue(targetInputDate);
   await expect(page.getByText("読み込み中...")).toHaveCount(0);
-  await expect(page.getByText(/対象日: 2026\/03\/03/)).toBeVisible();
+  await expect(page.getByText(/対象日: 2026\/03\/09/)).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "エリア別需給カード" })).toBeVisible();
+});
+
+test("date selector shows a clear message when the selected day is unavailable", async ({ page }) => {
+  await waitForDashboardReady(page);
+
+  const headerSummary = page.getByText(/対象日:/);
+  const dateInput = page.getByLabel("対象日", { exact: true });
+
+  await dateInput.fill("2026-03-11");
+
+  await expect(page.getByText("2026/03/11 の公開データはまだありません。最新は 2026/03/10 です。")).toBeVisible();
+  await expect(headerSummary).toContainText("2026/03/10");
+  await expect(page.getByText("読み込み中...")).toHaveCount(0);
 });
