@@ -103,6 +103,7 @@ type DashboardSectionId =
   | "summary"
   | "areaCards"
   | "generation"
+  | "composition"
   | "reserve"
   | "totals"
   | "network"
@@ -113,6 +114,7 @@ const DASHBOARD_SECTION_OPTIONS: Array<{ id: DashboardSectionId; label: string }
   { id: "summary", label: "全国サマリー" },
   { id: "areaCards", label: "エリア需給" },
   { id: "generation", label: "発電トレンド" },
+  { id: "composition", label: "発電構成" },
   { id: "reserve", label: "需要・予備率" },
   { id: "totals", label: "発電・連系概要" },
   { id: "network", label: "ネットワーク" },
@@ -407,6 +409,10 @@ const STATION_CANVAS_OFFSETS_BY_AREA: Record<string, CanvasOffsetHint[]> = {
   中国: [{ keyword: "山陰", dx: -8, dy: -46 }],
 };
 
+const STATION_LAYOUT_NUDGES_BY_AREA: Record<string, CanvasOffsetHint[]> = {
+  四国: [{ keyword: "阿南", dx: 5, dy: -4 }],
+};
+
 const PLANT_GEO_HINTS_BY_AREA: Record<string, PlantGeoHint[]> = {
   中国: [
     { keyword: "三隅", lat: 34.79, lon: 132.19 },
@@ -437,6 +443,43 @@ const PLANT_GEO_HINTS_BY_AREA: Record<string, PlantGeoHint[]> = {
     { keyword: "本川", lat: 33.78, lon: 133.22 },
   ],
 };
+
+const INTERTIE_STATION_ENDPOINTS: Record<
+  string,
+  {
+    sourceArea: string;
+    sourceStation: string;
+    targetArea: string;
+    targetStation: string;
+    currentType: "ac" | "dc";
+  }
+> = {
+  三重東近江線: {
+    sourceArea: "中部",
+    sourceStation: "三重",
+    targetArea: "関西",
+    targetStation: "東近江変電所",
+    currentType: "ac",
+  },
+  越前嶺南線: {
+    sourceArea: "北陸",
+    sourceStation: "越前変電所",
+    targetArea: "関西",
+    targetStation: "嶺南変電所",
+    currentType: "ac",
+  },
+  阿南紀北直流幹線: {
+    sourceArea: "四国",
+    sourceStation: "阿南CS",
+    targetArea: "関西",
+    targetStation: "紀北変換所",
+    currentType: "dc",
+  },
+};
+
+const DIRECTIONAL_NUDGE_EXCLUDED_STATIONS = new Set<string>(["阿南", "紀北", "嶺南"]);
+
+const AREA_GEO_CANVAS_EXTENTS = buildAreaGeoCanvasExtents();
 
 
 export function DashboardApp({ initialData, availableDates }: DashboardAppProps) {
@@ -536,6 +579,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const selectedFlowSlotLabel = flowSlotLabels[clampedNetworkFlowSlotIndex] ?? "-";
   const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
   const visibleSectionSet = useMemo(() => new Set<DashboardSectionId>(visibleSectionIds), [visibleSectionIds]);
+  const showGenerationTrend = visibleSectionSet.has("generation");
+  const showSourceComposition = visibleSectionSet.has("composition");
   const reserveAreaSeries = useMemo(() => data.reserves?.areaSeries ?? [], [data.reserves?.areaSeries]);
   const reserveAreaMap = useMemo(
     () => new Map(reserveAreaSeries.map((item) => [item.area, item])),
@@ -1009,6 +1054,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const stationsByArea = new Map<string, Set<string>>();
     const nodeDegree = new Map<string, number>();
     const links: NetworkLink[] = [];
+    const intertieFacilityMap = new Map<
+      string,
+      {
+        sourceNodeId: string;
+        targetNodeId: string;
+        sourceArea: string;
+        targetArea: string;
+        absMw: number;
+        peakAbsMw: number;
+        intertieNames: Set<string>;
+        currentType: "ac" | "dc";
+      }
+    >();
     const intertieBridgeMap = new Map<
       string,
       {
@@ -1068,6 +1126,44 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       visibleAreas.add(row.sourceArea);
       visibleAreas.add(row.targetArea);
       const slotMw = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
+      const explicitEndpoints = INTERTIE_STATION_ENDPOINTS[row.intertieName];
+      if (explicitEndpoints) {
+        const flowSourceArea = slotMw >= 0 ? explicitEndpoints.sourceArea : explicitEndpoints.targetArea;
+        const flowSourceStation = slotMw >= 0 ? explicitEndpoints.sourceStation : explicitEndpoints.targetStation;
+        const flowTargetArea = slotMw >= 0 ? explicitEndpoints.targetArea : explicitEndpoints.sourceArea;
+        const flowTargetStation = slotMw >= 0 ? explicitEndpoints.targetStation : explicitEndpoints.sourceStation;
+        const sourceNodeId = buildStationNodeId(flowSourceArea, flowSourceStation);
+        const targetNodeId = buildStationNodeId(flowTargetArea, flowTargetStation);
+
+        const sourceStationSet = stationsByArea.get(flowSourceArea) ?? new Set<string>();
+        sourceStationSet.add(flowSourceStation);
+        stationsByArea.set(flowSourceArea, sourceStationSet);
+
+        const targetStationSet = stationsByArea.get(flowTargetArea) ?? new Set<string>();
+        targetStationSet.add(flowTargetStation);
+        stationsByArea.set(flowTargetArea, targetStationSet);
+
+        nodeDegree.set(sourceNodeId, (nodeDegree.get(sourceNodeId) ?? 0) + 1);
+        nodeDegree.set(targetNodeId, (nodeDegree.get(targetNodeId) ?? 0) + 1);
+
+        const key = `${sourceNodeId}=>${targetNodeId}`;
+        const current = intertieFacilityMap.get(key) ?? {
+          sourceNodeId,
+          targetNodeId,
+          sourceArea: flowSourceArea,
+          targetArea: flowTargetArea,
+          absMw: 0,
+          peakAbsMw: 0,
+          intertieNames: new Set<string>(),
+          currentType: explicitEndpoints.currentType,
+        };
+        current.absMw += Math.abs(slotMw);
+        current.peakAbsMw = Math.max(current.peakAbsMw, row.peakAbsMw ?? 0);
+        current.intertieNames.add(row.intertieName);
+        intertieFacilityMap.set(key, current);
+        return;
+      }
+
       const sourceArea = slotMw >= 0 ? row.sourceArea : row.targetArea;
       const targetArea = slotMw >= 0 ? row.targetArea : row.sourceArea;
       const key = `${sourceArea}=>${targetArea}`;
@@ -1261,6 +1357,37 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         opacity: 0,
       },
     }));
+    const maxAbsIntertieFacility = Math.max(...Array.from(intertieFacilityMap.values()).map((item) => item.absMw), 1);
+    const intertieFacilityLines = Array.from(intertieFacilityMap.values())
+      .map((line) => {
+        const from = nodePointById.get(line.sourceNodeId);
+        const to = nodePointById.get(line.targetNodeId);
+        if (!from || !to) {
+          return null;
+        }
+        const ratio = line.absMw / maxAbsIntertieFacility;
+        const strokeColor =
+          line.currentType === "dc" ? "rgba(192,38,211,0.82)" : "rgba(234,88,12,0.74)";
+        return {
+          ...line,
+          coords: buildCurvedLineCoords(from, to, line.currentType === "dc" ? 0.08 : 0.05),
+          lineStyle: {
+            width: 1.5 + ratio * 3.2,
+            opacity: 0.72,
+            color: strokeColor,
+            type: line.currentType === "dc" ? "dashed" : "solid",
+          },
+        };
+      })
+      .filter((item) => item !== null);
+    const animatedIntertieFacilityLines = intertieFacilityLines.map((line) => ({
+      coords: line.coords,
+      lineStyle: {
+        color: line.lineStyle.color,
+        width: 0,
+        opacity: 0,
+      },
+    }));
 
     const guideGraphics = buildJapanGuideGraphics();
 
@@ -1323,6 +1450,36 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       ],
       graphic: guideGraphics,
       series: [
+        {
+          type: "lines",
+          coordinateSystem: "none",
+          polyline: true,
+          silent: false,
+          z: 3,
+          data: intertieFacilityLines,
+          tooltip: {
+            formatter: (params: {
+              data: {
+                sourceArea: string;
+                targetArea: string;
+                absMw: number;
+                peakAbsMw: number;
+                intertieNames: Set<string>;
+                currentType: "ac" | "dc";
+              };
+            }) =>
+              `${params.data.sourceArea} → ${params.data.targetArea}<br/>区分: ${
+                params.data.currentType === "dc" ? "直流連係線" : "連係線"
+              }<br/>表示時刻: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(
+                params.data.absMw,
+              )} MW<br/>最大|潮流|: ${numberFmt.format(params.data.peakAbsMw)} MW<br/>連係線: ${Array.from(
+                params.data.intertieNames,
+              ).join(" / ")}`,
+          },
+          lineStyle: {
+            opacity: 0.7,
+          },
+        },
         {
           type: "lines",
           coordinateSystem: "none",
@@ -1415,6 +1572,26 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             symbol: "arrow",
             symbolSize: 6,
             color: "rgba(15,23,42,0.9)",
+          },
+          lineStyle: {
+            width: 0,
+            opacity: 0,
+          },
+        },
+        {
+          type: "lines",
+          coordinateSystem: "none",
+          polyline: true,
+          silent: true,
+          z: 7,
+          data: animatedIntertieFacilityLines,
+          effect: {
+            show: true,
+            constantSpeed: 24,
+            trailLength: 0,
+            symbol: "arrow",
+            symbolSize: 7,
+            color: "rgba(15,23,42,0.82)",
           },
           lineStyle: {
             width: 0,
@@ -1538,6 +1715,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       netIntertieRows.filter((item) => item.mw < 0).sort((a, b) => a.mw - b.mw)[0] ?? null;
 
     const hottestIntertie = interAreaFlowTextRows[0] ?? null;
+    const largestUnit =
+      [...data.generation.topUnits].sort(
+        (a, b) => b.maxOutputManKw - a.maxOutputManKw || b.dailyKwh - a.dailyKwh,
+      )[0] ?? null;
     const topPlant = allPlantSummaries[0] ?? null;
     const strongestImportValue = strongestImportArea?.area ?? "-";
     const strongestImportDetail = strongestImportArea
@@ -1591,6 +1772,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         detail: strongestExportDetail,
       },
       {
+        label: "最大ユニット",
+        value: largestUnit ? `${largestUnit.plantName} ${largestUnit.unitName}` : "-",
+        detail: largestUnit
+          ? `${largestUnit.area} / ${manKwFmt.format(largestUnit.maxOutputManKw)} 万kW`
+          : "データなし",
+      },
+      {
         label: "最大発電所",
         value: topPlant ? topPlant.plantName : "-",
         detail: topPlant ? `${topPlant.area} / ${formatCompactEnergy(topPlant.dailyKwh)}` : "データなし",
@@ -1602,6 +1790,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     data.flows.intertieSeries,
     data.generation.areaTotals,
     data.generation.sourceTotals,
+    data.generation.topUnits,
     interAreaFlowTextRows,
     reserveCurrentRows,
     selectedFlowDateTimeLabel,
@@ -1874,21 +2063,26 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 data: netImportSeries,
                 smooth: true,
                 symbol: "none",
+                color: "#111827",
                 lineStyle: { width: 3, color: "#111827", type: "dashed" },
               },
             ]
           : []),
-        ...topSeries.map((row) => ({
-          name: `${row.sourceArea}→${row.targetArea}`,
-          type: "line",
-          data: row.values,
-          smooth: true,
-          symbol: "none",
-          lineStyle: {
-            width: 2.3,
-            color: FLOW_AREA_COLORS[row.sourceArea] ?? FLOW_AREA_COLORS.default,
-          },
-        })),
+        ...topSeries.map((row) => {
+          const seriesColor = FLOW_AREA_COLORS[row.sourceArea] ?? FLOW_AREA_COLORS.default;
+          return {
+            name: `${row.sourceArea}→${row.targetArea}`,
+            type: "line",
+            data: row.values,
+            smooth: true,
+            symbol: "none",
+            color: seriesColor,
+            lineStyle: {
+              width: 2.3,
+              color: seriesColor,
+            },
+          };
+        }),
       ],
     };
   }, [data.flows.intertieSeries, data.meta.slotLabels.flow, selectedArea]);
@@ -2010,7 +2204,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               <button
                 type="button"
                 className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700"
-                onClick={() => setVisibleSectionIds(["summary", "areaCards", "network"])}
+                onClick={() => setVisibleSectionIds(["summary", "areaCards", "composition", "network"])}
               >
                 俯瞰モード
               </button>
@@ -2161,62 +2355,74 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           </section>
         ) : null}
 
-        {visibleSectionSet.has("generation") ? (
+        {showGenerationTrend || showSourceComposition ? (
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <Panel title="発電方式別 30分推移" className="lg:col-span-7" testId="generation-trend-panel">
-              <div className="mb-2 flex justify-end">
-                <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
-                  表示エリア
-                </label>
-                <select
-                  id="generation-area"
-                  className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
-                  value={generationTrendArea}
-                  onChange={(event) => setGenerationTrendArea(event.target.value)}
-                >
-                  {generationAreas.map((area) => (
-                    <option key={area} value={area}>
-                      {area}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div data-testid="generation-trend-chart">
-                <ReactECharts option={generationLineOption} style={{ height: 360 }} />
-              </div>
-            </Panel>
-            <Panel title="発電方式 構成比" className="lg:col-span-5" testId="source-composition-panel">
-              <div className="mb-2 flex justify-end">
-                <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
-                  表示エリア
-                </label>
-                <select
-                  id="source-donut-area"
-                  className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
-                  value={sourceDonutArea}
-                  onChange={(event) => setSourceDonutArea(event.target.value)}
-                >
-                  {generationAreas.map((area) => (
-                    <option key={area} value={area}>
-                      {area}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div
-                className={`items-center gap-4 ${
-                  useInlineDonutLegend ? "grid lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]" : ""
-                }`}
+            {showGenerationTrend ? (
+              <Panel
+                title="発電方式別 30分推移"
+                className={showSourceComposition ? "lg:col-span-7" : "lg:col-span-12"}
+                testId="generation-trend-panel"
               >
-                <div data-testid="source-composition-chart" className="mx-auto w-full max-w-[300px]">
-                  <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
+                <div className="mb-2 flex justify-end">
+                  <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
+                    表示エリア
+                  </label>
+                  <select
+                    id="generation-area"
+                    className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+                    value={generationTrendArea}
+                    onChange={(event) => setGenerationTrendArea(event.target.value)}
+                  >
+                    {generationAreas.map((area) => (
+                      <option key={area} value={area}>
+                        {area}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <CompositionLegendList
-                  items={sourceCompositionItems}
-                  className={useInlineDonutLegend ? "" : "mt-3"}
-                />
-              </div>
-            </Panel>
+                <div data-testid="generation-trend-chart">
+                  <ReactECharts option={generationLineOption} style={{ height: 360 }} />
+                </div>
+              </Panel>
+            ) : null}
+            {showSourceComposition ? (
+              <Panel
+                title="発電方式 構成比"
+                className={showGenerationTrend ? "lg:col-span-5" : "lg:col-span-12"}
+                testId="source-composition-panel"
+              >
+                <div className="mb-2 flex justify-end">
+                  <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
+                    表示エリア
+                  </label>
+                  <select
+                    id="source-donut-area"
+                    className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+                    value={sourceDonutArea}
+                    onChange={(event) => setSourceDonutArea(event.target.value)}
+                  >
+                    {generationAreas.map((area) => (
+                      <option key={area} value={area}>
+                        {area}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div
+                  className={`items-center gap-4 ${
+                    useInlineDonutLegend ? "grid lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]" : ""
+                  }`}
+                >
+                  <div data-testid="source-composition-chart" className="mx-auto w-full max-w-[300px]">
+                    <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
+                  </div>
+                  <CompositionLegendList
+                    items={sourceCompositionItems}
+                    className={useInlineDonutLegend ? "" : "mt-3"}
+                  />
+                </div>
+              </Panel>
+            ) : null}
           </section>
         ) : null}
 
@@ -2280,7 +2486,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
                 </div>
                 <p className="mt-2 text-[11px] text-slate-600">
-                  注: この図は公開CSVで端点が確定できる地域内送電線のみ表示します。連系線と発電所-SS接続は推定が必要なため描画していません。
+                  注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンクとして、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
                 </p>
               </div>
               <div data-testid="network-flow-chart">
@@ -2545,11 +2751,12 @@ function resolveStationGeoBase(area: string, station: string): { x: number; y: n
     return null;
   }
 
-  const point = geoToCanvas(matched.lat, matched.lon);
+  const point = fitGeoPointToAreaBounds(area, geoToCanvas(matched.lat, matched.lon));
   const directionalNudge = getDirectionalNudge(normalized);
+  const layoutNudge = resolveStationLayoutNudge(area, normalized);
   return clampPointToAreaBounds(area, {
-    x: point.x + directionalNudge.dx,
-    y: point.y + directionalNudge.dy,
+    x: point.x + directionalNudge.dx + layoutNudge.dx,
+    y: point.y + directionalNudge.dy + layoutNudge.dy,
   });
 }
 
@@ -2568,7 +2775,7 @@ function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: n
   if (!matched) {
     return resolveStationGeoBase(area, plantName);
   }
-  const point = geoToCanvas(matched.lat, matched.lon);
+  const point = fitGeoPointToAreaBounds(area, geoToCanvas(matched.lat, matched.lon));
   return clampPointToAreaBounds(area, point);
 }
 
@@ -2583,6 +2790,15 @@ function resolveStationCanvasOverride(area: string, normalizedStation: string): 
     x: anchor.x + matched.dx,
     y: anchor.y + matched.dy,
   });
+}
+
+function resolveStationLayoutNudge(area: string, normalizedStation: string): { dx: number; dy: number } {
+  const hints = STATION_LAYOUT_NUDGES_BY_AREA[area] ?? [];
+  const matched = hints.find((hint) => normalizedStation.includes(hint.keyword));
+  if (!matched) {
+    return { dx: 0, dy: 0 };
+  }
+  return { dx: matched.dx, dy: matched.dy };
 }
 
 function resolveGlobalStationGeoBase(normalizedStation: string): { x: number; y: number } | null {
@@ -2651,6 +2867,9 @@ function isConverterStationName(name: string): boolean {
 }
 
 function getDirectionalNudge(station: string): { dx: number; dy: number } {
+  if (DIRECTIONAL_NUDGE_EXCLUDED_STATIONS.has(station)) {
+    return { dx: 0, dy: 0 };
+  }
   let dx = 0;
   let dy = 0;
   if (station.includes("東")) {
@@ -2705,6 +2924,56 @@ function placePointAvoidingOverlap(
   return {
     x: clamp(base.x, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
     y: clamp(base.y, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+  };
+}
+
+function buildAreaGeoCanvasExtents(): Record<string, { xMin: number; xMax: number; yMin: number; yMax: number }> {
+  const extents = new Map<string, { xMin: number; xMax: number; yMin: number; yMax: number }>();
+  const register = (area: string, lat: number, lon: number): void => {
+    const point = geoToCanvas(lat, lon);
+    const current = extents.get(area);
+    if (!current) {
+      extents.set(area, {
+        xMin: point.x,
+        xMax: point.x,
+        yMin: point.y,
+        yMax: point.y,
+      });
+      return;
+    }
+    current.xMin = Math.min(current.xMin, point.x);
+    current.xMax = Math.max(current.xMax, point.x);
+    current.yMin = Math.min(current.yMin, point.y);
+    current.yMax = Math.max(current.yMax, point.y);
+  };
+
+  Object.entries(STATION_GEO_HINTS_BY_AREA).forEach(([area, hints]) => {
+    hints.forEach((hint) => register(area, hint.lat, hint.lon));
+  });
+  Object.entries(PLANT_GEO_HINTS_BY_AREA).forEach(([area, hints]) => {
+    hints.forEach((hint) => register(area, hint.lat, hint.lon));
+  });
+
+  return Object.fromEntries(extents.entries());
+}
+
+function fitGeoPointToAreaBounds(area: string, point: { x: number; y: number }): { x: number; y: number } {
+  const extent = AREA_GEO_CANVAS_EXTENTS[area];
+  if (!extent) {
+    return clampPointToAreaBounds(area, point);
+  }
+
+  const bounds = getAreaLayoutBounds(area);
+  const innerPaddingX = Math.min(16, Math.max(8, (bounds.xMax - bounds.xMin) * 0.08));
+  const innerPaddingY = Math.min(16, Math.max(8, (bounds.yMax - bounds.yMin) * 0.08));
+  const normalizedX =
+    extent.xMax === extent.xMin ? 0.5 : clamp((point.x - extent.xMin) / (extent.xMax - extent.xMin), 0, 1);
+  const normalizedY =
+    extent.yMax === extent.yMin ? 0.5 : clamp((point.y - extent.yMin) / (extent.yMax - extent.yMin), 0, 1);
+
+  return {
+    x: bounds.xMin + innerPaddingX + normalizedX * (bounds.xMax - bounds.xMin - innerPaddingX * 2),
+    y: bounds.yMin + innerPaddingY + normalizedY * (bounds.yMax - bounds.yMin - innerPaddingY * 2),
   };
 }
 
@@ -2888,11 +3157,30 @@ function buildAreaBridgeEndpoints(
   };
   const dx = targetCenter.x - sourceCenter.x;
   const dy = targetCenter.y - sourceCenter.y;
-  const from = projectPointToAreaEdge(sourceBounds, { x: dx, y: dy });
-  const to = projectPointToAreaEdge(targetBounds, { x: -dx, y: -dy });
+  let from = projectPointToAreaEdge(sourceBounds, { x: dx, y: dy });
+  let to = projectPointToAreaEdge(targetBounds, { x: -dx, y: -dy });
+  const directDistance = Math.hypot(to.x - from.x, to.y - from.y);
+  if (directDistance < 26) {
+    const expandedSourceBounds = expandAreaBounds(sourceBounds, 18);
+    const expandedTargetBounds = expandAreaBounds(targetBounds, 18);
+    from = projectPointToAreaEdge(expandedSourceBounds, { x: dx, y: dy });
+    to = projectPointToAreaEdge(expandedTargetBounds, { x: -dx, y: -dy });
+  }
   const curveness = clamp((Math.abs(dy) > Math.abs(dx) ? 0.08 : 0.05) * Math.sign(dx || 1), -0.12, 0.12);
 
   return { from, to, curveness };
+}
+
+function expandAreaBounds(
+  bounds: { xMin: number; xMax: number; yMin: number; yMax: number },
+  margin: number,
+): { xMin: number; xMax: number; yMin: number; yMax: number } {
+  return {
+    xMin: bounds.xMin - margin,
+    xMax: bounds.xMax + margin,
+    yMin: bounds.yMin - margin,
+    yMax: bounds.yMax + margin,
+  };
 }
 
 function projectPointToAreaEdge(
