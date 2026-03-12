@@ -938,14 +938,26 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           return null;
         }
         const ratio = bridge.absMw / maxAbsIntertie;
+        const bridgeLabelText = `${Array.from(bridge.intertieNames).join("/")} ${decimalFmt.format(bridge.absMw)} MW`;
         return {
           ...bridge,
+          name: bridgeLabelText,
           coords: buildCurvedLineCoords(endpoints.from, endpoints.to, endpoints.curveness),
           lineStyle: {
             width: 1.2 + ratio * 3.2,
             opacity: 0.46,
             color: bridge.value >= 0 ? "rgba(234,88,12,0.55)" : "rgba(37,99,235,0.55)",
             type: "solid",
+          },
+          label: {
+            show: true,
+            formatter: bridgeLabelText,
+            position: "middle" as const,
+            fontSize: 9,
+            color: "#334155",
+            backgroundColor: "rgba(255,255,255,0.82)",
+            borderRadius: 3,
+            padding: [1, 4] as [number, number],
           },
         };
       })
@@ -1012,14 +1024,26 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         const ratio = line.absMw / maxAbsIntertieFacility;
         const strokeColor =
           line.currentType === "dc" ? "rgba(192,38,211,0.82)" : "rgba(234,88,12,0.74)";
+        const labelText = `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)} MW`;
         return {
           ...line,
+          name: labelText,
           coords: buildCurvedLineCoords(from, to, line.currentType === "dc" ? 0.08 : 0.05),
           lineStyle: {
             width: 1.5 + ratio * 3.2,
             opacity: 0.72,
             color: strokeColor,
             type: line.currentType === "dc" ? "dashed" : "solid",
+          },
+          label: {
+            show: true,
+            formatter: labelText,
+            position: "middle" as const,
+            fontSize: 9,
+            color: "#334155",
+            backgroundColor: "rgba(255,255,255,0.82)",
+            borderRadius: 3,
+            padding: [1, 4] as [number, number],
           },
         };
       })
