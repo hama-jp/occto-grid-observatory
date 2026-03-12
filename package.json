@@ -11,7 +11,14 @@
     "test:ui:public": "playwright test",
     "ingest": "tsx scripts/ingest.ts",
     "enrich:reserve": "tsx scripts/enrich-reserve.ts",
-    "sync-public-data": "tsx scripts/sync-public-data.ts"
+    "sync-public-data": "tsx scripts/sync-public-data.ts",
+    "geocode:db": "tsx scripts/geocode-station-db.ts",
+    "geocode:fill-from-hints": "tsx scripts/fill-station-db-from-hints.ts",
+    "geocode:fill-from-mymaps": "tsx scripts/fill-station-db-from-mymaps.ts",
+    "geocode:fill-from-curated": "tsx scripts/fill-station-db-from-curated.ts",
+    "geocode:progress": "tsx scripts/geocode-progress-report.ts",
+    "geocode:manual-sheet": "tsx scripts/geocode-manual-research-sheet.ts",
+    "geocode:triage": "tsx scripts/geocode-triage-report.ts"
   },
   "dependencies": {
     "csv-parse": "^6.1.0",

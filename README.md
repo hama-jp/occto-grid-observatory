@@ -38,6 +38,38 @@ npm run ingest -- --mode=backfill --from=2026-02-20 --to=2026-02-29 --force=true
 - `data/normalized/dashboard-latest.json`
 - `data/normalized/dashboard-YYYYMMDD.json`
 
+
+## 変電所/発電所 位置DB（SS/CS/PS）
+```bash
+# 最新データから未登録設備候補を抽出
+npm run geocode:db
+
+# 既存のダッシュボード内ヒントからDBへ移行（初回整備用）
+npm run geocode:fill-from-hints
+
+# Google My Maps の設備ラベル一致からDBへ反映
+npm run geocode:fill-from-mymaps
+
+# 公式資料と地図の突き合わせで手動確認した候補をDBへ反映
+npm run geocode:fill-from-curated
+
+# 整備進捗を確認（カバレッジ）
+npm run geocode:progress
+
+# 手動調査用シート（検索URL付きCSV）を生成
+npm run geocode:manual-sheet
+
+# 未解決候補の難易度を分類（quick_win / manual_hard / ask_user）
+npm run geocode:triage
+```
+
+- 確定座標DB: `data/master/station-location-db.json`（verifiedのみ）
+- 未登録候補: `data/master/station-location-candidates.json`
+- 手動調査シート: `data/master/station-location-research-sheet.csv`
+- トリアージ結果: `data/master/station-location-triage.json`
+- Google My Maps 照合結果: `data/master/station-location-mymaps-matches.json`
+- 位置整備方針: `docs/station-geocoding-plan.md`
+
 ## 開発起動
 ```bash
 npm run dev
