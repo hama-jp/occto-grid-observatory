@@ -25,6 +25,7 @@ import {
   AREA_LAYOUT_BOUNDS,
   flowMagnitudeColor,
   buildJapanGuideGraphics,
+  buildJapanGuideSvgPaths,
 } from "./geo";
 
 // ---------- parseDirection ----------
@@ -416,6 +417,23 @@ describe("buildJapanGuideGraphics", () => {
       expect(graphic.silent).toBe(true);
       expect(graphic.shape).toBeDefined();
       expect((graphic.shape as { points: unknown[] }).points.length).toBeGreaterThan(3);
+    }
+  });
+});
+
+// ---------- buildJapanGuideSvgPaths ----------
+describe("buildJapanGuideSvgPaths", () => {
+  test("returns array of SVG path objects for main islands", () => {
+    const paths = buildJapanGuideSvgPaths();
+    expect(paths.length).toBeGreaterThanOrEqual(4);
+    const names = paths.map((p) => p.name);
+    expect(names).toContain("hokkaido");
+    expect(names).toContain("honshu");
+    expect(names).toContain("shikoku");
+    expect(names).toContain("kyushu");
+    for (const path of paths) {
+      expect(path.d).toMatch(/^M[\d.]+,[\d.]+ /);
+      expect(path.d).toMatch(/ Z$/);
     }
   });
 });
