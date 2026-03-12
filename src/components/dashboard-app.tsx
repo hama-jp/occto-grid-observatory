@@ -86,7 +86,7 @@ const MAP_VIEWBOX = {
   height: 560,
   padding: 30,
 };
-const MAX_ANIMATED_FLOW_LINES_PER_AREA = 10;
+const MAX_ANIMATED_FLOW_LINES_PER_AREA = 8;
 
 const FLOW_AREA_NAME_SET = new Set<string>([
   "北海道",
@@ -484,10 +484,6 @@ const STATION_CANVAS_OFFSETS_BY_AREA: Record<string, CanvasOffsetHint[]> = {
   中国: [{ keyword: "山陰", dx: -8, dy: -46 }],
 };
 
-const STATION_LAYOUT_NUDGES_BY_AREA: Record<string, CanvasOffsetHint[]> = {
-  四国: [{ keyword: "阿南", dx: 5, dy: -4 }],
-};
-
 const PLANT_GEO_HINTS_BY_AREA: Record<string, PlantGeoHint[]> = {
   中国: [
     { keyword: "三隅", lat: 34.79, lon: 132.19 },
@@ -551,8 +547,6 @@ const INTERTIE_STATION_ENDPOINTS: Record<
     currentType: "dc",
   },
 };
-
-const DIRECTIONAL_NUDGE_EXCLUDED_STATIONS = new Set<string>(["阿南", "紀北", "嶺南"]);
 
 const AREA_GEO_CANVAS_EXTENTS = buildAreaGeoCanvasExtents();
 const AREA_LAYOUT_BOUNDS = buildAreaLayoutBounds();
@@ -1298,7 +1292,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       intertieBridgeMap.set(key, current);
     });
 
-    const stationPositions = buildStationLayout(stationsByArea, links, nodeDegree);
+    const stationPositions = buildStationLayout(stationsByArea);
 
     if (visibleAreas.size === 0) {
       data.flows.areaSummaries.forEach((row) => visibleAreas.add(row.area));
@@ -1334,7 +1328,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             shouldLabel: stationLabelIds.has(stationNodeId),
             x: position.x,
             y: position.y,
-            symbolSize: isConverterStationName(station) ? 10 : 8,
+            symbolSize: isConverterStationName(station) ? 8 : 6,
             symbol: isConverterStationName(station) ? "diamond" : "circle",
             itemStyle: {
               color: isConverterStationName(station)
@@ -1354,22 +1348,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       .filter((plant) => areaScope.has(plant.area))
       .sort((a, b) => b.dailyKwh - a.dailyKwh);
     const maxPlantDaily = Math.max(...scopedPowerPlants.map((item) => item.dailyKwh), 1);
-    const powerOccupiedCells = new Set<string>();
 
-    scopedPowerPlants.forEach((plant, plantIndex) => {
-      const base = resolvePlantGeoBase(plant.area, plant.plantName) ?? (AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default);
-      const angle = ((hashSeed(`${plant.area}-${plant.plantName}`) % 360) * Math.PI) / 180;
+    scopedPowerPlants.forEach((plant) => {
+      const base =
+        resolvePlantGeoBase(plant.area, plant.plantName) ?? clampPointToMapBounds(AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default);
       const ratio = plant.dailyKwh / maxPlantDaily;
-      const radius = 6 + ratio * 9 + (plantIndex % 2) * 2;
-      const radialCandidate = clampPointToAreaBounds(plant.area, {
-        x: base.x + Math.cos(angle) * radius,
-        y: base.y + Math.sin(angle) * radius * 0.66,
-      });
-      const position = placePointAvoidingOverlap(
-        radialCandidate,
-        `power-${plant.area}-${plant.plantName}`,
-        powerOccupiedCells,
-      );
       const powerNodeId = buildPowerNodeId(plant.area, plant.plantName);
       nodes.push({
         id: powerNodeId,
@@ -1382,10 +1365,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         dailyKwh: plant.dailyKwh,
         maxOutputManKw: roundTo(plant.maxOutputManKw, 2),
         shouldLabel: ratio >= 0.5,
-        x: position.x,
-        y: position.y,
+        x: base.x,
+        y: base.y,
         symbol: "rect",
-        symbolSize: 5.2 + ratio * 10.8,
+        symbolSize: 4.2 + ratio * 7.4,
         itemStyle: {
           color: FLOW_AREA_COLORS[plant.area] ?? FLOW_AREA_COLORS.default,
           borderColor: "#ffffff",
@@ -1473,7 +1456,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           coords: buildCurvedLineCoords(from, to, line.lineStyle.curveness),
           lineStyle: {
             color: "rgba(125,211,252,0.42)",
-            width: Math.max(2.6, line.lineStyle.width * 1.1),
+            width: Math.max(1.4, line.lineStyle.width * 0.72),
             opacity: 0.34,
           },
         };
@@ -1482,7 +1465,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const majorFlowAnimationPaths: NetworkAnimationPath[] = animatedFlowLines.map((line, index) => ({
       id: `major-flow-${index}`,
       d: buildSvgQuadraticPath(line.coords),
-      strokeWidth: Math.max(3.6, line.lineStyle.width + 0.8),
+      strokeWidth: Math.max(2.1, line.lineStyle.width + 0.35),
       durationSeconds: roundTo(1.7 + (index % 4) * 0.18, 2),
       delaySeconds: roundTo((index % 5) * 0.12, 2),
     }));
@@ -2766,14 +2749,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                               d={path.d}
                               fill="none"
                               stroke="rgba(56,189,248,0.38)"
-                              strokeWidth={path.strokeWidth + 2.2}
+                              strokeWidth={path.strokeWidth + 1.2}
                               strokeLinecap="round"
                             />
                             <path
                               d={path.d}
                               fill="none"
                               stroke="rgba(255,255,255,0.96)"
-                              strokeWidth={path.strokeWidth + 0.8}
+                              strokeWidth={path.strokeWidth}
                               strokeLinecap="round"
                               strokeDasharray="22 20"
                               style={{
@@ -3230,14 +3213,8 @@ function buildPowerNodeId(area: string, plantName: string): string {
   return `power::${area.trim()}::${plantName.trim()}`;
 }
 
-function buildStationLayout(
-  stationsByArea: Map<string, Set<string>>,
-  links: Array<{ source: string; target: string }>,
-  nodeDegree: Map<string, number>,
-): Map<string, { x: number; y: number }> {
+function buildStationLayout(stationsByArea: Map<string, Set<string>>): Map<string, { x: number; y: number }> {
   const positions = new Map<string, { x: number; y: number }>();
-  const basePositions = new Map<string, { x: number; y: number }>();
-  const occupiedCells = new Set<string>();
 
   stationsByArea.forEach((stations, area) => {
     const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
@@ -3246,25 +3223,21 @@ function buildStationLayout(
     sorted.forEach((station, index) => {
       const seed = `${area}-${station}-${index}`;
       const hinted = resolveStationGeoBase(area, station);
-      const unclampedBase = hinted ?? {
+      const base = hinted ?? clampPointToMapBounds({
         x: anchor.x + ((hashSeed(seed) % 13) - 6),
         y: anchor.y + (((hashSeed(seed + "-y") % 13) - 6) * 0.85),
-      };
-      const base = clampPointToAreaBounds(area, unclampedBase);
-      basePositions.set(buildStationNodeId(area, station), base);
-      const placed = placePointAvoidingOverlap(base, seed, occupiedCells);
-      positions.set(buildStationNodeId(area, station), placed);
+      });
+      positions.set(buildStationNodeId(area, station), base);
     });
   });
 
-  relaxStationLayout(positions, basePositions, stationsByArea, links, nodeDegree);
   return positions;
 }
 
 function resolveStationGeoBase(area: string, station: string): { x: number; y: number } | null {
   const fromDb = resolveStationLocationFromDb(area, station);
   if (fromDb) {
-    return clampPointToAreaBounds(area, geoToCanvas(fromDb.lat, fromDb.lon));
+    return clampPointToMapBounds(geoToCanvas(fromDb.lat, fromDb.lon));
   }
   const normalized = normalizeStationName(station);
   const globalOverride = resolveGlobalStationGeoBase(normalized);
@@ -3290,18 +3263,13 @@ function resolveStationGeoBase(area: string, station: string): { x: number; y: n
   }
 
   const point = geoToCanvas(matched.lat, matched.lon);
-  const directionalNudge = getDirectionalNudge(normalized);
-  const layoutNudge = resolveStationLayoutNudge(area, normalized);
-  return clampPointToAreaBounds(area, {
-    x: point.x + directionalNudge.dx + layoutNudge.dx,
-    y: point.y + directionalNudge.dy + layoutNudge.dy,
-  });
+  return clampPointToMapBounds(point);
 }
 
 function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: number } | null {
   const fromDb = resolveStationLocationFromDb(area, plantName);
   if (fromDb) {
-    return clampPointToAreaBounds(area, geoToCanvas(fromDb.lat, fromDb.lon));
+    return clampPointToMapBounds(geoToCanvas(fromDb.lat, fromDb.lon));
   }
   const normalized = normalizeStationName(plantName);
   const hints = PLANT_GEO_HINTS_BY_AREA[area] ?? [];
@@ -3318,7 +3286,7 @@ function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: n
     return resolveStationGeoBase(area, plantName);
   }
   const point = geoToCanvas(matched.lat, matched.lon);
-  return clampPointToAreaBounds(area, point);
+  return clampPointToMapBounds(point);
 }
 
 function resolveStationCanvasOverride(area: string, normalizedStation: string): { x: number; y: number } | null {
@@ -3328,19 +3296,10 @@ function resolveStationCanvasOverride(area: string, normalizedStation: string): 
     return null;
   }
   const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
-  return clampPointToAreaBounds(area, {
+  return clampPointToMapBounds({
     x: anchor.x + matched.dx,
     y: anchor.y + matched.dy,
   });
-}
-
-function resolveStationLayoutNudge(area: string, normalizedStation: string): { dx: number; dy: number } {
-  const hints = STATION_LAYOUT_NUDGES_BY_AREA[area] ?? [];
-  const matched = hints.find((hint) => normalizedStation.includes(hint.keyword));
-  if (!matched) {
-    return { dx: 0, dy: 0 };
-  }
-  return { dx: matched.dx, dy: matched.dy };
 }
 
 function resolveGlobalStationGeoBase(normalizedStation: string): { x: number; y: number } | null {
@@ -3460,64 +3419,12 @@ function isConverterStationName(name: string): boolean {
   return false;
 }
 
-function getDirectionalNudge(station: string): { dx: number; dy: number } {
-  if (DIRECTIONAL_NUDGE_EXCLUDED_STATIONS.has(station)) {
-    return { dx: 0, dy: 0 };
-  }
-  let dx = 0;
-  let dy = 0;
-  if (station.includes("東")) {
-    dx += 9;
-  }
-  if (station.includes("西")) {
-    dx -= 9;
-  }
-  if (station.includes("北")) {
-    dy -= 9;
-  }
-  if (station.includes("南")) {
-    dy += 9;
-  }
-  if (station.includes("新")) {
-    dx += 3;
-    dy -= 3;
-  }
-  return { dx, dy };
-}
-
 function geoToCanvas(lat: number, lon: number): { x: number; y: number } {
   const xRatio = (lon - JAPAN_GEO_BOUNDS.lonMin) / (JAPAN_GEO_BOUNDS.lonMax - JAPAN_GEO_BOUNDS.lonMin);
   const yRatio = (JAPAN_GEO_BOUNDS.latMax - lat) / (JAPAN_GEO_BOUNDS.latMax - JAPAN_GEO_BOUNDS.latMin);
   return {
     x: MAP_VIEWBOX.padding + xRatio * (MAP_VIEWBOX.width - MAP_VIEWBOX.padding * 2),
     y: MAP_VIEWBOX.padding + yRatio * (MAP_VIEWBOX.height - MAP_VIEWBOX.padding * 2),
-  };
-}
-
-function placePointAvoidingOverlap(
-  base: { x: number; y: number },
-  seedText: string,
-  occupiedCells: Set<string>,
-): { x: number; y: number } {
-  const cellSize = 12;
-  const maxTry = 42;
-  const hash = hashSeed(seedText);
-
-  for (let attempt = 0; attempt < maxTry; attempt += 1) {
-    const radius = attempt === 0 ? 0 : 3 + Math.floor((attempt - 1) / 6) * 2;
-    const angle = ((hash + attempt * 53) % 360) * (Math.PI / 180);
-    const x = clamp(base.x + Math.cos(angle) * radius, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding);
-    const y = clamp(base.y + Math.sin(angle) * radius, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding);
-    const key = `${Math.round(x / cellSize)}:${Math.round(y / cellSize)}`;
-    if (!occupiedCells.has(key)) {
-      occupiedCells.add(key);
-      return { x, y };
-    }
-  }
-
-  return {
-    x: clamp(base.x, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
-    y: clamp(base.y, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
   };
 }
 
@@ -3606,99 +3513,6 @@ function buildAreaAnchors(): Record<string, { x: number; y: number }> {
 
   anchors.set("default", AREA_ANCHOR_FALLBACKS.default);
   return Object.fromEntries(anchors.entries());
-}
-
-function relaxStationLayout(
-  positions: Map<string, { x: number; y: number }>,
-  basePositions: Map<string, { x: number; y: number }>,
-  stationsByArea: Map<string, Set<string>>,
-  links: Array<{ source: string; target: string }>,
-  nodeDegree: Map<string, number>,
-): void {
-  const adjacency = new Map<string, Set<string>>();
-  links.forEach((link) => {
-    const sourceNeighbors = adjacency.get(link.source) ?? new Set<string>();
-    sourceNeighbors.add(link.target);
-    adjacency.set(link.source, sourceNeighbors);
-
-    const targetNeighbors = adjacency.get(link.target) ?? new Set<string>();
-    targetNeighbors.add(link.source);
-    adjacency.set(link.target, targetNeighbors);
-  });
-
-  stationsByArea.forEach((stations, area) => {
-    const nodeIds = Array.from(stations)
-      .map((station) => buildStationNodeId(area, station))
-      .filter((nodeId) => positions.has(nodeId));
-    const bounds = getAreaLayoutBounds(area);
-
-    for (let iteration = 0; iteration < 32; iteration += 1) {
-      const deltas = new Map<string, { dx: number; dy: number }>();
-      nodeIds.forEach((nodeId) => deltas.set(nodeId, { dx: 0, dy: 0 }));
-
-      for (let i = 0; i < nodeIds.length; i += 1) {
-        const aId = nodeIds[i];
-        const aPos = positions.get(aId);
-        if (!aPos) {
-          continue;
-        }
-
-        for (let j = i + 1; j < nodeIds.length; j += 1) {
-          const bId = nodeIds[j];
-          const bPos = positions.get(bId);
-          if (!bPos) {
-            continue;
-          }
-
-          const dx = bPos.x - aPos.x;
-          const dy = bPos.y - aPos.y;
-          const distance = Math.hypot(dx, dy) || 0.001;
-          const connected =
-            adjacency.get(aId)?.has(bId) ||
-            adjacency.get(bId)?.has(aId) ||
-            false;
-          const preferredDistance = connected
-            ? 26 + Math.max(nodeDegree.get(aId) ?? 0, nodeDegree.get(bId) ?? 0) * 1.6
-            : 18 + Math.max(nodeDegree.get(aId) ?? 0, nodeDegree.get(bId) ?? 0) * 0.8;
-
-          if (distance >= preferredDistance) {
-            continue;
-          }
-
-          const push = (preferredDistance - distance) * (connected ? 0.12 : 0.19);
-          const unitX = dx / distance;
-          const unitY = dy / distance;
-
-          const aDelta = deltas.get(aId);
-          const bDelta = deltas.get(bId);
-          if (!aDelta || !bDelta) {
-            continue;
-          }
-
-          aDelta.dx -= unitX * push;
-          aDelta.dy -= unitY * push;
-          bDelta.dx += unitX * push;
-          bDelta.dy += unitY * push;
-        }
-      }
-
-      nodeIds.forEach((nodeId) => {
-        const delta = deltas.get(nodeId);
-        const position = positions.get(nodeId);
-        const base = basePositions.get(nodeId);
-        if (!delta || !position || !base) {
-          return;
-        }
-
-        const degree = nodeDegree.get(nodeId) ?? 0;
-        delta.dx += (base.x - position.x) * (0.12 + Math.min(degree, 6) * 0.01);
-        delta.dy += (base.y - position.y) * (0.12 + Math.min(degree, 6) * 0.01);
-
-        position.x = clamp(position.x + delta.dx, bounds.xMin, bounds.xMax);
-        position.y = clamp(position.y + delta.dy, bounds.yMin, bounds.yMax);
-      });
-    }
-  });
 }
 
 function buildLinkCurvenessMap(
@@ -3992,11 +3806,10 @@ function getAreaLayoutBounds(area: string): { xMin: number; xMax: number; yMin: 
   return AREA_LAYOUT_BOUNDS[area] ?? AREA_LAYOUT_BOUND_FALLBACKS.default;
 }
 
-function clampPointToAreaBounds(area: string, point: { x: number; y: number }): { x: number; y: number } {
-  const bounds = getAreaLayoutBounds(area);
+function clampPointToMapBounds(point: { x: number; y: number }): { x: number; y: number } {
   return {
-    x: clamp(point.x, bounds.xMin, bounds.xMax),
-    y: clamp(point.y, bounds.yMin, bounds.yMax),
+    x: clamp(point.x, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+    y: clamp(point.y, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
   };
 }
 
