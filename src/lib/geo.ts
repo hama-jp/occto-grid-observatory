@@ -5,13 +5,9 @@ import {
   AREA_ANCHOR_FALLBACKS,
   AREA_LAYOUT_BOUND_FALLBACKS,
   FLOW_AREA_NAME_SET,
-} from "@/lib/constants";
-import { clamp, hashSeed, roundTo } from "@/lib/formatters";
+} from "./constants";
+import { clamp, hashSeed } from "./formatters";
 import stationLocationDb from "../../data/master/station-location-db.json";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export type GeoHint = {
   keyword: string;
@@ -79,10 +75,6 @@ export type GraphRoamPayload = {
 export type NetworkFlowChartHostElement = HTMLDivElement & {
   __occtoDispatchGraphRoam?: (payload: GraphRoamPayload) => void;
 };
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
 
 export const DEFAULT_NETWORK_OVERLAY_VIEWPORT: NetworkOverlayViewport = {
   width: MAP_VIEWBOX.width,
@@ -416,18 +408,6 @@ export const INTERTIE_STATION_ENDPOINTS: Record<
     currentType: "dc",
   },
 };
-
-// ---------------------------------------------------------------------------
-// Module-level computed constants
-// ---------------------------------------------------------------------------
-
-export const AREA_GEO_CANVAS_EXTENTS = buildAreaGeoCanvasExtents();
-export const AREA_LAYOUT_BOUNDS = buildAreaLayoutBounds();
-export const AREA_ANCHORS = buildAreaAnchors();
-
-// ---------------------------------------------------------------------------
-// Functions
-// ---------------------------------------------------------------------------
 
 export function parseDirection(
   rawDirection: string,
@@ -1068,3 +1048,8 @@ export function isNetworkPowerPlantSource(sourceType: string): boolean {
 export function buildJapanGuideGraphics(): Array<Record<string, unknown>> {
   return [];
 }
+
+// Module-level computed constants (depend on the functions above)
+export const AREA_GEO_CANVAS_EXTENTS = buildAreaGeoCanvasExtents();
+export const AREA_LAYOUT_BOUNDS = buildAreaLayoutBounds();
+export const AREA_ANCHORS = buildAreaAnchors();
