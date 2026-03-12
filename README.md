@@ -90,9 +90,9 @@ PR / push 時に以下を実行:
 - ワークフロー: [data-refresh.yml](.github/workflows/data-refresh.yml)
 - 定時実行:
   1. **09:10 / 12:10 / 15:10 / 18:10 JST** に `mode=now` を実行して、当日分の途中経過を保存
-  2. **16:10 JST**（= **07:10 UTC**）に `mode=daily` を実行して、前日分の確定版を保存
+  2. **11:10 / 16:10 JST**（= **02:10 / 07:10 UTC**）に固定データの再取得を実行し、前日分の公開遅延をリトライ
 - 処理内容:
-  1. schedule時は `mode=now` または `mode=daily` を時刻ごとに切り替えて実行
+  1. schedule時は `mode=now` または `mode=backfill` を時刻ごとに切り替えて実行
   2. 発電実績 + 地内基幹送電線 + 地域間連系線のCSVを取得して正規化
   3. `data/normalized` に差分があれば自動コミット＆push
   4. `main` へのpushをトリガーに Pages デプロイが走る
