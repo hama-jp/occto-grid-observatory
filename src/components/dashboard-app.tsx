@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { DashboardData } from "@/lib/dashboard-types";
+import stationLocationDb from "../../data/master/station-location-db.json";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -112,6 +113,8 @@ type BarListItem = {
   valueLabel: string;
   percent: number;
   color: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
   note?: string;
 };
 
@@ -195,6 +198,21 @@ type PlantGeoHint = {
   keyword: string;
   lat: number;
   lon: number;
+};
+
+type StationLocationRecord = {
+  area: string;
+  name: string;
+  aliases?: string[];
+  facilityType?: "SS" | "CS" | "PS" | "SWS" | "UNKNOWN";
+  address?: string;
+  lat: number;
+  lon: number;
+  source?: string;
+  confidence?: "high" | "medium";
+  verifiedBy?: string;
+  verifiedAt?: string;
+  note?: string;
 };
 
 const JAPAN_GEO_BOUNDS = {
@@ -1185,7 +1203,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         isPseudoAreaNodeName(sourceName) ||
         isPseudoAreaNodeName(targetName) ||
         isLineLikeNodeName(sourceName) ||
-        isLineLikeNodeName(targetName)
+        isLineLikeNodeName(targetName) ||
+        isVirtualBranchNodeName(sourceName) ||
+        isVirtualBranchNodeName(targetName) ||
+        isCompositeFacilityNodeName(sourceName) ||
+        isCompositeFacilityNodeName(targetName)
       ) {
         return;
       }
@@ -3238,6 +3260,10 @@ function buildStationLayout(
 }
 
 function resolveStationGeoBase(area: string, station: string): { x: number; y: number } | null {
+  const fromDb = resolveStationLocationFromDb(area, station);
+  if (fromDb) {
+    return fitGeoPointToAreaBounds(area, geoToCanvas(fromDb.lat, fromDb.lon));
+  }
   const normalized = normalizeStationName(station);
   const globalOverride = resolveGlobalStationGeoBase(normalized);
   if (globalOverride) {
@@ -3271,6 +3297,10 @@ function resolveStationGeoBase(area: string, station: string): { x: number; y: n
 }
 
 function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: number } | null {
+  const fromDb = resolveStationLocationFromDb(area, plantName);
+  if (fromDb) {
+    return fitGeoPointToAreaBounds(area, geoToCanvas(fromDb.lat, fromDb.lon));
+  }
   const normalized = normalizeStationName(plantName);
   const hints = PLANT_GEO_HINTS_BY_AREA[area] ?? [];
   let matched: PlantGeoHint | null = null;
@@ -3322,12 +3352,44 @@ function resolveGlobalStationGeoBase(normalizedStation: string): { x: number; y:
   };
 }
 
+function resolveStationLocationFromDb(area: string, stationOrPlantName: string): StationLocationRecord | null {
+  const normalizedInput = normalizeStationName(stationOrPlantName);
+  if (!normalizedInput) {
+    return null;
+  }
+
+  let areaMatch: StationLocationRecord | null = null;
+  let crossAreaMatch: StationLocationRecord | null = null;
+  for (const record of stationLocationDb.records as StationLocationRecord[]) {
+    const candidates = [record.name, ...(record.aliases ?? [])]
+      .map((entry) => normalizeStationName(entry))
+      .filter(Boolean);
+    const matched = candidates.some((candidate) => candidate === normalizedInput);
+    if (!matched) {
+      continue;
+    }
+    if (record.area === area) {
+      areaMatch = record;
+      break;
+    }
+    if (!crossAreaMatch) {
+      crossAreaMatch = record;
+    }
+  }
+
+  return areaMatch ?? crossAreaMatch;
+}
+
 function normalizeStationName(station: string): string {
   return station
     .trim()
+    .normalize("NFKC")
     .replace(/\s+/g, "")
     .replace(/（[^）]*）/g, "")
     .replace(/\([^)]*\)/g, "")
+    .replace(/第?[0-9]+号(?:機|系列)?/g, "")
+    .replace(/[0-9]+(?:号機|号系列|系列|軸)/g, "")
+    .replace(/新[0-9]+号機/g, "")
     .replace(/変電所|開閉所|変換所|発電所|火力|幹線|連系線|SS|ss|SWS|sws|CS|cs|PS|ps/g, "");
 }
 
@@ -3359,6 +3421,26 @@ function isLineLikeNodeName(name: string): boolean {
     return true;
   }
   return false;
+}
+
+function isCompositeFacilityNodeName(name: string): boolean {
+  const normalized = name.trim().normalize("NFKC").replace(/\s+/g, "");
+  if (!/[・,，、\/／]/.test(normalized)) {
+    return false;
+  }
+  const matches = normalized.match(/(変電所|開閉所|変換所|発電所|SS|PS|CS|SWS)/gi) ?? [];
+  return matches.length >= 2;
+}
+
+function isVirtualBranchNodeName(name: string): boolean {
+  const normalized = name.trim().normalize("NFKC").replace(/\s+/g, "");
+  if (!normalized) {
+    return false;
+  }
+  if (/[0-9]+T(?:[（(].*)?$/i.test(normalized)) {
+    return true;
+  }
+  return normalized === "電名" || normalized === "分岐点";
 }
 
 function isConverterStationName(name: string): boolean {
