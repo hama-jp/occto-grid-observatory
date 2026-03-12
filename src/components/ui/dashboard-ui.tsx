@@ -185,11 +185,13 @@ export function SupplyDemandMeter({
   demandMw,
   supplyMw,
   reserveMw,
+  reserveRate,
   color,
 }: {
   demandMw: number;
   supplyMw: number;
   reserveMw: number;
+  reserveRate: number;
   color: string;
 }) {
   const demandPercent = supplyMw > 0 ? clamp((demandMw / supplyMw) * 100, 0, 100) : 0;
@@ -203,10 +205,22 @@ export function SupplyDemandMeter({
           style={{ width: `${reservePercent}%` }}
         />
       </div>
-      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-        <span>需要</span>
-        <span>供給力</span>
-        <span>予備力</span>
+      <div className="mt-2 grid grid-cols-3 gap-1 text-[11px]">
+        <div>
+          <span className="inline-block h-2 w-2 rounded-full mr-1" style={{ backgroundColor: color }} />
+          <span className="text-slate-500 dark:text-slate-400">需要</span>
+          <p className="mt-0.5 text-xs font-semibold text-slate-800 dark:text-slate-200 pl-3">{decimalFmt.format(demandMw)} <span className="font-normal text-slate-400">MW</span></p>
+        </div>
+        <div className="text-center">
+          <span className="inline-block h-2 w-2 rounded-full mr-1 bg-slate-300 dark:bg-slate-500" />
+          <span className="text-slate-500 dark:text-slate-400">供給力</span>
+          <p className="mt-0.5 text-xs font-semibold text-slate-800 dark:text-slate-200">{decimalFmt.format(supplyMw)} <span className="font-normal text-slate-400">MW</span></p>
+        </div>
+        <div className="text-right">
+          <span className="inline-block h-2 w-2 rounded-full mr-1 bg-emerald-400 dark:bg-emerald-500" />
+          <span className="text-slate-500 dark:text-slate-400">予備力</span>
+          <p className="mt-0.5 text-xs font-semibold text-slate-800 dark:text-slate-200 pr-0.5">{decimalFmt.format(reserveMw)} <span className="font-normal text-slate-400">MW</span> <span className="font-normal text-slate-400">({decimalFmt.format(reserveRate)}%)</span></p>
+        </div>
       </div>
       <style jsx global>{`
         @keyframes network-flow-dash {
