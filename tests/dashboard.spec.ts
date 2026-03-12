@@ -182,9 +182,10 @@ test("date selector shows a clear message when the selected day is unavailable",
   const headerSummary = page.getByText(/対象日:/);
   const dateInput = page.getByLabel("対象日", { exact: true });
 
-  await dateInput.fill("2026-03-11");
+  // Use a far-future date that is guaranteed to have no data
+  await dateInput.fill("2029-12-31");
 
-  await expect(page.getByText("2026/03/11 の公開データはまだありません。最新は 2026/03/10 です。")).toBeVisible();
-  await expect(headerSummary).toContainText("2026/03/10");
+  await expect(page.getByText(/2029\/12\/31 の公開データはまだありません。最新は /)).toBeVisible();
+  await expect(headerSummary).not.toContainText("2029/12/31");
   await expect(page.getByText("読み込み中...")).toHaveCount(0);
 });
