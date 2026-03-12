@@ -598,7 +598,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
       try {
         const dateStamp = toDateStamp(selectedDate);
-        const response = await fetch(`data/normalized/dashboard-${dateStamp}.json`, { cache: "no-store" });
+        const dataBasePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+        const response = await fetch(`${dataBasePath}/data/normalized/dashboard-${dateStamp}.json`, { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`data not found for ${selectedDate}`);
         }
