@@ -32,7 +32,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: UI test
-        run: npm run test:ui
+        run: npx playwright test
 
       - name: Upload Playwright report
         if: failure()
