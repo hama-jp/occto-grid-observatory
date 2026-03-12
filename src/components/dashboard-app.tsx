@@ -2049,24 +2049,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                               demandMw={card.demandMw}
                               supplyMw={card.supplyMw}
                               reserveMw={card.reserveMw}
+                              reserveRate={card.reserveRate}
                               color={areaColor}
-                            />
-                          </div>
-                          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                            <CompactStatCard
-                              label="需要"
-                              value={`${decimalFmt.format(card.demandMw)} MW`}
-                              detail={`${card.supplyMw > 0 ? decimalFmt.format((card.demandMw / card.supplyMw) * 100) : "0"}%`}
-                            />
-                            <CompactStatCard
-                              label="供給力"
-                              value={`${decimalFmt.format(card.supplyMw)} MW`}
-                              detail="実供給力"
-                            />
-                            <CompactStatCard
-                              label="予備力"
-                              value={`${decimalFmt.format(card.reserveMw)} MW`}
-                              detail={`${decimalFmt.format(card.reserveRate)}%`}
                             />
                           </div>
                         </div>
