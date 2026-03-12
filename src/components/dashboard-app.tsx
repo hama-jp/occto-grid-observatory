@@ -52,7 +52,7 @@ const FLOW_AREA_COLORS: Record<string, string> = {
   default: "#577590",
 };
 
-const AREA_ANCHORS: Record<string, { x: number; y: number }> = {
+const AREA_ANCHOR_FALLBACKS: Record<string, { x: number; y: number }> = {
   北海道: { x: 760, y: 82 },
   東北: { x: 695, y: 155 },
   東京: { x: 724, y: 236 },
@@ -66,7 +66,7 @@ const AREA_ANCHORS: Record<string, { x: number; y: number }> = {
   default: { x: 610, y: 300 },
 };
 
-const AREA_LAYOUT_BOUNDS: Record<string, { xMin: number; xMax: number; yMin: number; yMax: number }> = {
+const AREA_LAYOUT_BOUND_FALLBACKS: Record<string, { xMin: number; xMax: number; yMin: number; yMax: number }> = {
   北海道: { xMin: 640, xMax: 845, yMin: 38, yMax: 156 },
   東北: { xMin: 610, xMax: 770, yMin: 116, yMax: 226 },
   東京: { xMin: 650, xMax: 820, yMin: 194, yMax: 292 },
@@ -555,6 +555,8 @@ const INTERTIE_STATION_ENDPOINTS: Record<
 const DIRECTIONAL_NUDGE_EXCLUDED_STATIONS = new Set<string>(["阿南", "紀北", "嶺南"]);
 
 const AREA_GEO_CANVAS_EXTENTS = buildAreaGeoCanvasExtents();
+const AREA_LAYOUT_BOUNDS = buildAreaLayoutBounds();
+const AREA_ANCHORS = buildAreaAnchors();
 
 
 export function DashboardApp({ initialData, availableDates }: DashboardAppProps) {
@@ -3262,7 +3264,7 @@ function buildStationLayout(
 function resolveStationGeoBase(area: string, station: string): { x: number; y: number } | null {
   const fromDb = resolveStationLocationFromDb(area, station);
   if (fromDb) {
-    return fitGeoPointToAreaBounds(area, geoToCanvas(fromDb.lat, fromDb.lon));
+    return clampPointToAreaBounds(area, geoToCanvas(fromDb.lat, fromDb.lon));
   }
   const normalized = normalizeStationName(station);
   const globalOverride = resolveGlobalStationGeoBase(normalized);
@@ -3287,7 +3289,7 @@ function resolveStationGeoBase(area: string, station: string): { x: number; y: n
     return null;
   }
 
-  const point = fitGeoPointToAreaBounds(area, geoToCanvas(matched.lat, matched.lon));
+  const point = geoToCanvas(matched.lat, matched.lon);
   const directionalNudge = getDirectionalNudge(normalized);
   const layoutNudge = resolveStationLayoutNudge(area, normalized);
   return clampPointToAreaBounds(area, {
@@ -3299,7 +3301,7 @@ function resolveStationGeoBase(area: string, station: string): { x: number; y: n
 function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: number } | null {
   const fromDb = resolveStationLocationFromDb(area, plantName);
   if (fromDb) {
-    return fitGeoPointToAreaBounds(area, geoToCanvas(fromDb.lat, fromDb.lon));
+    return clampPointToAreaBounds(area, geoToCanvas(fromDb.lat, fromDb.lon));
   }
   const normalized = normalizeStationName(plantName);
   const hints = PLANT_GEO_HINTS_BY_AREA[area] ?? [];
@@ -3315,7 +3317,7 @@ function resolvePlantGeoBase(area: string, plantName: string): { x: number; y: n
   if (!matched) {
     return resolveStationGeoBase(area, plantName);
   }
-  const point = fitGeoPointToAreaBounds(area, geoToCanvas(matched.lat, matched.lon));
+  const point = geoToCanvas(matched.lat, matched.lon);
   return clampPointToAreaBounds(area, point);
 }
 
@@ -3539,6 +3541,10 @@ function buildAreaGeoCanvasExtents(): Record<string, { xMin: number; xMax: numbe
     current.yMax = Math.max(current.yMax, point.y);
   };
 
+  (stationLocationDb.records as StationLocationRecord[]).forEach((record) => {
+    register(record.area, record.lat, record.lon);
+  });
+
   Object.entries(STATION_GEO_HINTS_BY_AREA).forEach(([area, hints]) => {
     hints.forEach((hint) => register(area, hint.lat, hint.lon));
   });
@@ -3549,24 +3555,57 @@ function buildAreaGeoCanvasExtents(): Record<string, { xMin: number; xMax: numbe
   return Object.fromEntries(extents.entries());
 }
 
-function fitGeoPointToAreaBounds(area: string, point: { x: number; y: number }): { x: number; y: number } {
-  const extent = AREA_GEO_CANVAS_EXTENTS[area];
-  if (!extent) {
-    return clampPointToAreaBounds(area, point);
-  }
+function buildAreaLayoutBounds(): Record<string, { xMin: number; xMax: number; yMin: number; yMax: number }> {
+  const bounds = new Map<string, { xMin: number; xMax: number; yMin: number; yMax: number }>();
 
-  const bounds = getAreaLayoutBounds(area);
-  const innerPaddingX = Math.min(16, Math.max(8, (bounds.xMax - bounds.xMin) * 0.08));
-  const innerPaddingY = Math.min(16, Math.max(8, (bounds.yMax - bounds.yMin) * 0.08));
-  const normalizedX =
-    extent.xMax === extent.xMin ? 0.5 : clamp((point.x - extent.xMin) / (extent.xMax - extent.xMin), 0, 1);
-  const normalizedY =
-    extent.yMax === extent.yMin ? 0.5 : clamp((point.y - extent.yMin) / (extent.yMax - extent.yMin), 0, 1);
+  AREA_DISPLAY_ORDER.forEach((area) => {
+    const extent = AREA_GEO_CANVAS_EXTENTS[area];
+    if (!extent) {
+      const fallback = AREA_LAYOUT_BOUND_FALLBACKS[area] ?? AREA_LAYOUT_BOUND_FALLBACKS.default;
+      bounds.set(area, fallback);
+      return;
+    }
 
-  return {
-    x: bounds.xMin + innerPaddingX + normalizedX * (bounds.xMax - bounds.xMin - innerPaddingX * 2),
-    y: bounds.yMin + innerPaddingY + normalizedY * (bounds.yMax - bounds.yMin - innerPaddingY * 2),
-  };
+    const spanX = extent.xMax - extent.xMin;
+    const spanY = extent.yMax - extent.yMin;
+    const paddingX = Math.max(12, Math.min(28, spanX * 0.16));
+    const paddingY = Math.max(12, Math.min(24, spanY * 0.18));
+    const minWidth = 88;
+    const minHeight = 64;
+    const centerX = (extent.xMin + extent.xMax) / 2;
+    const centerY = (extent.yMin + extent.yMax) / 2;
+    const halfWidth = Math.max(minWidth, spanX + paddingX * 2) / 2;
+    const halfHeight = Math.max(minHeight, spanY + paddingY * 2) / 2;
+
+    bounds.set(area, {
+      xMin: clamp(centerX - halfWidth, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+      xMax: clamp(centerX + halfWidth, MAP_VIEWBOX.padding, MAP_VIEWBOX.width - MAP_VIEWBOX.padding),
+      yMin: clamp(centerY - halfHeight, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+      yMax: clamp(centerY + halfHeight, MAP_VIEWBOX.padding, MAP_VIEWBOX.height - MAP_VIEWBOX.padding),
+    });
+  });
+
+  bounds.set("default", AREA_LAYOUT_BOUND_FALLBACKS.default);
+  return Object.fromEntries(bounds.entries());
+}
+
+function buildAreaAnchors(): Record<string, { x: number; y: number }> {
+  const anchors = new Map<string, { x: number; y: number }>();
+
+  AREA_DISPLAY_ORDER.forEach((area) => {
+    const bounds = AREA_LAYOUT_BOUNDS[area];
+    if (!bounds) {
+      anchors.set(area, AREA_ANCHOR_FALLBACKS[area] ?? AREA_ANCHOR_FALLBACKS.default);
+      return;
+    }
+    anchors.set(area, {
+      x: (bounds.xMin + bounds.xMax) / 2,
+      y: (bounds.yMin + bounds.yMax) / 2,
+    });
+  });
+
+  anchors.set("default", AREA_ANCHOR_FALLBACKS.default);
+  return Object.fromEntries(anchors.entries());
 }
 
 function relaxStationLayout(
@@ -3950,7 +3989,7 @@ function projectPointToAreaEdge(
 }
 
 function getAreaLayoutBounds(area: string): { xMin: number; xMax: number; yMin: number; yMax: number } {
-  return AREA_LAYOUT_BOUNDS[area] ?? AREA_LAYOUT_BOUNDS.default;
+  return AREA_LAYOUT_BOUNDS[area] ?? AREA_LAYOUT_BOUND_FALLBACKS.default;
 }
 
 function clampPointToAreaBounds(area: string, point: { x: number; y: number }): { x: number; y: number } {
