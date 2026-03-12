@@ -54,6 +54,7 @@ import {
   clampPointToMapBounds,
   isNetworkPowerPlantSource,
   buildJapanGuideGraphics,
+  buildJapanGuideSvgPaths,
   flowMagnitudeColor,
 } from "@/lib/geo";
 import {
@@ -937,14 +938,26 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           return null;
         }
         const ratio = bridge.absMw / maxAbsIntertie;
+        const bridgeLabelText = `${Array.from(bridge.intertieNames).join("/")} ${decimalFmt.format(bridge.absMw)} MW`;
         return {
           ...bridge,
+          name: bridgeLabelText,
           coords: buildCurvedLineCoords(endpoints.from, endpoints.to, endpoints.curveness),
           lineStyle: {
             width: 1.2 + ratio * 3.2,
             opacity: 0.46,
             color: bridge.value >= 0 ? "rgba(234,88,12,0.55)" : "rgba(37,99,235,0.55)",
             type: "solid",
+          },
+          label: {
+            show: true,
+            formatter: bridgeLabelText,
+            position: "middle" as const,
+            fontSize: 9,
+            color: "#334155",
+            backgroundColor: "rgba(255,255,255,0.82)",
+            borderRadius: 3,
+            padding: [1, 4] as [number, number],
           },
         };
       })
@@ -1011,8 +1024,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         const ratio = line.absMw / maxAbsIntertieFacility;
         const strokeColor =
           line.currentType === "dc" ? "rgba(192,38,211,0.82)" : "rgba(234,88,12,0.74)";
+        const labelText = `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)} MW`;
         return {
           ...line,
+          name: labelText,
           coords: buildCurvedLineCoords(from, to, line.currentType === "dc" ? 0.08 : 0.05),
           lineStyle: {
             width: 1.5 + ratio * 3.2,
@@ -1020,11 +1035,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             color: strokeColor,
             type: line.currentType === "dc" ? "dashed" : "solid",
           },
+          label: {
+            show: true,
+            formatter: labelText,
+            position: "middle" as const,
+            fontSize: 9,
+            color: "#334155",
+            backgroundColor: "rgba(255,255,255,0.82)",
+            borderRadius: 3,
+            padding: [1, 4] as [number, number],
+          },
         };
       })
       .filter((item) => item !== null);
-    const guideGraphics = buildJapanGuideGraphics();
-
     return {
       animationDurationUpdate: 360,
       __majorFlowAnimationPaths: majorFlowAnimationPaths,
@@ -1083,7 +1106,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           textStyle: { color: "#334155" },
         },
       ],
-      graphic: guideGraphics,
       series: [
         {
           type: "lines",
@@ -1210,6 +1232,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       ).__majorFlowAnimationPaths ?? [],
     [flowNetworkOption],
   );
+
+  const japanGuidePaths = useMemo(() => buildJapanGuideSvgPaths(), []);
 
   const interAreaFlowTextRows = useMemo(() => {
     const rowLimit = selectedArea === "全エリア" ? (isMobileViewport ? 10 : 14) : (isMobileViewport ? 16 : 22);
@@ -2282,52 +2306,60 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                     graphRoam: (_event: unknown, chart: unknown) => registerNetworkFlowChart(chart),
                   }}
                 />
-                {majorFlowAnimationPaths.length > 0 ? (
-                  <svg
-                    data-testid="network-flow-overlay-svg"
-                    className="pointer-events-none absolute inset-0 z-10"
-                    viewBox={`0 0 ${networkOverlayViewport.width} ${networkOverlayViewport.height}`}
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
+                <svg
+                  data-testid="network-flow-overlay-svg"
+                  className="pointer-events-none absolute inset-0 z-10"
+                  viewBox={`0 0 ${networkOverlayViewport.width} ${networkOverlayViewport.height}`}
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <g
+                    data-testid="network-flow-overlay-roam"
+                    transform={formatSvgMatrixTransform(networkOverlayViewport.roam)}
                   >
-                    <g
-                      data-testid="network-flow-overlay-roam"
-                      transform={formatSvgMatrixTransform(networkOverlayViewport.roam)}
-                    >
-                      <g transform={formatSvgMatrixTransform(networkOverlayViewport.raw)}>
-                        {majorFlowAnimationPaths.map((path) => {
-                          const glowColor = flowMagnitudeColor(path.magnitude, 0.38);
-                          const dashColor = flowMagnitudeColor(path.magnitude, 0.92);
-                          const shadowColor = flowMagnitudeColor(path.magnitude, 0.95);
-                          return (
-                            <g key={path.id}>
-                              <path
-                                d={path.d}
-                                fill="none"
-                                stroke={glowColor}
-                                strokeWidth={path.strokeWidth + 1.2}
-                                strokeLinecap="round"
-                              />
-                              <path
-                                d={path.d}
-                                fill="none"
-                                stroke={dashColor}
-                                strokeWidth={path.strokeWidth}
-                                strokeLinecap="round"
-                                strokeDasharray="22 20"
-                                style={{
-                                  animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
-                                  animationDelay: `-${path.delaySeconds}s`,
-                                  filter: `drop-shadow(0 0 2px ${shadowColor})`,
-                                }}
-                              />
-                            </g>
-                          );
-                        })}
-                      </g>
+                    <g transform={formatSvgMatrixTransform(networkOverlayViewport.raw)}>
+                      {japanGuidePaths.map((island) => (
+                        <path
+                          key={island.name}
+                          d={island.d}
+                          fill="rgba(203,213,225,0.12)"
+                          stroke="rgba(148,163,184,0.22)"
+                          strokeWidth={1}
+                          strokeLinejoin="round"
+                        />
+                      ))}
+                      {majorFlowAnimationPaths.map((path) => {
+                        const glowColor = flowMagnitudeColor(path.magnitude, 0.38);
+                        const dashColor = flowMagnitudeColor(path.magnitude, 0.92);
+                        const shadowColor = flowMagnitudeColor(path.magnitude, 0.95);
+                        return (
+                          <g key={path.id}>
+                            <path
+                              d={path.d}
+                              fill="none"
+                              stroke={glowColor}
+                              strokeWidth={path.strokeWidth + 1.2}
+                              strokeLinecap="round"
+                            />
+                            <path
+                              d={path.d}
+                              fill="none"
+                              stroke={dashColor}
+                              strokeWidth={path.strokeWidth}
+                              strokeLinecap="round"
+                              strokeDasharray="22 20"
+                              style={{
+                                animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
+                                animationDelay: `-${path.delaySeconds}s`,
+                                filter: `drop-shadow(0 0 2px ${shadowColor})`,
+                              }}
+                            />
+                          </g>
+                        );
+                      })}
                     </g>
-                  </svg>
-                ) : null}
+                  </g>
+                </svg>
               </div>
             </Panel>
             <Panel title="エリア間連系潮流（実績）" testId="inter-area-flow-panel">
