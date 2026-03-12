@@ -2,8 +2,9 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { PNG } from "pngjs";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { AREA_DISPLAY_ORDER } from "../../src/lib/constants";
 
-export const AREA_ORDER = ["北海道", "東北", "東京", "中部", "北陸", "関西", "中国", "四国", "九州", "沖縄"];
+export const AREA_ORDER = AREA_DISPLAY_ORDER;
 
 const FIXTURE_FILE = path.join(process.cwd(), "data", "normalized", "dashboard-20260304.json");
 
