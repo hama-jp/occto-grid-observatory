@@ -54,6 +54,7 @@ import {
   clampPointToMapBounds,
   isNetworkPowerPlantSource,
   buildJapanGuideGraphics,
+  flowMagnitudeColor,
 } from "@/lib/geo";
 import {
   type BarListItem,
@@ -68,7 +69,9 @@ import {
   SupplyDemandMeter,
   NetFlowMeter,
   CompositionLegendList,
+  LoadingOverlay,
 } from "@/components/ui/dashboard-ui";
+import { ChartErrorBoundary } from "@/components/ui/error-boundary";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -979,6 +982,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         }
         return {
           coords: buildCurvedLineCoords(from, to, line.lineStyle.curveness),
+          absAvgMw: line.absAvgMw,
           lineStyle: {
             color: "rgba(125,211,252,0.42)",
             width: Math.max(1.4, line.lineStyle.width * 0.72),
@@ -987,12 +991,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         };
       })
       .filter((item) => item !== null);
+    const maxAnimatedFlowMw = Math.max(...animatedFlowLines.map((line) => line.absAvgMw), 1);
     const majorFlowAnimationPaths: NetworkAnimationPath[] = animatedFlowLines.map((line, index) => ({
       id: `major-flow-${index}`,
       d: buildSvgQuadraticPath(line.coords),
       strokeWidth: Math.max(2.1, line.lineStyle.width + 0.35),
       durationSeconds: roundTo(1.7 + (index % 4) * 0.18, 2),
       delaySeconds: roundTo((index % 5) * 0.12, 2),
+      magnitude: clamp(line.absAvgMw / maxAnimatedFlowMw, 0, 1),
     }));
     const maxAbsIntertieFacility = Math.max(...Array.from(intertieFacilityMap.values()).map((item) => item.absMw), 1);
     const intertieFacilityLines = Array.from(intertieFacilityMap.values())
@@ -1706,28 +1712,35 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   }, [data.flows.intertieSeries, data.meta.slotLabels.flow, selectedArea]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4f1de_0%,_#f6f8fb_38%,_#e9f5f2_100%)] text-slate-800">
-      <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 py-6 md:px-8">
-        <header className="rounded-3xl border border-white/70 bg-white/80 px-5 py-5 shadow-sm backdrop-blur">
+    <div className="relative min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4f1de_0%,_#f6f8fb_38%,_#e9f5f2_100%)] text-slate-800 dark:bg-[radial-gradient(circle_at_top_left,_#1a1a2e_0%,_#16213e_38%,_#0f3460_100%)] dark:text-slate-200">
+      <a
+        href="#dashboard-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
+      >
+        コンテンツへスキップ
+      </a>
+      <LoadingOverlay visible={isDateLoading} />
+      <div id="dashboard-content" className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 py-6 md:px-8">
+        <header className="rounded-3xl border border-white/70 bg-white/80 px-5 py-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/80">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs tracking-[0.18em] text-teal-700">OCCTO GRID OBSERVATORY</p>
+              <p className="text-xs tracking-[0.18em] text-teal-700 dark:text-teal-400">OCCTO GRID OBSERVATORY</p>
               <h1 className="text-2xl font-semibold leading-tight md:text-3xl">
                 送電潮流 × ユニット発電実績 ダッシュボード
               </h1>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 対象日: {data.meta.targetDate} / 最終取り込み: {fetchedAtLabel}
               </p>
             </div>
             <div className="flex flex-col items-start gap-2 md:items-end">
               <div className="flex flex-wrap items-center gap-2">
-                <label htmlFor="dashboard-date" className="text-sm font-medium text-slate-600">
+                <label htmlFor="dashboard-date" className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   対象日
                 </label>
                 <input
                   id="dashboard-date"
                   type="date"
-                  className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+                  className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none dark:border-teal-800 dark:bg-slate-800 dark:text-slate-200"
                   value={toInputDateValue(selectedDate)}
                   min={toInputDateValue(earliestAvailableDate)}
                   onChange={(event) => {
@@ -1745,18 +1758,23 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   }}
                   disabled={isDateLoading}
                 />
-                {isDateLoading ? <span className="text-xs text-teal-700">読み込み中...</span> : null}
+                {isDateLoading ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-teal-700 dark:text-teal-400">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-teal-200 border-t-teal-600" />
+                    読み込み中...
+                  </span>
+                ) : null}
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 公開データ範囲: {earliestAvailableDate} から {latestAvailableDate}
               </p>
               <div className="flex items-center gap-2">
-                <label htmlFor="area" className="text-sm font-medium text-slate-600">
+                <label htmlFor="area" className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   エリア
                 </label>
                 <select
                   id="area"
-                  className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+                  className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none dark:border-teal-800 dark:bg-slate-800 dark:text-slate-200"
                   value={selectedArea}
                   onChange={(event) => setSelectedArea(event.target.value)}
                 >
@@ -1767,26 +1785,26 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   ))}
                 </select>
               </div>
-              {dateError ? <p className="text-xs text-rose-700">{dateError}</p> : null}
+              {dateError ? <p className="text-xs text-rose-700 dark:text-rose-400">{dateError}</p> : null}
             </div>
           </div>
         </header>
-        <section className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur">
+        <section className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/85">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-base font-semibold text-slate-800">表示するパネル</h2>
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">表示するパネル</h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700"
+                className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-600 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
                 onClick={() => setVisibleSectionIds(DASHBOARD_SECTION_OPTIONS.map((item) => item.id))}
               >
                 すべて表示
               </button>
               <button
                 type="button"
-                className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700"
+                className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-600 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
                 onClick={() => setVisibleSectionIds(["summary", "areaCards", "composition", "network"])}
               >
                 俯瞰モード
@@ -1800,10 +1818,12 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 <button
                   key={item.id}
                   type="button"
+                  role="switch"
+                  aria-checked={active}
                   className={`rounded-full border px-3 py-1.5 text-sm transition ${
                     active
                       ? "border-teal-500 bg-teal-600 text-white shadow-sm"
-                      : "border-slate-300 bg-white text-slate-700 hover:border-teal-400 hover:text-teal-700"
+                      : "border-slate-300 bg-white text-slate-700 hover:border-teal-400 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
                   }`}
                   onClick={() =>
                     setVisibleSectionIds((current) => {
@@ -2109,6 +2129,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {showGenerationTrend || showSourceComposition ? (
+          <ChartErrorBoundary sectionName="発電トレンド・構成">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             {showGenerationTrend ? (
               <Panel
@@ -2133,7 +2154,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                     ))}
                   </select>
                 </div>
-                <div data-testid="generation-trend-chart">
+                <div data-testid="generation-trend-chart" role="img" aria-label="発電方式別30分推移チャート">
                   <ReactECharts option={generationLineOption} style={{ height: 360 }} />
                 </div>
               </Panel>
@@ -2166,7 +2187,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                     useInlineDonutLegend ? "grid lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]" : ""
                   }`}
                 >
-                  <div data-testid="source-composition-chart" className="mx-auto w-full max-w-[300px]">
+                  <div data-testid="source-composition-chart" role="img" aria-label="発電方式構成比チャート" className="mx-auto w-full max-w-[300px]">
                     <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
                   </div>
                   <CompositionLegendList
@@ -2177,43 +2198,49 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               </Panel>
             ) : null}
           </section>
+          </ChartErrorBoundary>
         ) : null}
 
         {visibleSectionSet.has("reserve") ? (
+          <ChartErrorBoundary sectionName="需要・予備率">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             <Panel title="エリア予備率（30分推移）" className="lg:col-span-7" testId="reserve-trend-panel">
               <div className="mb-2 text-xs text-slate-600">
                 公式値ベース。{selectedArea === "全エリア" ? "全エリア" : `${selectedArea}`} / {data.meta.targetDate}
               </div>
-              <div data-testid="reserve-trend-chart">
+              <div data-testid="reserve-trend-chart" role="img" aria-label="エリア予備率推移チャート">
                 <ReactECharts option={reserveTrendOption} style={{ height: 320 }} />
               </div>
             </Panel>
             <Panel title="エリア需要・予備力（表示時刻）" className="lg:col-span-5" testId="reserve-current-panel">
               <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-              <div data-testid="reserve-current-chart">
+              <div data-testid="reserve-current-chart" role="img" aria-label="エリア需要・予備力チャート">
                 <ReactECharts option={reserveCurrentOption} style={{ height: 320 }} />
               </div>
             </Panel>
           </section>
+          </ChartErrorBoundary>
         ) : null}
 
         {visibleSectionSet.has("totals") ? (
+          <ChartErrorBoundary sectionName="発電・連系概要">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
-              <div data-testid="area-total-generation-chart">
+              <div data-testid="area-total-generation-chart" role="img" aria-label="エリア別日量発電チャート">
                 <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
               </div>
             </Panel>
             <Panel title="連系線潮流トレンド（時系列）" testId="intertie-trend-panel">
-              <div data-testid="intertie-trend-chart">
+              <div data-testid="intertie-trend-chart" role="img" aria-label="連系線潮流トレンドチャート">
                 <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
               </div>
             </Panel>
           </section>
+          </ChartErrorBoundary>
         ) : null}
 
         {visibleSectionSet.has("network") ? (
+          <ChartErrorBoundary sectionName="ネットワーク">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2" testId="network-flow-panel">
               <div className="mb-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
@@ -2245,7 +2272,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   各エリアの主要潮流を最大10本ずつ、水色の破線アニメーションで表示しています。
                 </p>
               </div>
-              <div data-testid="network-flow-chart" className="relative" ref={networkFlowChartHostRef}>
+              <div data-testid="network-flow-chart" role="img" aria-label="ネットワーク潮流グラフ" className="relative" ref={networkFlowChartHostRef}>
                 <ReactECharts
                   option={flowNetworkOption}
                   style={{ height: 620 }}
@@ -2268,30 +2295,35 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                       transform={formatSvgMatrixTransform(networkOverlayViewport.roam)}
                     >
                       <g transform={formatSvgMatrixTransform(networkOverlayViewport.raw)}>
-                        {majorFlowAnimationPaths.map((path) => (
-                          <g key={path.id}>
-                            <path
-                              d={path.d}
-                              fill="none"
-                              stroke="rgba(56,189,248,0.38)"
-                              strokeWidth={path.strokeWidth + 1.2}
-                              strokeLinecap="round"
-                            />
-                            <path
-                              d={path.d}
-                              fill="none"
-                              stroke="rgba(255,255,255,0.96)"
-                              strokeWidth={path.strokeWidth}
-                              strokeLinecap="round"
-                              strokeDasharray="22 20"
-                              style={{
-                                animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
-                                animationDelay: `-${path.delaySeconds}s`,
-                                filter: "drop-shadow(0 0 2px rgba(56,189,248,0.95))",
-                              }}
-                            />
-                          </g>
-                        ))}
+                        {majorFlowAnimationPaths.map((path) => {
+                          const glowColor = flowMagnitudeColor(path.magnitude, 0.38);
+                          const dashColor = flowMagnitudeColor(path.magnitude, 0.92);
+                          const shadowColor = flowMagnitudeColor(path.magnitude, 0.95);
+                          return (
+                            <g key={path.id}>
+                              <path
+                                d={path.d}
+                                fill="none"
+                                stroke={glowColor}
+                                strokeWidth={path.strokeWidth + 1.2}
+                                strokeLinecap="round"
+                              />
+                              <path
+                                d={path.d}
+                                fill="none"
+                                stroke={dashColor}
+                                strokeWidth={path.strokeWidth}
+                                strokeLinecap="round"
+                                strokeDasharray="22 20"
+                                style={{
+                                  animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
+                                  animationDelay: `-${path.delaySeconds}s`,
+                                  filter: `drop-shadow(0 0 2px ${shadowColor})`,
+                                }}
+                              />
+                            </g>
+                          );
+                        })}
                       </g>
                     </g>
                   </svg>
@@ -2300,24 +2332,28 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </Panel>
             <Panel title="エリア間連系潮流（実績）" testId="inter-area-flow-panel">
               <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-              <div data-testid="inter-area-flow-chart">
+              <div data-testid="inter-area-flow-chart" role="img" aria-label="エリア間連系潮流チャート">
                 <ReactECharts option={interAreaFlowOption} style={{ height: isMobileViewport ? 520 : 594 }} />
               </div>
             </Panel>
           </section>
+          </ChartErrorBoundary>
         ) : null}
 
         {visibleSectionSet.has("diagnostics") ? (
+          <ChartErrorBoundary sectionName="潮流ヒートマップ">
           <section className="grid grid-cols-1 gap-4">
             <Panel title="主要線路の潮流ヒートマップ">
               <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
               <ReactECharts option={flowHeatmapOption} style={{ height: 420 }} />
             </Panel>
           </section>
+          </ChartErrorBoundary>
         ) : null}
 
         {visibleSectionSet.has("rankings") ? (
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm">
+          <ChartErrorBoundary sectionName="ランキング">
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
             <h2 className="mb-3 text-lg font-semibold">高発電ユニット上位</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -2376,6 +2412,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               </table>
             </div>
           </section>
+          </ChartErrorBoundary>
         ) : null}
       </div>
     </div>
