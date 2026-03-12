@@ -48,7 +48,41 @@ export type NetworkAnimationPath = {
   strokeWidth: number;
   durationSeconds: number;
   delaySeconds: number;
+  /** Normalized 0-1 magnitude for color mapping (0=low flow, 1=high flow) */
+  magnitude: number;
 };
+
+/**
+ * Map a 0-1 magnitude to a color gradient from blue (low) to red (high).
+ * Returns an rgba string suitable for SVG stroke.
+ */
+export function flowMagnitudeColor(magnitude: number, alpha = 0.85): string {
+  const t = clamp(magnitude, 0, 1);
+  // Blue (low) → Cyan → Yellow → Orange → Red (high)
+  let r: number, g: number, b: number;
+  if (t < 0.25) {
+    const s = t / 0.25;
+    r = 30;
+    g = Math.round(80 + s * 140);
+    b = Math.round(220 - s * 30);
+  } else if (t < 0.5) {
+    const s = (t - 0.25) / 0.25;
+    r = Math.round(30 + s * 200);
+    g = Math.round(220 - s * 20);
+    b = Math.round(190 - s * 140);
+  } else if (t < 0.75) {
+    const s = (t - 0.5) / 0.25;
+    r = Math.round(230 + s * 25);
+    g = Math.round(200 - s * 100);
+    b = Math.round(50 - s * 30);
+  } else {
+    const s = (t - 0.75) / 0.25;
+    r = 255;
+    g = Math.round(100 - s * 70);
+    b = Math.round(20 + s * 10);
+  }
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 export type NetworkOverlayTransformPart = {
   x: number;
@@ -1046,7 +1080,85 @@ export function isNetworkPowerPlantSource(sourceType: string): boolean {
 }
 
 export function buildJapanGuideGraphics(): Array<Record<string, unknown>> {
-  return [];
+  // Simplified outlines of Japan's main islands as lat/lon sequences
+  const islands: Array<{ name: string; coords: Array<[number, number]> }> = [
+    {
+      name: "hokkaido",
+      coords: [
+        [43.39, 145.82], [43.33, 145.59], [43.08, 144.83], [42.92, 143.91],
+        [42.05, 142.96], [41.77, 140.73], [41.46, 140.17], [41.53, 140.66],
+        [42.32, 140.35], [42.83, 141.67], [43.17, 141.35], [43.37, 141.68],
+        [43.45, 141.7], [43.78, 142.37], [44.37, 142.46], [44.93, 142.63],
+        [45.31, 141.89], [45.43, 141.73], [45.02, 142.26], [44.79, 143.29],
+        [44.19, 144.76], [43.65, 145.45], [43.39, 145.82],
+      ],
+    },
+    {
+      name: "honshu",
+      coords: [
+        [41.45, 140.2], [41.26, 140.31], [40.52, 139.86], [39.88, 139.84],
+        [39.72, 140.05], [39.14, 139.92], [38.84, 139.55], [38.27, 138.56],
+        [37.95, 138.24], [37.31, 136.92], [36.77, 136.28], [36.34, 136.12],
+        [35.73, 135.99], [35.52, 135.7], [35.06, 135.13], [34.65, 135.25],
+        [34.26, 135.08], [33.95, 135.03], [33.51, 133.56], [33.25, 132.49],
+        [34.07, 131.88], [34.19, 131.22], [34.75, 131.73], [35.16, 132.07],
+        [35.45, 132.56], [35.42, 133.38], [35.63, 134.25], [35.55, 135.35],
+        [35.75, 136.01], [36.25, 136.62], [36.56, 136.8], [36.99, 137.17],
+        [37.55, 138.95], [37.83, 139.18], [37.65, 139.5], [37.88, 139.87],
+        [38.77, 139.82], [39.57, 140.14], [39.89, 139.84], [40.4, 139.81],
+        [40.54, 140.01], [40.87, 140.36], [41.05, 140.7], [41.26, 140.87],
+        [41.45, 140.2],
+      ],
+    },
+    {
+      name: "shikoku",
+      coords: [
+        [34.35, 134.64], [34.25, 134.18], [33.97, 133.65], [33.55, 133.27],
+        [33.02, 132.68], [32.85, 132.68], [33.15, 132.5], [33.27, 132.49],
+        [33.61, 133.03], [33.85, 133.64], [33.97, 134.3], [34.24, 134.77],
+        [34.35, 134.64],
+      ],
+    },
+    {
+      name: "kyushu",
+      coords: [
+        [33.95, 131.01], [33.58, 130.39], [33.19, 130.03], [32.72, 129.76],
+        [32.58, 130.02], [32.09, 130.3], [31.37, 131.04], [30.99, 131.04],
+        [31.21, 131.42], [31.9, 131.39], [32.66, 131.69], [32.74, 131.84],
+        [33.2, 131.73], [33.32, 131.95], [33.55, 131.17], [33.86, 130.88],
+        [33.95, 131.01],
+      ],
+    },
+    {
+      name: "okinawa",
+      coords: [
+        [26.88, 128.25], [26.71, 128.11], [26.34, 127.77], [26.09, 127.65],
+        [26.21, 127.71], [26.5, 127.94], [26.73, 128.17], [26.88, 128.25],
+      ],
+    },
+  ];
+
+  return islands.map((island) => {
+    const points = island.coords.map(([lat, lon]) => {
+      const pt = geoToCanvas(lat, lon);
+      return [pt.x, pt.y] as [number, number];
+    });
+
+    return {
+      type: "polygon",
+      z: -1,
+      silent: true,
+      shape: {
+        points,
+        smooth: 0.3,
+      },
+      style: {
+        fill: "rgba(203,213,225,0.12)",
+        stroke: "rgba(148,163,184,0.22)",
+        lineWidth: 1,
+      },
+    };
+  });
 }
 
 // Module-level computed constants (depend on the functions above)

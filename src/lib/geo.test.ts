@@ -23,6 +23,8 @@ import {
   DEFAULT_NETWORK_OVERLAY_VIEWPORT,
   AREA_ANCHORS,
   AREA_LAYOUT_BOUNDS,
+  flowMagnitudeColor,
+  buildJapanGuideGraphics,
 } from "./geo";
 
 // ---------- parseDirection ----------
@@ -370,6 +372,50 @@ describe("module-level computed constants", () => {
       expect(anchor.x).toBeLessThanOrEqual(bounds.xMax);
       expect(anchor.y).toBeGreaterThanOrEqual(bounds.yMin);
       expect(anchor.y).toBeLessThanOrEqual(bounds.yMax);
+    }
+  });
+});
+
+// ---------- flowMagnitudeColor ----------
+describe("flowMagnitudeColor", () => {
+  test("returns rgba string", () => {
+    const color = flowMagnitudeColor(0.5);
+    expect(color).toMatch(/^rgba\(\d+,\d+,\d+,[\d.]+\)$/);
+  });
+  test("low magnitude produces blue-ish color", () => {
+    const color = flowMagnitudeColor(0);
+    const match = color.match(/rgba\((\d+),(\d+),(\d+)/);
+    expect(match).not.toBeNull();
+    const [, r, , b] = match!;
+    expect(Number(b)).toBeGreaterThan(Number(r));
+  });
+  test("high magnitude produces red-ish color", () => {
+    const color = flowMagnitudeColor(1);
+    const match = color.match(/rgba\((\d+),(\d+),(\d+)/);
+    expect(match).not.toBeNull();
+    const [, r, , b] = match!;
+    expect(Number(r)).toBeGreaterThan(Number(b));
+  });
+  test("clamps out-of-range values", () => {
+    expect(flowMagnitudeColor(-0.5)).toBe(flowMagnitudeColor(0));
+    expect(flowMagnitudeColor(1.5)).toBe(flowMagnitudeColor(1));
+  });
+  test("custom alpha", () => {
+    const color = flowMagnitudeColor(0.5, 0.5);
+    expect(color).toContain(",0.5)");
+  });
+});
+
+// ---------- buildJapanGuideGraphics ----------
+describe("buildJapanGuideGraphics", () => {
+  test("returns array of polygon graphic elements", () => {
+    const graphics = buildJapanGuideGraphics();
+    expect(graphics.length).toBeGreaterThanOrEqual(4);
+    for (const graphic of graphics) {
+      expect(graphic.type).toBe("polygon");
+      expect(graphic.silent).toBe(true);
+      expect(graphic.shape).toBeDefined();
+      expect((graphic.shape as { points: unknown[] }).points.length).toBeGreaterThan(3);
     }
   });
 });
