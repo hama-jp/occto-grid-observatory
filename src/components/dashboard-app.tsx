@@ -1087,7 +1087,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           absAvgMw: line.absAvgMw,
           lineStyle: {
             color: "rgba(125,211,252,0.42)",
-            width: Math.max(1.4, line.lineStyle.width * 0.72),
+            width: Math.max(0.9, line.lineStyle.width * 0.45),
             opacity: 0.34,
           },
         };
@@ -1097,7 +1097,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const majorFlowAnimationPaths: NetworkAnimationPath[] = animatedFlowLines.map((line, index) => ({
       id: `major-flow-${index}`,
       d: buildSvgQuadraticPath(line.coords),
-      strokeWidth: Math.max(2.1, line.lineStyle.width + 0.35),
+      strokeWidth: Math.max(1.3, line.lineStyle.width + 0.2),
       durationSeconds: roundTo(1.7 + (index % 4) * 0.18, 2),
       delaySeconds: roundTo((index % 5) * 0.12, 2),
       magnitude: clamp(line.absAvgMw / maxAnimatedFlowMw, 0, 1),
@@ -2567,7 +2567,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                               d={path.d}
                               fill="none"
                               stroke={glowColor}
-                              strokeWidth={path.strokeWidth + 1.2}
+                              strokeWidth={path.strokeWidth + 0.8}
                               strokeLinecap="round"
                             />
                             <path
@@ -2576,7 +2576,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                               stroke={dashColor}
                               strokeWidth={path.strokeWidth}
                               strokeLinecap="round"
-                              strokeDasharray="22 20"
+                              strokeDasharray="14 13"
                               style={{
                                 animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
                                 animationDelay: `-${path.delaySeconds}s`,
