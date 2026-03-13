@@ -90,7 +90,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const [viewportWidth, setViewportWidth] = useState<number>(1280);
   const isMobileViewport = viewportWidth < 768;
   const useInlineDonutLegend = viewportWidth >= 1024;
-  const fetchedAtLabel = useMemo(() => formatJstDateTime(data.meta.fetchedAt), [data.meta.fetchedAt]);
+  const fetchedAtLabel = useMemo(() => formatJstDateTime(initialData.meta.fetchedAt), [initialData.meta.fetchedAt]);
 
   useEffect(() => {
     const updateViewportWidth = (): void => {
