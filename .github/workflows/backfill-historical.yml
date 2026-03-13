@@ -46,6 +46,22 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      - name: Validate inputs
+        shell: bash
+        run: |
+          DATE_RE='^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+          FROM="${{ github.event.inputs.from }}"
+          TO="${{ github.event.inputs.to }}"
+
+          if [ -n "${FROM}" ] && ! [[ "${FROM}" =~ ${DATE_RE} ]]; then
+            echo "::error::--from must be YYYY-MM-DD, got '${FROM}'"
+            exit 1
+          fi
+          if [ -n "${TO}" ] && ! [[ "${TO}" =~ ${DATE_RE} ]]; then
+            echo "::error::--to must be YYYY-MM-DD, got '${TO}'"
+            exit 1
+          fi
+
       - name: Run historical backfill
         shell: bash
         run: |
