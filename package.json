@@ -20,7 +20,8 @@
     "geocode:fill-from-curated": "tsx scripts/fill-station-db-from-curated.ts",
     "geocode:progress": "tsx scripts/geocode-progress-report.ts",
     "geocode:manual-sheet": "tsx scripts/geocode-manual-research-sheet.ts",
-    "geocode:triage": "tsx scripts/geocode-triage-report.ts"
+    "geocode:triage": "tsx scripts/geocode-triage-report.ts",
+    "backfill:historical": "tsx scripts/fetch-historical-data.ts"
   },
   "dependencies": {
     "csv-parse": "^6.1.0",

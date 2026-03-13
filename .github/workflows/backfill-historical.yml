@@ -1,0 +1,82 @@
+name: Backfill Historical Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Start date (YYYY-MM-DD). Default: 3 years ago."
+        required: false
+        type: string
+      to:
+        description: "End date (YYYY-MM-DD). Default: yesterday."
+        required: false
+        type: string
+      chunk_days:
+        description: "Days per chunk (default: 7)"
+        required: false
+        default: "7"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run historical backfill
+        shell: bash
+        run: |
+          CMD=("npm" "run" "backfill:historical" "--")
+          FROM="${{ github.event.inputs.from }}"
+          TO="${{ github.event.inputs.to }}"
+          CHUNK="${{ github.event.inputs.chunk_days }}"
+
+          if [ -n "${FROM}" ]; then
+            CMD+=("--from=${FROM}")
+          fi
+          if [ -n "${TO}" ]; then
+            CMD+=("--to=${TO}")
+          fi
+          if [ -n "${CHUNK}" ]; then
+            CMD+=("--chunk-days=${CHUNK}")
+          fi
+
+          echo "Command: ${CMD[*]}"
+          "${CMD[@]}"
+
+      - name: Commit normalized data if changed
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain -- data/normalized)" ]; then
+            echo "No changes in data/normalized"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/normalized
+          git commit -m "chore(data): backfill historical dashboard data"
+          git push
