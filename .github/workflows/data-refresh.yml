@@ -30,10 +30,10 @@ on:
         default: false
         type: boolean
   schedule:
-    # 09:10 / 15:10 / 18:10 JST: intraday snapshot for today + yesterday
-    - cron: "10 0,6,9 * * *"
-    # 11:10 / 16:10 / 21:10 JST (02:10 / 07:10 / 12:10 UTC): refresh recent fixed datasets
-    - cron: "10 2,7,12 * * *"
+    # 09:10 / 12:10 / 15:10 / 18:10 JST: intraday snapshot for today + yesterday
+    - cron: "10 0,3,6,9 * * *"
+    # 11:10 / 13:10 / 16:10 / 21:10 JST: refresh recent fixed datasets
+    - cron: "10 2,4,7,12 * * *"
 
 permissions:
   contents: write
@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ "${{ github.event.schedule }}" = "10 2,7,12 * * *" ]; then
+            if [ "${{ github.event.schedule }}" = "10 2,4,7,12 * * *" ]; then
               FROM="$(TZ=Asia/Tokyo date -d '4 days ago' '+%Y-%m-%d')"
               TO="$(TZ=Asia/Tokyo date -d '1 day ago' '+%Y-%m-%d')"
               echo "Scheduled fixed-data refresh for recent dates: ${FROM}..${TO}"
