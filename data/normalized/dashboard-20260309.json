@@ -1,7 +1,7 @@
 {
   "meta": {
     "targetDate": "2026/03/09",
-    "fetchedAt": "2026-03-10T07:59:47.704Z",
+    "fetchedAt": "2026-03-13T13:28:27.400Z",
     "generationRows": 476,
     "flowRows": 463,
     "slotCount": 48,
@@ -110,7 +110,7 @@
     "sources": {
       "generationCsv": "generation-20260309.csv",
       "flowCsv": "flow-20260309-01-北海道.csv,flow-20260309-02-東北.csv,flow-20260309-03-東京.csv,flow-20260309-04-中部.csv,flow-20260309-05-北陸.csv,flow-20260309-06-関西.csv,flow-20260309-07-中国.csv,flow-20260309-08-四国.csv,flow-20260309-09-九州.csv,flow-20260309-10-沖縄.csv",
-      "intertieCsv": "intertie-20260309-01-北海道・本州間電力連系設備.csv,intertie-20260309-02-相馬双葉幹線.csv,intertie-20260309-03-周波数変換設備.csv,intertie-20260309-04-三重東近江線.csv,intertie-20260309-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260309-06-越前嶺南線.csv,intertie-20260309-07-西播東岡山線・山崎智頭線.csv,intertie-20260309-08-阿南紀北直流幹線.csv,intertie-20260309-09-本四連系線.csv,intertie-20260309-10-関門連系線.csv,intertie-20260309-11-北陸フェンス.csv",
+      "intertieCsv": "intertie-20260309-01-北海道・本州間電力連系設備.csv,intertie-20260309-02-相馬双葉幹線.csv,intertie-20260309-03-周波数変換設備.csv,intertie-20260309-04-三重東近江線.csv,intertie-20260309-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260309-06-越前嶺南線.csv,intertie-20260309-07-西播東岡山線・山崎智頭線.csv,intertie-20260309-08-阿南紀北直流幹線.csv,intertie-20260309-09-本四連系線.csv,intertie-20260309-10-関門連系線.csv,intertie-20260309-12-北陸フェンス.csv",
       "reserveJson": "reserve-20260309.json"
     }
   },
@@ -42715,17 +42715,17 @@
         "stressIndex": 0.28
       },
       {
-        "area": "沖縄",
-        "dailyKwh": 14057700,
-        "peakAbsMw": 155,
-        "lineCount": 31,
-        "stressIndex": 0.26
-      },
-      {
         "area": "北海道",
         "dailyKwh": 58719870,
         "peakAbsMw": 641,
         "lineCount": 40,
+        "stressIndex": 0.26
+      },
+      {
+        "area": "沖縄",
+        "dailyKwh": 14057700,
+        "peakAbsMw": 155,
+        "lineCount": 31,
         "stressIndex": 0.26
       },
       {
