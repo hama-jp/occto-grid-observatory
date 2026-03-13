@@ -30,7 +30,7 @@ export async function waitForChartSurface(locator: Locator): Promise<void> {
 
 export async function waitForDashboardReady(page: Page): Promise<void> {
   await page.goto("./");
-  await expect(page.getByRole("heading", { level: 1, name: "送電潮流 × ユニット発電実績 ダッシュボード" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "発電実績 ×送電潮流実績 ダッシュボード" })).toBeVisible();
   await waitForChartSurface(page.getByTestId("generation-trend-chart"));
   await waitForChartSurface(page.getByTestId("reserve-trend-chart"));
   await waitForChartSurface(page.getByTestId("reserve-current-chart"));
