@@ -7,6 +7,10 @@
  * This script invokes `npm run ingest -- --mode=backfill` in weekly chunks,
  * sleeping between chunks to avoid overloading OCCTO servers.
  *
+ * If 3 consecutive chunks produce zero new files (all noData), the script
+ * assumes the OCCTO site does not have data for that period and jumps forward
+ * by 4 weeks to probe for the availability boundary.
+ *
  * Defaults:
  *   --from     3 years ago from today (JST)
  *   --to       yesterday (JST)
@@ -17,6 +21,9 @@
 import { execFileSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+
+const CONSECUTIVE_EMPTY_THRESHOLD = 3;
+const SKIP_FORWARD_WEEKS = 4;
 
 type Args = {
   from: Date;
@@ -146,14 +153,21 @@ async function main(): Promise<void> {
   let completedChunks = 0;
   let totalNewFiles = 0;
   let totalSkipped = 0;
+  let totalNoData = 0;
   let failedChunks = 0;
+  let consecutiveEmpty = 0;
+  let chunkIndex = 0;
 
-  for (const chunk of chunks) {
+  while (chunkIndex < chunks.length) {
+    const chunk = chunks[chunkIndex];
+    const filesBefore = await countExistingFiles(normalizedDir);
     const missing = countMissingDays(chunk, existing);
     completedChunks++;
+    chunkIndex++;
 
     if (missing === 0) {
       totalSkipped += chunk.days;
+      consecutiveEmpty = 0; // existing data resets the counter
       console.log(
         `[backfill] chunk ${completedChunks}/${chunks.length}: ${chunk.from} → ${chunk.to} — all ${chunk.days} day(s) already exist, skipping`,
       );
@@ -166,6 +180,7 @@ async function main(): Promise<void> {
 
     if (args.dryRun) {
       totalNewFiles += missing;
+      consecutiveEmpty = 0;
       continue;
     }
 
@@ -180,22 +195,59 @@ async function main(): Promise<void> {
       "--sample=daily",
     ];
 
+    let chunkOutput = "";
     try {
-      execFileSync(cmd[0], cmd.slice(1), {
+      chunkOutput = execFileSync(cmd[0], cmd.slice(1), {
         cwd: process.cwd(),
-        stdio: "inherit",
+        stdio: ["inherit", "pipe", "pipe"],
         timeout: 30 * 60 * 1000, // 30 min per chunk
-      });
-      totalNewFiles += missing;
+        encoding: "utf-8",
+      }) as unknown as string;
+      process.stdout.write(chunkOutput);
     } catch (error: unknown) {
       failedChunks++;
+      if (error && typeof error === "object" && "stdout" in error) {
+        chunkOutput = String((error as { stdout: unknown }).stdout ?? "");
+        process.stdout.write(chunkOutput);
+      }
       const detail = error instanceof Error ? error.message : String(error);
       console.error(`[backfill] chunk failed: ${chunk.from} → ${chunk.to}: ${detail}`);
-      // Continue with the next chunk — partial progress is better than stopping entirely
+    }
+
+    // Count how many files were actually created
+    const filesAfter = await countExistingFiles(normalizedDir);
+    const newlyCreated = filesAfter.size - filesBefore.size;
+
+    if (newlyCreated > 0) {
+      totalNewFiles += newlyCreated;
+      consecutiveEmpty = 0;
+      // Update existing set so future chunks can skip properly
+      for (const stamp of filesAfter) existing.add(stamp);
+    } else {
+      totalNoData += chunk.days;
+      consecutiveEmpty++;
+
+      if (consecutiveEmpty >= CONSECUTIVE_EMPTY_THRESHOLD) {
+        const skipDays = SKIP_FORWARD_WEEKS * 7;
+        const jumpTarget = new Date(parseDateArg(chunk.to).getTime() + skipDays * 24 * 60 * 60_000);
+        console.log(
+          `[backfill] ${consecutiveEmpty} consecutive empty chunks — OCCTO likely has no data for this period`,
+        );
+        console.log(
+          `[backfill] jumping forward ${SKIP_FORWARD_WEEKS} weeks to ${formatDate(jumpTarget)} to probe for data`,
+        );
+
+        // Skip chunks until we reach the jump target
+        while (chunkIndex < chunks.length && parseDateArg(chunks[chunkIndex].from).getTime() < jumpTarget.getTime()) {
+          totalNoData += chunks[chunkIndex].days;
+          chunkIndex++;
+        }
+        consecutiveEmpty = 0;
+      }
     }
 
     // Sleep 10s between chunks to be polite to OCCTO servers
-    if (completedChunks < chunks.length) {
+    if (chunkIndex < chunks.length) {
       console.log("[backfill] sleeping 10s between chunks...");
       await new Promise((resolve) => setTimeout(resolve, 10_000));
     }
@@ -204,7 +256,7 @@ async function main(): Promise<void> {
   console.log();
   console.log("[backfill] === Summary ===");
   console.log(`[backfill] chunks processed: ${completedChunks}, failed: ${failedChunks}`);
-  console.log(`[backfill] new files: ${totalNewFiles}, skipped (existing): ${totalSkipped}`);
+  console.log(`[backfill] new files: ${totalNewFiles}, skipped (existing): ${totalSkipped}, noData: ${totalNoData}`);
   if (args.dryRun) {
     console.log("[backfill] (dry-run mode — no data was fetched)");
   }
