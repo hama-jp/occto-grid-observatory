@@ -2040,6 +2040,260 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               }))} />
             </SummaryCard>
             <SummaryCard
+              title="発電トップ"
+              value={dashboardHighlights.largestUnit ? `${dashboardHighlights.largestUnit.plantName} ${dashboardHighlights.largestUnit.unitName}` : "-"}
+              detail={
+                dashboardHighlights.largestUnit
+                  ? `${dashboardHighlights.largestUnit.area} / ${manKwFmt.format(
+                      dashboardHighlights.largestUnit.maxOutputManKw,
+                    )} 万kW`
+                  : "データなし"
+              }
+              accentColor="#1d3557"
+            >
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500">最大ユニット</p>
+                  <MiniBarList items={dashboardHighlights.unitLeaderItems} compact />
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500">最大発電所</p>
+                  <MiniBarList items={dashboardHighlights.plantLeaderItems} compact />
+                </div>
+              </div>
+            </SummaryCard>
+          </section>
+        ) : null}
+
+        {showGenerationTrend || showSourceComposition ? (
+          <ChartErrorBoundary sectionName="発電トレンド・構成">
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            {showGenerationTrend ? (
+              <Panel
+                title="発電方式別 30分推移"
+                className={showSourceComposition ? "lg:col-span-7" : "lg:col-span-12"}
+                testId="generation-trend-panel"
+              >
+                <div className="mb-2 flex justify-end">
+                  <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
+                    表示エリア
+                  </label>
+                  <select
+                    id="generation-area"
+                    className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+                    value={generationTrendArea}
+                    onChange={(event) => setGenerationTrendArea(event.target.value)}
+                  >
+                    {generationAreas.map((area) => (
+                      <option key={area} value={area}>
+                        {area}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div data-testid="generation-trend-chart" role="img" aria-label="発電方式別30分推移チャート">
+                  <ReactECharts option={generationLineOption} style={{ height: 360 }} />
+                </div>
+              </Panel>
+            ) : null}
+            {showSourceComposition ? (
+              <Panel
+                title="発電方式 構成比"
+                className={showGenerationTrend ? "lg:col-span-5" : "lg:col-span-12"}
+                testId="source-composition-panel"
+              >
+                <div className="mb-2 flex justify-end">
+                  <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
+                    表示エリア
+                  </label>
+                  <select
+                    id="source-donut-area"
+                    className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+                    value={sourceDonutArea}
+                    onChange={(event) => setSourceDonutArea(event.target.value)}
+                  >
+                    {generationAreas.map((area) => (
+                      <option key={area} value={area}>
+                        {area}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div
+                  className={`items-center gap-4 ${
+                    useInlineDonutLegend ? "grid lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]" : ""
+                  }`}
+                >
+                  <div data-testid="source-composition-chart" role="img" aria-label="発電方式構成比チャート" className="mx-auto w-full max-w-[300px]">
+                    <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
+                  </div>
+                  <CompositionLegendList
+                    items={sourceCompositionItems}
+                    className={useInlineDonutLegend ? "" : "mt-3"}
+                  />
+                </div>
+              </Panel>
+            ) : null}
+          </section>
+          </ChartErrorBoundary>
+        ) : null}
+
+        {visibleSectionSet.has("reserve") ? (
+          <ChartErrorBoundary sectionName="予備率推移">
+          <section className="grid grid-cols-1 gap-4">
+            <Panel title="エリア予備率（30分推移）" testId="reserve-trend-panel">
+              <div className="mb-2 text-xs text-slate-600">
+                公式値ベース。{selectedArea === "全エリア" ? "全エリア" : `${selectedArea}`} / {data.meta.targetDate}
+              </div>
+              <div data-testid="reserve-trend-chart" role="img" aria-label="エリア予備率推移チャート">
+                <ReactECharts option={reserveTrendOption} style={{ height: 320 }} />
+              </div>
+            </Panel>
+          </section>
+          </ChartErrorBoundary>
+        ) : null}
+
+        {visibleSectionSet.has("totals") ? (
+          <ChartErrorBoundary sectionName="発電・連系概要">
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
+              <div data-testid="area-total-generation-chart" role="img" aria-label="エリア別日量発電チャート">
+                <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
+              </div>
+            </Panel>
+            <Panel title="連系線潮流トレンド（時系列）" testId="intertie-trend-panel">
+              <div data-testid="intertie-trend-chart" role="img" aria-label="連系線潮流トレンドチャート">
+                <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
+              </div>
+            </Panel>
+          </section>
+          </ChartErrorBoundary>
+        ) : null}
+
+        {visibleSectionSet.has("diagnostics") ? (
+          <ChartErrorBoundary sectionName="潮流ヒートマップ">
+          <section className="grid grid-cols-1 gap-4">
+            <Panel title="主要線路の潮流ヒートマップ">
+              <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
+              <ReactECharts option={flowHeatmapOption} style={{ height: 420 }} />
+            </Panel>
+          </section>
+          </ChartErrorBoundary>
+        ) : null}
+
+        {visibleSectionSet.has("diagnostics") ? (
+          <ChartErrorBoundary sectionName="潮流変動率ヒートマップ">
+          <section className="grid grid-cols-1 gap-4">
+            <Panel title="潮流変動率が大きい送電線">
+              <p className="mb-2 text-xs text-slate-500">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
+              <ReactECharts option={volatilityHeatmapOption} style={{ height: 480 }} />
+            </Panel>
+          </section>
+          </ChartErrorBoundary>
+        ) : null}
+
+        {visibleSectionSet.has("rankings") ? (
+          <ChartErrorBoundary sectionName="ランキング">
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
+            <h2 className="mb-3 text-lg font-semibold">高発電ユニット上位</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
+                    <th className="py-2 pr-3">エリア</th>
+                    <th className="py-2 pr-3">発電所</th>
+                    <th className="py-2 pr-3">ユニット</th>
+                    <th className="py-2 pr-3">方式</th>
+                    <th className="py-2 text-right">最大出力(万kW)</th>
+                    <th className="py-2 text-right">日量(kWh)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTopUnits.slice(0, 24).map((unit) => (
+                    <tr key={`${unit.area}-${unit.plantName}-${unit.unitName}`} className="border-b border-slate-100">
+                      <td className="py-2 pr-3">{unit.area}</td>
+                      <td className="py-2 pr-3">{unit.plantName}</td>
+                      <td className="py-2 pr-3">{unit.unitName}</td>
+                      <td className="py-2 pr-3">{unit.sourceType}</td>
+                      <td className="py-2 text-right">
+                        {typeof unit.maxOutputManKw === "number" ? manKwFmt.format(unit.maxOutputManKw) : "-"}
+                      </td>
+                      <td className="py-2 text-right">{numberFmt.format(unit.dailyKwh)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="mb-3 mt-6 text-lg font-semibold">高発電発電所上位（ユニット合計）</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
+                    <th className="py-2 pr-3">エリア</th>
+                    <th className="py-2 pr-3">発電所</th>
+                    <th className="py-2 pr-3">方式</th>
+                    <th className="py-2 text-right">最大出力(万kW)</th>
+                    <th className="py-2 text-right">日量(kWh)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTopPlants.slice(0, 24).map((plant) => (
+                    <tr key={`${plant.area}-${plant.plantName}`} className="border-b border-slate-100">
+                      <td className="py-2 pr-3">{plant.area}</td>
+                      <td className="py-2 pr-3">{plant.plantName}</td>
+                      <td className="py-2 pr-3">{plant.sourceType || "不明"}</td>
+                      <td className="py-2 text-right">
+                        {typeof plant.maxOutputManKw === "number" ? manKwFmt.format(plant.maxOutputManKw) : "-"}
+                      </td>
+                      <td className="py-2 text-right">{numberFmt.format(plant.dailyKwh)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          </ChartErrorBoundary>
+        ) : null}
+
+        {/* ── 表示時刻スナップショット ── */}
+        <section className="rounded-3xl border border-teal-200/60 bg-gradient-to-r from-teal-50/80 to-white/80 px-5 py-4 shadow-sm backdrop-blur dark:border-teal-800/60 dark:from-teal-950/30 dark:to-slate-800/80">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-teal-800 dark:text-teal-300">表示時刻スナップショット</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400">以下のカードはスライダーで選択した時刻のデータを表示します</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span data-testid="selected-flow-datetime" className="text-sm font-medium text-teal-700 dark:text-teal-400">
+                {selectedFlowDateTimeLabel}
+              </span>
+              <span className="text-xs text-slate-500">
+                スロット {flowSlotLabels.length === 0 ? 0 : clampedNetworkFlowSlotIndex + 1} / {flowSlotLabels.length}
+              </span>
+            </div>
+          </div>
+          <div className="mt-3">
+            <input
+              aria-label="ネットワーク潮流の表示時刻"
+              type="range"
+              min={0}
+              max={maxFlowSlotIndex}
+              step={1}
+              value={clampedNetworkFlowSlotIndex}
+              onChange={(event) => setNetworkFlowSlotIndex(Number(event.target.value))}
+              disabled={flowSlotLabels.length === 0}
+              className="w-full accent-teal-600"
+            />
+            <div className="mt-1 flex justify-between text-[11px] text-slate-500">
+              <span>{flowSlotLabels[0] ?? "-"}</span>
+              <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
+            </div>
+          </div>
+        </section>
+
+        {visibleSectionSet.has("summary") ? (
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <SummaryCard
               title="予備率監視"
               value={
                 dashboardHighlights.lowestReserveArea
@@ -2095,29 +2349,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   value={dashboardHighlights.strongestExportValue}
                   detail={dashboardHighlights.strongestExportDetail}
                 />
-              </div>
-            </SummaryCard>
-            <SummaryCard
-              title="発電トップ"
-              value={dashboardHighlights.largestUnit ? `${dashboardHighlights.largestUnit.plantName} ${dashboardHighlights.largestUnit.unitName}` : "-"}
-              detail={
-                dashboardHighlights.largestUnit
-                  ? `${dashboardHighlights.largestUnit.area} / ${manKwFmt.format(
-                      dashboardHighlights.largestUnit.maxOutputManKw,
-                    )} 万kW`
-                  : "データなし"
-              }
-              accentColor="#1d3557"
-            >
-              <div className="space-y-3">
-                <div>
-                  <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500">最大ユニット</p>
-                  <MiniBarList items={dashboardHighlights.unitLeaderItems} compact />
-                </div>
-                <div>
-                  <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500">最大発電所</p>
-                  <MiniBarList items={dashboardHighlights.plantLeaderItems} compact />
-                </div>
               </div>
             </SummaryCard>
           </section>
@@ -2269,111 +2500,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           </section>
         ) : null}
 
-        {showGenerationTrend || showSourceComposition ? (
-          <ChartErrorBoundary sectionName="発電トレンド・構成">
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            {showGenerationTrend ? (
-              <Panel
-                title="発電方式別 30分推移"
-                className={showSourceComposition ? "lg:col-span-7" : "lg:col-span-12"}
-                testId="generation-trend-panel"
-              >
-                <div className="mb-2 flex justify-end">
-                  <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
-                    表示エリア
-                  </label>
-                  <select
-                    id="generation-area"
-                    className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
-                    value={generationTrendArea}
-                    onChange={(event) => setGenerationTrendArea(event.target.value)}
-                  >
-                    {generationAreas.map((area) => (
-                      <option key={area} value={area}>
-                        {area}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div data-testid="generation-trend-chart" role="img" aria-label="発電方式別30分推移チャート">
-                  <ReactECharts option={generationLineOption} style={{ height: 360 }} />
-                </div>
-              </Panel>
-            ) : null}
-            {showSourceComposition ? (
-              <Panel
-                title="発電方式 構成比"
-                className={showGenerationTrend ? "lg:col-span-5" : "lg:col-span-12"}
-                testId="source-composition-panel"
-              >
-                <div className="mb-2 flex justify-end">
-                  <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
-                    表示エリア
-                  </label>
-                  <select
-                    id="source-donut-area"
-                    className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
-                    value={sourceDonutArea}
-                    onChange={(event) => setSourceDonutArea(event.target.value)}
-                  >
-                    {generationAreas.map((area) => (
-                      <option key={area} value={area}>
-                        {area}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div
-                  className={`items-center gap-4 ${
-                    useInlineDonutLegend ? "grid lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]" : ""
-                  }`}
-                >
-                  <div data-testid="source-composition-chart" role="img" aria-label="発電方式構成比チャート" className="mx-auto w-full max-w-[300px]">
-                    <ReactECharts option={sourceDonutOption} style={{ height: 300 }} />
-                  </div>
-                  <CompositionLegendList
-                    items={sourceCompositionItems}
-                    className={useInlineDonutLegend ? "" : "mt-3"}
-                  />
-                </div>
-              </Panel>
-            ) : null}
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
         {visibleSectionSet.has("reserve") ? (
-          <ChartErrorBoundary sectionName="需要・予備率">
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <Panel title="エリア予備率（30分推移）" className="lg:col-span-7" testId="reserve-trend-panel">
-              <div className="mb-2 text-xs text-slate-600">
-                公式値ベース。{selectedArea === "全エリア" ? "全エリア" : `${selectedArea}`} / {data.meta.targetDate}
-              </div>
-              <div data-testid="reserve-trend-chart" role="img" aria-label="エリア予備率推移チャート">
-                <ReactECharts option={reserveTrendOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
-            <Panel title="エリア需要・予備力（表示時刻）" className="lg:col-span-5" testId="reserve-current-panel">
+          <ChartErrorBoundary sectionName="需要・予備力スナップショット">
+          <section className="grid grid-cols-1 gap-4">
+            <Panel title="エリア需要・予備力（表示時刻）" testId="reserve-current-panel">
               <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
               <div data-testid="reserve-current-chart" role="img" aria-label="エリア需要・予備力チャート">
                 <ReactECharts option={reserveCurrentOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("totals") ? (
-          <ChartErrorBoundary sectionName="発電・連系概要">
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
-              <div data-testid="area-total-generation-chart" role="img" aria-label="エリア別日量発電チャート">
-                <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
-            <Panel title="連系線潮流トレンド（時系列）" testId="intertie-trend-panel">
-              <div data-testid="intertie-trend-chart" role="img" aria-label="連系線潮流トレンドチャート">
-                <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
               </div>
             </Panel>
           </section>
@@ -2385,28 +2518,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2" testId="network-flow-panel">
               <div className="mb-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-                  <span data-testid="selected-flow-datetime">表示日時: {selectedFlowDateTimeLabel}</span>
-                  <span>
-                    スロット {flowSlotLabels.length === 0 ? 0 : clampedNetworkFlowSlotIndex + 1} / {flowSlotLabels.length}
-                  </span>
-                </div>
-                <input
-                  aria-label="ネットワーク潮流の表示時刻"
-                  type="range"
-                  min={0}
-                  max={maxFlowSlotIndex}
-                  step={1}
-                  value={clampedNetworkFlowSlotIndex}
-                  onChange={(event) => setNetworkFlowSlotIndex(Number(event.target.value))}
-                  disabled={flowSlotLabels.length === 0}
-                  className="w-full accent-teal-600"
-                />
-                <div className="mt-1 flex justify-between text-[11px] text-slate-500">
-                  <span>{flowSlotLabels[0] ?? "-"}</span>
-                  <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
-                </div>
-                <p className="mt-2 text-[11px] text-slate-600">
+                <p className="text-[11px] text-slate-600">
                   注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンク（SS・CS・変換所間）として、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
                 </p>
                 <p className="mt-1 text-[11px] text-slate-500">
@@ -2521,92 +2633,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 <ReactECharts option={interAreaFlowOption} style={{ height: isMobileViewport ? 520 : 594 }} />
               </div>
             </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("diagnostics") ? (
-          <ChartErrorBoundary sectionName="潮流ヒートマップ">
-          <section className="grid grid-cols-1 gap-4">
-            <Panel title="主要線路の潮流ヒートマップ">
-              <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
-              <ReactECharts option={flowHeatmapOption} style={{ height: 420 }} />
-            </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("diagnostics") ? (
-          <ChartErrorBoundary sectionName="潮流変動率ヒートマップ">
-          <section className="grid grid-cols-1 gap-4">
-            <Panel title="潮流変動率が大きい送電線">
-              <p className="mb-2 text-xs text-slate-500">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
-              <ReactECharts option={volatilityHeatmapOption} style={{ height: 480 }} />
-            </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("rankings") ? (
-          <ChartErrorBoundary sectionName="ランキング">
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
-            <h2 className="mb-3 text-lg font-semibold">高発電ユニット上位</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                    <th className="py-2 pr-3">エリア</th>
-                    <th className="py-2 pr-3">発電所</th>
-                    <th className="py-2 pr-3">ユニット</th>
-                    <th className="py-2 pr-3">方式</th>
-                    <th className="py-2 text-right">最大出力(万kW)</th>
-                    <th className="py-2 text-right">日量(kWh)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTopUnits.slice(0, 24).map((unit) => (
-                    <tr key={`${unit.area}-${unit.plantName}-${unit.unitName}`} className="border-b border-slate-100">
-                      <td className="py-2 pr-3">{unit.area}</td>
-                      <td className="py-2 pr-3">{unit.plantName}</td>
-                      <td className="py-2 pr-3">{unit.unitName}</td>
-                      <td className="py-2 pr-3">{unit.sourceType}</td>
-                      <td className="py-2 text-right">
-                        {typeof unit.maxOutputManKw === "number" ? manKwFmt.format(unit.maxOutputManKw) : "-"}
-                      </td>
-                      <td className="py-2 text-right">{numberFmt.format(unit.dailyKwh)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <h3 className="mb-3 mt-6 text-lg font-semibold">高発電発電所上位（ユニット合計）</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                    <th className="py-2 pr-3">エリア</th>
-                    <th className="py-2 pr-3">発電所</th>
-                    <th className="py-2 pr-3">方式</th>
-                    <th className="py-2 text-right">最大出力(万kW)</th>
-                    <th className="py-2 text-right">日量(kWh)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTopPlants.slice(0, 24).map((plant) => (
-                    <tr key={`${plant.area}-${plant.plantName}`} className="border-b border-slate-100">
-                      <td className="py-2 pr-3">{plant.area}</td>
-                      <td className="py-2 pr-3">{plant.plantName}</td>
-                      <td className="py-2 pr-3">{plant.sourceType || "不明"}</td>
-                      <td className="py-2 text-right">
-                        {typeof plant.maxOutputManKw === "number" ? manKwFmt.format(plant.maxOutputManKw) : "-"}
-                      </td>
-                      <td className="py-2 text-right">{numberFmt.format(plant.dailyKwh)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </section>
           </ChartErrorBoundary>
         ) : null}
