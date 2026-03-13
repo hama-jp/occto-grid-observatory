@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardData } from "@/lib/dashboard-types";
 import {
   SOURCE_COLORS,
+  SOURCE_COLOR_MAP,
   FLOW_AREA_COLORS,
   MAX_ANIMATED_FLOW_LINES_PER_AREA,
   DASHBOARD_SECTION_OPTIONS,
@@ -377,7 +378,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       new Map(
         data.generation.sourceTotals.map((item, idx) => [
           item.source,
-          SOURCE_COLORS[idx % SOURCE_COLORS.length],
+          SOURCE_COLOR_MAP[item.source] ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
         ]),
       ),
     [data.generation.sourceTotals],
@@ -514,11 +515,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         areaStyle: { opacity: 0.12 },
         symbol: "none",
         lineStyle: { width: 2 },
-        color: SOURCE_COLORS[idx % SOURCE_COLORS.length],
+        color: sourceColorByName.get(source) ?? SOURCE_COLOR_MAP[source] ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
         data: scopedSeries.map((point) => point.values[source] ?? 0),
       })),
     };
-  }, [data.generation.hourlyBySource, data.generation.hourlyBySourceByArea, data.meta.slotLabels.generation, generationTrendArea]);
+  }, [data.generation.hourlyBySource, data.generation.hourlyBySourceByArea, data.meta.slotLabels.generation, generationTrendArea, sourceColorByName]);
 
   const sourceCompositionItems = useMemo(() => {
     const rows =
