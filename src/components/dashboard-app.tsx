@@ -241,7 +241,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         type: "scroll",
         textStyle: { color: "#334155" },
       },
-      grid: { top: 48, left: 52, right: 18, bottom: 34 },
+      grid: { top: 60, left: 52, right: 18, bottom: 34 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.generation,
@@ -250,6 +250,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       yAxis: {
         type: "value",
         name: "予備率(%)",
+        nameGap: 10,
         axisLabel: {
           formatter: (value: number) => decimalFmt.format(value),
         },
