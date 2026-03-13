@@ -663,117 +663,92 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     };
   }, [data.meta.slotLabels.flow, filteredLines]);
 
-  const volatilityRanking = useMemo(() => {
-    return filteredLines
+  const volatilityHeatmapOption = useMemo(() => {
+    // Compute coefficient of variation for each line and pick top 18
+    const scored = filteredLines
       .map((line) => {
         const vals = line.values;
         const n = vals.length;
         if (n === 0) return null;
+        const meanAbs = vals.reduce((s, v) => s + Math.abs(v), 0) / n;
+        if (meanAbs < 1) return null; // skip near-zero lines
         const mean = vals.reduce((s, v) => s + v, 0) / n;
-        const variance = vals.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
-        const stdDev = Math.sqrt(variance);
-        const maxVal = Math.max(...vals);
-        const minVal = Math.min(...vals);
-        const range = maxVal - minVal;
-        return { ...line, stdDev, range, mean, maxVal, minVal };
+        const stdDev = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / n);
+        const cv = stdDev / meanAbs; // coefficient of variation
+        return { ...line, cv, mean, stdDev, meanAbs };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
-      .sort((a, b) => b.range - a.range)
-      .slice(0, 15);
-  }, [filteredLines]);
+      .sort((a, b) => b.cv - a.cv)
+      .slice(0, 18);
 
-  const volatilityBarOption = useMemo(() => {
-    const items = volatilityRanking;
-    const labels = items.map((l) => `${l.area} | ${l.lineName}`);
+    const yLabels = scored.map(
+      (l) => `${l.area} | ${l.lineName}  (CV ${(l.cv * 100).toFixed(0)}%)`,
+    );
+
+    // Each cell = deviation from that line's mean, as % of meanAbs
+    const heatmapData: Array<[number, number, number]> = [];
+    scored.forEach((line, rowIdx) => {
+      line.values.forEach((value, colIdx) => {
+        const pctDev = ((value - line.mean) / line.meanAbs) * 100;
+        heatmapData.push([colIdx, rowIdx, Math.round(pctDev)]);
+      });
+    });
+
     return {
       tooltip: {
-        trigger: "axis" as const,
-        axisPointer: { type: "shadow" as const },
-        formatter: (params: Array<{ seriesName: string; value: number; name: string }>) => {
-          const item = items[labels.indexOf(params[0].name)];
-          if (!item) return "";
+        position: "top",
+        formatter: (params: { data: [number, number, number] }) => {
+          const [col, row, pct] = params.data;
+          const line = scored[row];
+          const rawMw = line ? Math.round(line.values[col]) : 0;
           return [
-            `<b>${params[0].name}</b>`,
-            `変動幅: ${numberFmt.format(Math.round(item.range))} MW`,
-            `標準偏差: ${numberFmt.format(Math.round(item.stdDev))} MW`,
-            `最大: ${numberFmt.format(Math.round(item.maxVal))} MW`,
-            `最小: ${numberFmt.format(Math.round(item.minVal))} MW`,
-            `平均: ${numberFmt.format(Math.round(item.mean))} MW`,
+            `<b>${yLabels[row]}</b>`,
+            `${data.meta.slotLabels.flow[col]}`,
+            `潮流: ${numberFmt.format(rawMw)} MW`,
+            `平均比偏差: ${pct > 0 ? "+" : ""}${pct}%`,
           ].join("<br/>");
         },
       },
-      grid: { top: 20, left: 160, right: 60, bottom: 30 },
+      grid: { top: 20, left: 220, right: 20, bottom: 44 },
       xAxis: {
-        type: "value" as const,
-        name: "MW",
-        axisLabel: { formatter: (v: number) => numberFmt.format(v) },
+        type: "category",
+        data: data.meta.slotLabels.flow,
+        splitArea: { show: true },
+        axisLabel: { interval: 3 },
       },
       yAxis: {
-        type: "category" as const,
-        data: [...labels].reverse(),
+        type: "category",
+        data: yLabels,
+        splitArea: { show: true },
         axisLabel: { fontSize: 11 },
+      },
+      visualMap: {
+        min: -150,
+        max: 150,
+        calculable: true,
+        orient: "horizontal",
+        left: "center",
+        bottom: 0,
+        text: ["+150%", "−150%"],
+        inRange: {
+          color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"],
+        },
       },
       series: [
         {
-          name: "変動幅",
-          type: "bar",
-          data: [...items].reverse().map((l) => ({
-            value: Math.round(l.range),
-            itemStyle: { color: FLOW_AREA_COLORS[l.area] ?? FLOW_AREA_COLORS.default },
-          })),
-          barMaxWidth: 18,
-          label: {
-            show: true,
-            position: "right" as const,
-            fontSize: 10,
-            formatter: (p: { value: number }) => `${numberFmt.format(p.value)}`,
+          name: "変動率",
+          type: "heatmap",
+          data: heatmapData,
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowColor: "rgba(0, 0, 0, 0.35)",
+            },
           },
         },
       ],
     };
-  }, [volatilityRanking]);
-
-  const volatilitySparkOption = useMemo(() => {
-    const items = volatilityRanking.slice(0, 10);
-    const slotLabels = data.meta.slotLabels.flow;
-    return {
-      tooltip: {
-        trigger: "axis" as const,
-        formatter: (params: Array<{ seriesName: string; data: number; dataIndex: number }>) => {
-          const time = slotLabels[params[0].dataIndex] ?? "";
-          return params
-            .map((p) => `${p.seriesName}: ${numberFmt.format(Math.round(p.data))} MW`)
-            .join("<br/>")
-            + `<br/><span style="color:#999">${time}</span>`;
-        },
-      },
-      legend: {
-        type: "scroll" as const,
-        bottom: 0,
-        textStyle: { fontSize: 10 },
-      },
-      grid: { top: 10, left: 50, right: 20, bottom: 40 },
-      xAxis: {
-        type: "category" as const,
-        data: slotLabels,
-        axisLabel: { interval: 5, fontSize: 10 },
-        boundaryGap: false,
-      },
-      yAxis: {
-        type: "value" as const,
-        axisLabel: { fontSize: 10, formatter: (v: number) => numberFmt.format(v) },
-      },
-      series: items.map((line, idx) => ({
-        name: `${line.area}|${line.lineName}`,
-        type: "line" as const,
-        data: line.values.map((v) => Math.round(v)),
-        smooth: true,
-        symbol: "none",
-        lineStyle: { width: 1.5 },
-        color: SOURCE_COLORS[idx % SOURCE_COLORS.length],
-      })),
-    };
-  }, [volatilityRanking, data.meta.slotLabels.flow]);
+  }, [data.meta.slotLabels.flow, filteredLines]);
 
   const flowNetworkOption = useMemo(() => {
     type NetworkLink = {
@@ -2480,15 +2455,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {visibleSectionSet.has("diagnostics") ? (
-          <ChartErrorBoundary sectionName="潮流変動ランキング">
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Panel title="潮流変動が大きい送電線">
-              <p className="mb-2 text-xs text-slate-500">一日の潮流の変動幅（最大−最小）が大きい上位15線路。</p>
-              <ReactECharts option={volatilityBarOption} style={{ height: 440 }} />
-            </Panel>
-            <Panel title="高変動線路の時間推移">
-              <p className="mb-2 text-xs text-slate-500">変動上位10線路の30分値推移を重ねて表示します。</p>
-              <ReactECharts option={volatilitySparkOption} style={{ height: 440 }} />
+          <ChartErrorBoundary sectionName="潮流変動率ヒートマップ">
+          <section className="grid grid-cols-1 gap-4">
+            <Panel title="潮流変動率が大きい送電線">
+              <p className="mb-2 text-xs text-slate-500">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
+              <ReactECharts option={volatilityHeatmapOption} style={{ height: 480 }} />
             </Panel>
           </section>
           </ChartErrorBoundary>
