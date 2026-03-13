@@ -2607,6 +2607,34 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           </section>
           </ChartErrorBoundary>
         ) : null}
+
+        {/* Footer */}
+        <footer className="mt-8 border-t border-slate-200/60 pt-4 pb-2 text-center text-[11px] leading-relaxed text-slate-400 dark:border-slate-700/60 dark:text-slate-500">
+          <p>
+            本サイトは
+            <a
+              href="https://www.occto.or.jp/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-slate-600 dark:hover:text-slate-300"
+            >
+              電力広域的運営推進機関（OCCTO）
+            </a>
+            が公開するデータをもとに作成した非公式の可視化ダッシュボードです。
+          </p>
+          <p className="mt-1">
+            正確な情報は必ず
+            <a
+              href="https://www.occto.or.jp/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-slate-600 dark:hover:text-slate-300"
+            >
+              広域機関の公式ページ
+            </a>
+            をご確認ください。
+          </p>
+        </footer>
       </div>
     </div>
   );
