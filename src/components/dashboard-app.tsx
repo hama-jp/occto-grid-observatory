@@ -283,6 +283,76 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       })),
     };
   }, [data.meta.slotLabels.generation, reserveAreaSeries, selectedArea]);
+  const demandCurrentOption = useMemo(() => {
+    const rows = (selectedArea === "全エリア"
+      ? reserveCurrentRows
+      : reserveCurrentRows.filter((item) => item.area === selectedArea)
+    ).sort((a, b) => b.demandMw - a.demandMw);
+    const hasData = rows.length > 0;
+
+    return {
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: Array<{ data: { row: (typeof rows)[number] } }>) => {
+          const row = params[0]?.data?.row;
+          if (!row) {
+            return "";
+          }
+          return `${row.area}<br/>表示日時: ${selectedFlowDateTimeLabel}<br/>需要: ${decimalFmt.format(
+            row.demandMw,
+          )} MW<br/>供給力: ${decimalFmt.format(row.supplyMw)} MW<br/>使用率: ${decimalFmt.format(row.usageRate)}%`;
+        },
+      },
+      grid: { top: 18, left: 74, right: 18, bottom: 30 },
+      xAxis: {
+        type: "value",
+        name: "MW",
+      },
+      yAxis: {
+        type: "category",
+        inverse: true,
+        data: rows.map((item) => item.area),
+      },
+      graphic: hasData
+        ? undefined
+        : [
+            {
+              type: "text",
+              left: "center",
+              top: "middle",
+              style: {
+                text: "需要データが未取得です",
+                fill: "#475569",
+                font: "14px sans-serif",
+              },
+              silent: true,
+            },
+          ],
+      series: [
+        {
+          type: "bar",
+          barWidth: 14,
+          data: rows.map((row) => ({
+            value: row.demandMw,
+            row,
+            itemStyle: {
+              color: (FLOW_AREA_COLORS[row.area] ?? FLOW_AREA_COLORS.default),
+              borderRadius: [0, 6, 6, 0],
+            },
+          })),
+          label: {
+            show: true,
+            position: "right",
+            formatter: (params: { data: { row: (typeof rows)[number] } }) =>
+              `${decimalFmt.format(params.data.row.demandMw)} MW`,
+            fontSize: 10,
+            color: "#334155",
+          },
+        },
+      ],
+    };
+  }, [reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
   const reserveCurrentOption = useMemo(() => {
     const rows = (selectedArea === "全エリア"
       ? reserveCurrentRows
@@ -299,9 +369,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           if (!row) {
             return "";
           }
-          return `${row.area}<br/>表示日時: ${selectedFlowDateTimeLabel}<br/>需要: ${decimalFmt.format(
-            row.demandMw,
-          )} MW<br/>供給力: ${decimalFmt.format(row.supplyMw)} MW<br/>予備力: ${decimalFmt.format(
+          return `${row.area}<br/>表示日時: ${selectedFlowDateTimeLabel}<br/>予備力: ${decimalFmt.format(
             row.reserveMw,
           )} MW<br/>予備率: ${decimalFmt.format(row.reserveRate)}%`;
         },
@@ -347,7 +415,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             show: true,
             position: "right",
             formatter: (params: { data: { row: (typeof rows)[number] } }) =>
-              `${decimalFmt.format(params.data.row.demandMw)}MW / ${decimalFmt.format(params.data.row.reserveMw)}MW`,
+              `${decimalFmt.format(params.data.row.reserveMw)} MW (${decimalFmt.format(params.data.row.reserveRate)}%)`,
             fontSize: 10,
             color: "#334155",
           },
@@ -2502,10 +2570,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
         {visibleSectionSet.has("reserve") ? (
           <ChartErrorBoundary sectionName="需要・予備力スナップショット">
-          <section className="grid grid-cols-1 gap-4">
-            <Panel title="エリア需要・予備力（表示時刻）" testId="reserve-current-panel">
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Panel title="エリア需要（表示時刻）" testId="demand-current-panel">
               <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-              <div data-testid="reserve-current-chart" role="img" aria-label="エリア需要・予備力チャート">
+              <div data-testid="demand-current-chart" role="img" aria-label="エリア需要チャート">
+                <ReactECharts option={demandCurrentOption} style={{ height: 320 }} />
+              </div>
+            </Panel>
+            <Panel title="エリア予備力（表示時刻）" testId="reserve-current-panel">
+              <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
+              <div data-testid="reserve-current-chart" role="img" aria-label="エリア予備力チャート">
                 <ReactECharts option={reserveCurrentOption} style={{ height: 320 }} />
               </div>
             </Panel>
