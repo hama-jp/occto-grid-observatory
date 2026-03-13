@@ -2257,7 +2257,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {/* ── 表示時刻スナップショット ── */}
-        <section className="rounded-3xl border border-teal-200/60 bg-gradient-to-r from-teal-50/80 to-white/80 px-5 py-4 shadow-sm backdrop-blur dark:border-teal-800/60 dark:from-teal-950/30 dark:to-slate-800/80">
+        <section className="sticky top-0 z-30 rounded-3xl border border-teal-200/60 bg-gradient-to-r from-teal-50/95 to-white/95 px-5 py-4 shadow-md backdrop-blur-sm dark:border-teal-800/60 dark:from-teal-950/95 dark:to-slate-800/95">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-base font-semibold text-teal-800 dark:text-teal-300">表示時刻スナップショット</h2>
