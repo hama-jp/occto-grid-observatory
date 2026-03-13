@@ -1898,18 +1898,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none dark:border-teal-800 dark:bg-slate-800 dark:text-slate-200"
                   value={toInputDateValue(selectedDate)}
                   min={toInputDateValue(earliestAvailableDate)}
+                  max={toInputDateValue(latestAvailableDate)}
                   onChange={(event) => {
                     const nextDate = toDisplayDateValue(event.target.value);
                     if (!nextDate) {
                       setDateError("対象日を入力してください。");
                       return;
                     }
-                    setSelectedDate(nextDate);
                     if (!availableDateSet.has(nextDate)) {
                       setDateError(`${nextDate} の公開データはまだありません。最新は ${latestAvailableDate} です。`);
                       return;
                     }
                     setDateError(null);
+                    setSelectedDate(nextDate);
                   }}
                   disabled={isDateLoading}
                 />
