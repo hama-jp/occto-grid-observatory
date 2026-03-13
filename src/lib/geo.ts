@@ -50,6 +50,12 @@ export type NetworkAnimationPath = {
   delaySeconds: number;
   /** Normalized 0-1 magnitude for color mapping (0=low flow, 1=high flow) */
   magnitude: number;
+  /** "intra" for intra-area flows (default), "intertie" for inter-area interconnection flows */
+  kind?: "intra" | "intertie";
+  /** AC or DC for intertie lines */
+  currentType?: "ac" | "dc";
+  /** Label text for the animation path (e.g. station names / MW) */
+  label?: string;
 };
 
 /**

@@ -1135,9 +1135,42 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         };
       })
       .filter((item) => item !== null);
+
+    // Build inter-area animation paths for SVG overlay
+    const maxAbsIntertieForAnim = Math.max(
+      ...intertieFacilityLines.map((line) => line.absMw),
+      ...intertieBridgeLines.map((line) => line.absMw),
+      1,
+    );
+    const intertieAnimationPaths: NetworkAnimationPath[] = [
+      ...intertieFacilityLines.map((line, index) => ({
+        id: `intertie-facility-${index}`,
+        d: buildSvgQuadraticPath(line.coords),
+        strokeWidth: Math.max(2.6, line.lineStyle.width + 0.5),
+        durationSeconds: roundTo(2.2 + (index % 3) * 0.22, 2),
+        delaySeconds: roundTo((index % 4) * 0.15, 2),
+        magnitude: clamp(line.absMw / maxAbsIntertieForAnim, 0, 1),
+        kind: "intertie" as const,
+        currentType: line.currentType,
+        label: `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)}MW`,
+      })),
+      ...intertieBridgeLines.map((line, index) => ({
+        id: `intertie-bridge-${index}`,
+        d: buildSvgQuadraticPath(line.coords),
+        strokeWidth: Math.max(2.4, (line.lineStyle?.width ?? 2) + 0.4),
+        durationSeconds: roundTo(2.4 + (index % 3) * 0.2, 2),
+        delaySeconds: roundTo((index % 4) * 0.18, 2),
+        magnitude: clamp(line.absMw / maxAbsIntertieForAnim, 0, 1),
+        kind: "intertie" as const,
+        currentType: undefined,
+        label: `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)}MW`,
+      })),
+    ];
+
     return {
       animationDurationUpdate: 360,
       __majorFlowAnimationPaths: majorFlowAnimationPaths,
+      __intertieAnimationPaths: intertieAnimationPaths,
       tooltip: {
         trigger: "item",
         confine: true,
@@ -1317,6 +1350,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           __majorFlowAnimationPaths?: NetworkAnimationPath[];
         }
       ).__majorFlowAnimationPaths ?? [],
+    [flowNetworkOption],
+  );
+
+  const intertieAnimationPaths = useMemo(
+    () =>
+      (
+        flowNetworkOption as {
+          __intertieAnimationPaths?: NetworkAnimationPath[];
+        }
+      ).__intertieAnimationPaths ?? [],
     [flowNetworkOption],
   );
 
@@ -2361,10 +2404,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
                 </div>
                 <p className="mt-2 text-[11px] text-slate-600">
-                  注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンクとして、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
+                  注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンク（SS・CS・変換所間）として、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
                 </p>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  各エリアの主要潮流を最大10本ずつ、水色の破線アニメーションで表示しています。
+                  各エリアの主要潮流を水色の破線アニメーションで、エリア間連係線を橙色（交流）・紫色（直流）の破線アニメーションで表示しています。
                 </p>
               </div>
               <div data-testid="network-flow-chart" role="img" aria-label="ネットワーク潮流グラフ" className="relative" ref={networkFlowChartHostRef}>
@@ -2423,6 +2466,42 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                                 animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
                                 animationDelay: `-${path.delaySeconds}s`,
                                 filter: `drop-shadow(0 0 2px ${shadowColor})`,
+                              }}
+                            />
+                          </g>
+                        );
+                      })}
+                      {intertieAnimationPaths.map((path) => {
+                        const isDc = path.currentType === "dc";
+                        const glowColor = isDc
+                          ? `rgba(192,38,211,${0.22 + path.magnitude * 0.18})`
+                          : `rgba(234,88,12,${0.22 + path.magnitude * 0.18})`;
+                        const dashColor = isDc
+                          ? `rgba(192,38,211,${0.7 + path.magnitude * 0.25})`
+                          : `rgba(234,88,12,${0.7 + path.magnitude * 0.25})`;
+                        const shadowColor = isDc
+                          ? "rgba(192,38,211,0.9)"
+                          : "rgba(234,88,12,0.9)";
+                        return (
+                          <g key={path.id}>
+                            <path
+                              d={path.d}
+                              fill="none"
+                              stroke={glowColor}
+                              strokeWidth={path.strokeWidth + 1.8}
+                              strokeLinecap="round"
+                            />
+                            <path
+                              d={path.d}
+                              fill="none"
+                              stroke={dashColor}
+                              strokeWidth={path.strokeWidth}
+                              strokeLinecap="round"
+                              strokeDasharray={isDc ? "10 12" : "18 14"}
+                              style={{
+                                animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
+                                animationDelay: `-${path.delaySeconds}s`,
+                                filter: `drop-shadow(0 0 3px ${shadowColor})`,
                               }}
                             />
                           </g>
