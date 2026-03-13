@@ -626,7 +626,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           return `${yLabels[row]}<br/>${data.meta.slotLabels.flow[col]}: ${numberFmt.format(value)} MW`;
         },
       },
-      grid: { top: 20, left: 160, right: 20, bottom: 44 },
+      grid: { top: 20, left: 160, right: 80, bottom: 20 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.flow,
@@ -642,9 +642,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         min: -800,
         max: 800,
         calculable: true,
-        orient: "horizontal",
-        left: "center",
-        bottom: 0,
+        orient: "vertical",
+        right: 0,
+        top: 0,
         inRange: {
           color: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"],
         },
@@ -711,7 +711,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           ].join("<br/>");
         },
       },
-      grid: { top: 20, left: 220, right: 20, bottom: 44 },
+      grid: { top: 20, left: 220, right: 80, bottom: 20 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.flow,
@@ -728,9 +728,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         min: -150,
         max: 150,
         calculable: true,
-        orient: "horizontal",
-        left: "center",
-        bottom: 0,
+        orient: "vertical",
+        right: 0,
+        top: 0,
         text: ["+150%", "−150%"],
         inRange: {
           color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"],
@@ -1882,7 +1882,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             <div>
               <p className="text-xs tracking-[0.18em] text-teal-700 dark:text-teal-400">OCCTO GRID OBSERVATORY</p>
               <h1 className="text-2xl font-semibold leading-tight md:text-3xl">
-                送電潮流 × ユニット発電実績 ダッシュボード
+                発電実績 ×送電潮流実績 ダッシュボード
               </h1>
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 対象日: {data.meta.targetDate} / 最終取り込み: {fetchedAtLabel}
