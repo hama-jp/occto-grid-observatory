@@ -91,7 +91,7 @@ export const MAP_VIEWBOX = {
   padding: 30,
 };
 
-export const MAX_ANIMATED_FLOW_LINES_PER_AREA = 8;
+export const MAX_ANIMATED_FLOW_LINES_PER_AREA = 16;
 
 export const FLOW_AREA_NAME_SET = new Set<string>([
   "北海道",
