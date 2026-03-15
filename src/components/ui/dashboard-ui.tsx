@@ -28,7 +28,7 @@ export function Panel({
   return (
     <section
       data-testid={testId}
-      className={`rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90 ${className ?? ""}`}
+      className={`rounded-3xl border border-white/70 bg-white/90 p-3 shadow-sm md:p-4 dark:border-slate-700 dark:bg-slate-800/90 ${className ?? ""}`}
     >
       <h2 className="mb-2 text-base font-semibold text-slate-800 dark:text-slate-200">{title}</h2>
       {children}
@@ -50,7 +50,7 @@ export function SummaryCard({
   children: ReactNode;
 }) {
   return (
-    <article className="rounded-3xl border border-white/70 bg-white/92 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/92">
+    <article className="rounded-3xl border border-white/70 bg-white/92 p-3 shadow-sm md:p-4 dark:border-slate-700 dark:bg-slate-800/92">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
