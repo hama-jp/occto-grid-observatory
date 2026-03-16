@@ -28,6 +28,10 @@ export function normalizeSourceName(source: string): string {
   return trimmed.length > 0 ? trimmed : "不明";
 }
 
+export function formatEnergyGwh(kwh: number): string {
+  return `${decimalFmt.format(kwh / 1_000_000)} GWh`;
+}
+
 export function formatCompactEnergy(kwh: number): string {
   if (Math.abs(kwh) >= 1_000_000_000) {
     return `${decimalFmt.format(kwh / 1_000_000_000)} TWh`;

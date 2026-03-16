@@ -18,6 +18,7 @@ import {
   manKwFmt,
   normalizeSourceName,
   formatCompactEnergy,
+  formatEnergyGwh,
   formatVoltageKv,
   formatJstDateTime,
   toDateStamp,
@@ -247,7 +248,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         type: "scroll",
         textStyle: { color: "#334155" },
       },
-      grid: { top: isMobileViewport ? 48 : 60, left: isMobileViewport ? 40 : 52, right: 18, bottom: isMobileViewport ? 48 : 34 },
+      grid: { top: isMobileViewport ? 48 : 60, left: isMobileViewport ? 52 : 64, right: 18, bottom: isMobileViewport ? 48 : 34 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.generation,
@@ -256,7 +257,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       yAxis: {
         type: "value",
         name: "予備率(%)",
-        nameGap: 10,
+        nameLocation: "middle",
+        nameGap: isMobileViewport ? 34 : 42,
+        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
         axisLabel: {
           formatter: (value: number) => decimalFmt.format(value),
         },
@@ -549,14 +552,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
     return {
       backgroundColor: "transparent",
-      tooltip: { trigger: "axis" },
+      tooltip: { trigger: "axis", valueFormatter: (value: number) => `${numberFmt.format(value)} MW` },
       legend: {
         type: "scroll",
         top: 8,
         textStyle: { color: "#264653" },
         formatter: (name: string) => normalizeSourceName(name),
       },
-      grid: { top: isMobileViewport ? 40 : 48, left: isMobileViewport ? 36 : 48, right: isMobileViewport ? 10 : 20, bottom: isMobileViewport ? 48 : 36 },
+      grid: { top: isMobileViewport ? 40 : 48, left: isMobileViewport ? 52 : 64, right: isMobileViewport ? 10 : 20, bottom: isMobileViewport ? 48 : 36 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.generation,
@@ -564,6 +567,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       },
       yAxis: {
         type: "value",
+        name: "発電量(MW)",
+        nameLocation: "middle",
+        nameGap: isMobileViewport ? 36 : 44,
+        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
         axisLabel: { color: "#4a5568", formatter: (v: number) => numberFmt.format(v) },
       },
       graphic:
@@ -612,7 +619,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
   const sourceDonutOption = useMemo(() => {
     return {
-      tooltip: { trigger: "item" },
+      tooltip: { trigger: "item", valueFormatter: (value: number) => formatCompactEnergy(value) },
       series: [
         {
           name: "発電方式",
@@ -652,11 +659,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     () => {
       const sortedAreaTotals = [...data.generation.areaTotals].sort((a, b) => b.totalKwh - a.totalKwh);
       return {
-        tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+          valueFormatter: (value: number) => `${decimalFmt.format(value / 1_000_000)} GWh`,
+        },
         grid: { top: 18, left: isMobileViewport ? 56 : 74, right: 18, bottom: 30 },
         xAxis: {
           type: "value",
-          axisLabel: { formatter: (v: number) => `${Math.round(v / 1_000_000)}M` },
+          name: "GWh",
+          axisLabel: { formatter: (v: number) => `${decimalFmt.format(v / 1_000_000)}` },
         },
         yAxis: {
           type: "category",
@@ -1939,7 +1951,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         type: "scroll",
         textStyle: { color: "#334155" },
       },
-      grid: { top: isMobileViewport ? 48 : 58, left: isMobileViewport ? 40 : 52, right: isMobileViewport ? 10 : 20, bottom: isMobileViewport ? 48 : 34 },
+      grid: { top: isMobileViewport ? 48 : 58, left: isMobileViewport ? 52 : 64, right: isMobileViewport ? 10 : 20, bottom: isMobileViewport ? 48 : 34 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.flow,
@@ -1948,6 +1960,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       yAxis: {
         type: "value",
         name: "潮流実績(MW)",
+        nameLocation: "middle",
+        nameGap: isMobileViewport ? 34 : 42,
+        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
       },
       graphic: hasData
         ? undefined
@@ -2072,7 +2087,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       },
       grid: {
         top: isMobileViewport ? 48 : 58,
-        left: isMobileViewport ? 40 : 52,
+        left: isMobileViewport ? 52 : 64,
         right: isMobileViewport ? 10 : 20,
         bottom: isMobileViewport ? 48 : 34,
       },
@@ -2084,6 +2099,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       yAxis: {
         type: "value" as const,
         name: "利用率(%)",
+        nameLocation: "middle" as const,
+        nameGap: isMobileViewport ? 30 : 38,
+        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
         max: 100,
         axisLabel: { formatter: (v: number) => `${v}%` },
       },
@@ -2331,7 +2349,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <SummaryCard
               title="全国発電量"
-              value={formatCompactEnergy(dashboardHighlights.totalGenerationKwh)}
+              value={formatEnergyGwh(dashboardHighlights.totalGenerationKwh)}
               detail={`${data.generation.areaTotals.length} エリア合計`}
               accentColor="#0b525b"
             >
