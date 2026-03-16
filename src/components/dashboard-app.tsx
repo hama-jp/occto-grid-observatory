@@ -163,8 +163,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     return ["全エリア", ...Array.from(set).sort(compareAreaOrder)];
   }, [data]);
   const generationAreas = useMemo(
-    () => ["全エリア", ...data.generation.areaTotals.map((item) => item.area).sort(compareAreaOrder)],
-    [data.generation.areaTotals],
+    () => {
+      const set = new Set<string>();
+      data.generation.areaTotals.forEach((item) => set.add(item.area));
+      data.flows.areaSummaries.forEach((item) => set.add(item.area));
+      return ["全エリア", ...Array.from(set).sort(compareAreaOrder)];
+    },
+    [data.generation.areaTotals, data.flows.areaSummaries],
   );
 
   const [selectedArea, setSelectedArea] = useState<string>("全エリア");
