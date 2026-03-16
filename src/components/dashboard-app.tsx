@@ -1714,28 +1714,35 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       }
     });
 
-    const rows = data.generation.areaTotals.map((item) => {
+    const areaTotalMap = new Map(data.generation.areaTotals.map((item) => [item.area, item]));
+    const allAreaNames = new Set<string>();
+    data.generation.areaTotals.forEach((item) => allAreaNames.add(item.area));
+    data.flows.areaSummaries.forEach((item) => allAreaNames.add(item.area));
+
+    const rows = Array.from(allAreaNames).map((areaName) => {
+      const item = areaTotalMap.get(areaName);
+      const areaKwh = item?.totalKwh ?? 0;
       const sourceMix = buildTopShareSegments(
-        sourceTotalsByArea[item.area] ?? [],
-        item.totalKwh,
+        sourceTotalsByArea[areaName] ?? [],
+        areaKwh,
         4,
         (source) => normalizeSourceName(source.source),
         (source) => source.totalKwh,
         (source, idx) => sourceColorByName.get(source.source) ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
       );
-      const topSource = sourceTotalsByArea[item.area]?.[0];
-      const netIntertieMw = netIntertieByArea.get(item.area) ?? 0;
-      const flowSummary = areaFlowSummaryMap.get(item.area);
-      const peer = strongestPeerByArea.get(item.area);
-      const primaryPlant = primaryPlantByArea.get(item.area);
-      const reserve = reserveAreaMap.get(item.area);
+      const topSource = sourceTotalsByArea[areaName]?.[0];
+      const netIntertieMw = netIntertieByArea.get(areaName) ?? 0;
+      const flowSummary = areaFlowSummaryMap.get(areaName);
+      const peer = strongestPeerByArea.get(areaName);
+      const primaryPlant = primaryPlantByArea.get(areaName);
+      const reserve = reserveAreaMap.get(areaName);
       return {
-        area: item.area,
-        totalKwh: item.totalKwh,
-        sharePercent: totalGenerationKwh > 0 ? (item.totalKwh / totalGenerationKwh) * 100 : 0,
+        area: areaName,
+        totalKwh: areaKwh,
+        sharePercent: totalGenerationKwh > 0 ? (areaKwh / totalGenerationKwh) * 100 : 0,
         topSource: topSource?.source ?? "不明",
         topSourceShare:
-          topSource && item.totalKwh > 0 ? (topSource.totalKwh / item.totalKwh) * 100 : 0,
+          topSource && areaKwh > 0 ? (topSource.totalKwh / areaKwh) * 100 : 0,
         sourceMix,
         netIntertieMw,
         peer,
