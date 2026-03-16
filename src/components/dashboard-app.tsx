@@ -460,9 +460,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
   const filteredTopUnits = useMemo(
     () =>
-      data.generation.topUnits.filter((unit) =>
-        selectedArea === "全エリア" ? true : unit.area === selectedArea,
-      ),
+      [...data.generation.topUnits]
+        .filter((unit) => (selectedArea === "全エリア" ? true : unit.area === selectedArea))
+        .sort((a, b) => b.dailyKwh - a.dailyKwh),
     [data.generation.topUnits, selectedArea],
   );
 
@@ -1562,7 +1562,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const hottestIntertie = interAreaFlowTextRows[0] ?? null;
     const largestUnit =
       [...data.generation.topUnits].sort(
-        (a, b) => b.maxOutputManKw - a.maxOutputManKw || b.dailyKwh - a.dailyKwh,
+        (a, b) => b.dailyKwh - a.dailyKwh || b.maxOutputManKw - a.maxOutputManKw,
       )[0] ?? null;
     const topPlant = allPlantSummaries[0] ?? null;
     const strongestImportValue = strongestImportArea?.area ?? "-";
@@ -1614,15 +1614,15 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       note: row.intertieNames.join(" / "),
     }));
     const unitLeadersRaw = [...data.generation.topUnits]
-      .sort((a, b) => b.maxOutputManKw - a.maxOutputManKw || b.dailyKwh - a.dailyKwh)
+      .sort((a, b) => b.dailyKwh - a.dailyKwh || b.maxOutputManKw - a.maxOutputManKw)
       .slice(0, 3);
-    const maxUnitOutput = Math.max(...unitLeadersRaw.map((item) => item.maxOutputManKw), 1);
+    const maxUnitKwh = Math.max(...unitLeadersRaw.map((item) => item.dailyKwh), 1);
     const unitLeaderItems: BarListItem[] = unitLeadersRaw.map((item) => ({
       label: `${item.plantName} ${item.unitName}`,
-      valueLabel: `${manKwFmt.format(item.maxOutputManKw)} 万kW`,
-      percent: clamp((item.maxOutputManKw / maxUnitOutput) * 100, 0, 100),
+      valueLabel: `${numberFmt.format(item.dailyKwh)} kWh`,
+      percent: clamp((item.dailyKwh / maxUnitKwh) * 100, 0, 100),
       color: FLOW_AREA_COLORS[item.area] ?? FLOW_AREA_COLORS.default,
-      note: item.area,
+      note: `${item.area}｜最大 ${manKwFmt.format(item.maxOutputManKw)} 万kW`,
     }));
     const plantLeadersRaw = allPlantSummaries.slice(0, 3);
     const maxPlantEnergy = Math.max(...plantLeadersRaw.map((item) => item.dailyKwh), 1);
@@ -2157,9 +2157,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               value={dashboardHighlights.largestUnit ? `${dashboardHighlights.largestUnit.plantName} ${dashboardHighlights.largestUnit.unitName}` : "-"}
               detail={
                 dashboardHighlights.largestUnit
-                  ? `${dashboardHighlights.largestUnit.area} / ${manKwFmt.format(
-                      dashboardHighlights.largestUnit.maxOutputManKw,
-                    )} 万kW`
+                  ? `${dashboardHighlights.largestUnit.area} / ${numberFmt.format(
+                      dashboardHighlights.largestUnit.dailyKwh,
+                    )} kWh（最大 ${manKwFmt.format(dashboardHighlights.largestUnit.maxOutputManKw)} 万kW）`
                   : "データなし"
               }
               accentColor="#1d3557"
@@ -2317,8 +2317,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                     <th className="whitespace-nowrap py-2 pr-2 md:pr-3">発電所</th>
                     <th className="whitespace-nowrap py-2 pr-2 md:pr-3">ユニット</th>
                     <th className="whitespace-nowrap py-2 pr-2 md:pr-3">方式</th>
-                    <th className="whitespace-nowrap py-2 text-right">最大出力(万kW)</th>
                     <th className="whitespace-nowrap py-2 text-right">日量(kWh)</th>
+                    <th className="whitespace-nowrap py-2 text-right text-slate-400">参考:最大出力(万kW)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2328,10 +2328,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                       <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.plantName}</td>
                       <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.unitName}</td>
                       <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.sourceType}</td>
-                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">
+                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">{numberFmt.format(unit.dailyKwh)}</td>
+                      <td className="whitespace-nowrap py-1.5 text-right text-slate-400 md:py-2">
                         {typeof unit.maxOutputManKw === "number" ? manKwFmt.format(unit.maxOutputManKw) : "-"}
                       </td>
-                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">{numberFmt.format(unit.dailyKwh)}</td>
                     </tr>
                   ))}
                 </tbody>
