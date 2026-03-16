@@ -56,6 +56,8 @@ export type NetworkAnimationPath = {
   currentType?: "ac" | "dc";
   /** Label text for the animation path (e.g. station names / MW) */
   label?: string;
+  /** Congestion percentage (utilization rate 0-100+) for intertie lines */
+  congestionPct?: number;
 };
 
 /**
