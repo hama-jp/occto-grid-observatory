@@ -163,8 +163,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     return ["全エリア", ...Array.from(set).sort(compareAreaOrder)];
   }, [data]);
   const generationAreas = useMemo(
-    () => ["全エリア", ...data.generation.areaTotals.map((item) => item.area).sort(compareAreaOrder)],
-    [data.generation.areaTotals],
+    () => {
+      const set = new Set<string>();
+      data.generation.areaTotals.forEach((item) => set.add(item.area));
+      data.flows.areaSummaries.forEach((item) => set.add(item.area));
+      return ["全エリア", ...Array.from(set).sort(compareAreaOrder)];
+    },
+    [data.generation.areaTotals, data.flows.areaSummaries],
   );
 
   const [selectedArea, setSelectedArea] = useState<string>("全エリア");
@@ -241,7 +246,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         type: "scroll",
         textStyle: { color: "#334155" },
       },
-      grid: { top: 60, left: 52, right: 18, bottom: 34 },
+      grid: { top: isMobileViewport ? 48 : 60, left: isMobileViewport ? 40 : 52, right: 18, bottom: 34 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.generation,
@@ -282,7 +287,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         data: item.reserveRate,
       })),
     };
-  }, [data.meta.slotLabels.generation, reserveAreaSeries, selectedArea]);
+  }, [data.meta.slotLabels.generation, isMobileViewport, reserveAreaSeries, selectedArea]);
   const demandCurrentOption = useMemo(() => {
     const rows = (selectedArea === "全エリア"
       ? reserveCurrentRows
@@ -304,7 +309,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           )} MW<br/>供給力: ${decimalFmt.format(row.supplyMw)} MW<br/>使用率: ${decimalFmt.format(row.usageRate)}%`;
         },
       },
-      grid: { top: 18, left: 74, right: 18, bottom: 30 },
+      grid: { top: 18, left: isMobileViewport ? 56 : 74, right: 18, bottom: 30 },
       xAxis: {
         type: "value",
         name: "MW",
@@ -352,7 +357,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         },
       ],
     };
-  }, [reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
+  }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
   const reserveCurrentOption = useMemo(() => {
     const rows = (selectedArea === "全エリア"
       ? reserveCurrentRows
@@ -374,7 +379,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           )} MW<br/>予備率: ${decimalFmt.format(row.reserveRate)}%`;
         },
       },
-      grid: { top: 18, left: 74, right: 18, bottom: 30 },
+      grid: { top: 18, left: isMobileViewport ? 56 : 74, right: 18, bottom: 30 },
       xAxis: {
         type: "value",
         name: "%",
@@ -422,7 +427,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         },
       ],
     };
-  }, [reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
+  }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
 
   const sourceTotalsByArea = useMemo(() => {
     const byArea: Record<string, Array<{ source: string; totalKwh: number }>> = {};
@@ -550,7 +555,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         textStyle: { color: "#264653" },
         formatter: (name: string) => normalizeSourceName(name),
       },
-      grid: { top: 48, left: 48, right: 20, bottom: 36 },
+      grid: { top: isMobileViewport ? 40 : 48, left: isMobileViewport ? 36 : 48, right: isMobileViewport ? 10 : 20, bottom: 36 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.generation,
@@ -588,7 +593,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         data: scopedSeries.map((point) => point.values[source] ?? 0),
       })),
     };
-  }, [data.generation.hourlyBySource, data.generation.hourlyBySourceByArea, data.meta.slotLabels.generation, generationTrendArea, sourceColorByName]);
+  }, [data.generation.hourlyBySource, data.generation.hourlyBySourceByArea, data.meta.slotLabels.generation, generationTrendArea, isMobileViewport, sourceColorByName]);
 
   const sourceCompositionItems = useMemo(() => {
     const rows =
@@ -647,7 +652,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       const sortedAreaTotals = [...data.generation.areaTotals].sort((a, b) => b.totalKwh - a.totalKwh);
       return {
         tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-        grid: { top: 18, left: 74, right: 18, bottom: 30 },
+        grid: { top: 18, left: isMobileViewport ? 56 : 74, right: 18, bottom: 30 },
         xAxis: {
           type: "value",
           axisLabel: { formatter: (v: number) => `${Math.round(v / 1_000_000)}M` },
@@ -672,12 +677,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ],
       };
     },
-    [data.generation.areaTotals],
+    [data.generation.areaTotals, isMobileViewport],
   );
 
   const flowHeatmapOption = useMemo(() => {
     const topLines = filteredLines.slice(0, 18);
-    const yLabels = topLines.map((line) => `${line.area} | ${line.lineName}`);
+    const yLabels = topLines.map((line) =>
+      isMobileViewport ? line.lineName.slice(0, 6) : `${line.area} | ${line.lineName}`,
+    );
     const heatmapData: Array<[number, number, number]> = [];
 
     topLines.forEach((line, rowIdx) => {
@@ -694,7 +701,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           return `${yLabels[row]}<br/>${data.meta.slotLabels.flow[col]}: ${numberFmt.format(value)} MW`;
         },
       },
-      grid: { top: 20, left: 160, right: 80, bottom: 20 },
+      grid: { top: 20, left: isMobileViewport ? 60 : 160, right: isMobileViewport ? 10 : 80, bottom: isMobileViewport ? 46 : 20 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.flow,
@@ -706,17 +713,31 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         data: yLabels,
         splitArea: { show: true },
       },
-      visualMap: {
-        min: -800,
-        max: 800,
-        calculable: true,
-        orient: "vertical",
-        right: 0,
-        top: 0,
-        inRange: {
-          color: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"],
-        },
-      },
+      visualMap: isMobileViewport
+        ? {
+            min: -800,
+            max: 800,
+            calculable: false,
+            orient: "horizontal",
+            left: "center",
+            bottom: 0,
+            itemWidth: 12,
+            itemHeight: 80,
+            inRange: {
+              color: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"],
+            },
+          }
+        : {
+            min: -800,
+            max: 800,
+            calculable: true,
+            orient: "vertical",
+            right: 0,
+            top: 0,
+            inRange: {
+              color: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"],
+            },
+          },
       series: [
         {
           name: "潮流",
@@ -731,7 +752,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         },
       ],
     };
-  }, [data.meta.slotLabels.flow, filteredLines]);
+  }, [data.meta.slotLabels.flow, filteredLines, isMobileViewport]);
 
   const volatilityHeatmapOption = useMemo(() => {
     // Compute coefficient of variation for each line and pick top 18
@@ -751,8 +772,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       .sort((a, b) => b.cv - a.cv)
       .slice(0, 18);
 
-    const yLabels = scored.map(
-      (l) => `${l.area} | ${l.lineName}  (CV ${(l.cv * 100).toFixed(0)}%)`,
+    const yLabels = scored.map((l) =>
+      isMobileViewport
+        ? `${l.lineName.slice(0, 6)} CV${(l.cv * 100).toFixed(0)}%`
+        : `${l.area} | ${l.lineName}  (CV ${(l.cv * 100).toFixed(0)}%)`,
     );
 
     // Each cell = deviation from that line's mean, as % of meanAbs
@@ -779,7 +802,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           ].join("<br/>");
         },
       },
-      grid: { top: 20, left: 220, right: 80, bottom: 20 },
+      grid: { top: 20, left: isMobileViewport ? 60 : 220, right: isMobileViewport ? 10 : 80, bottom: isMobileViewport ? 46 : 20 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.flow,
@@ -792,18 +815,33 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         splitArea: { show: true },
         axisLabel: { fontSize: 11 },
       },
-      visualMap: {
-        min: -150,
-        max: 150,
-        calculable: true,
-        orient: "vertical",
-        right: 0,
-        top: 0,
-        text: ["+150%", "−150%"],
-        inRange: {
-          color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"],
-        },
-      },
+      visualMap: isMobileViewport
+        ? {
+            min: -150,
+            max: 150,
+            calculable: false,
+            orient: "horizontal",
+            left: "center",
+            bottom: 0,
+            itemWidth: 12,
+            itemHeight: 80,
+            text: ["+150%", "−150%"],
+            inRange: {
+              color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"],
+            },
+          }
+        : {
+            min: -150,
+            max: 150,
+            calculable: true,
+            orient: "vertical",
+            right: 0,
+            top: 0,
+            text: ["+150%", "−150%"],
+            inRange: {
+              color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"],
+            },
+          },
       series: [
         {
           name: "変動率",
@@ -818,7 +856,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         },
       ],
     };
-  }, [data.meta.slotLabels.flow, filteredLines]);
+  }, [data.meta.slotLabels.flow, filteredLines, isMobileViewport]);
 
   const flowNetworkOption = useMemo(() => {
     type NetworkLink = {
@@ -1676,28 +1714,35 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       }
     });
 
-    const rows = data.generation.areaTotals.map((item) => {
+    const areaTotalMap = new Map(data.generation.areaTotals.map((item) => [item.area, item]));
+    const allAreaNames = new Set<string>();
+    data.generation.areaTotals.forEach((item) => allAreaNames.add(item.area));
+    data.flows.areaSummaries.forEach((item) => allAreaNames.add(item.area));
+
+    const rows = Array.from(allAreaNames).map((areaName) => {
+      const item = areaTotalMap.get(areaName);
+      const areaKwh = item?.totalKwh ?? 0;
       const sourceMix = buildTopShareSegments(
-        sourceTotalsByArea[item.area] ?? [],
-        item.totalKwh,
+        sourceTotalsByArea[areaName] ?? [],
+        areaKwh,
         4,
         (source) => normalizeSourceName(source.source),
         (source) => source.totalKwh,
         (source, idx) => sourceColorByName.get(source.source) ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
       );
-      const topSource = sourceTotalsByArea[item.area]?.[0];
-      const netIntertieMw = netIntertieByArea.get(item.area) ?? 0;
-      const flowSummary = areaFlowSummaryMap.get(item.area);
-      const peer = strongestPeerByArea.get(item.area);
-      const primaryPlant = primaryPlantByArea.get(item.area);
-      const reserve = reserveAreaMap.get(item.area);
+      const topSource = sourceTotalsByArea[areaName]?.[0];
+      const netIntertieMw = netIntertieByArea.get(areaName) ?? 0;
+      const flowSummary = areaFlowSummaryMap.get(areaName);
+      const peer = strongestPeerByArea.get(areaName);
+      const primaryPlant = primaryPlantByArea.get(areaName);
+      const reserve = reserveAreaMap.get(areaName);
       return {
-        area: item.area,
-        totalKwh: item.totalKwh,
-        sharePercent: totalGenerationKwh > 0 ? (item.totalKwh / totalGenerationKwh) * 100 : 0,
+        area: areaName,
+        totalKwh: areaKwh,
+        sharePercent: totalGenerationKwh > 0 ? (areaKwh / totalGenerationKwh) * 100 : 0,
         topSource: topSource?.source ?? "不明",
         topSourceShare:
-          topSource && item.totalKwh > 0 ? (topSource.totalKwh / item.totalKwh) * 100 : 0,
+          topSource && areaKwh > 0 ? (topSource.totalKwh / areaKwh) * 100 : 0,
         sourceMix,
         netIntertieMw,
         peer,
@@ -1877,7 +1922,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         type: "scroll",
         textStyle: { color: "#334155" },
       },
-      grid: { top: 58, left: 52, right: 20, bottom: 34 },
+      grid: { top: isMobileViewport ? 48 : 58, left: isMobileViewport ? 40 : 52, right: isMobileViewport ? 10 : 20, bottom: 34 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.flow,
@@ -1933,7 +1978,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         }),
       ],
     };
-  }, [data.flows.intertieSeries, data.meta.slotLabels.flow, selectedArea]);
+  }, [data.flows.intertieSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea]);
 
   return (
     <div className="relative min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4f1de_0%,_#f6f8fb_38%,_#e9f5f2_100%)] text-slate-800 dark:bg-[radial-gradient(circle_at_top_left,_#1a1a2e_0%,_#16213e_38%,_#0f3460_100%)] dark:text-slate-200">
@@ -1944,12 +1989,12 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         コンテンツへスキップ
       </a>
       <LoadingOverlay visible={isDateLoading} />
-      <div id="dashboard-content" className="mx-auto flex w-full max-w-[1320px] flex-col gap-5 px-4 py-6 md:px-8">
-        <header className="rounded-3xl border border-white/70 bg-white/80 px-5 py-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/80">
+      <div id="dashboard-content" className="mx-auto flex w-full max-w-[1320px] flex-col gap-3 px-2 py-4 md:gap-5 md:px-8 md:py-6">
+        <header className="rounded-3xl border border-white/70 bg-white/80 px-3 py-3 shadow-sm backdrop-blur md:px-5 md:py-5 dark:border-slate-700 dark:bg-slate-800/80">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs tracking-[0.18em] text-teal-700 dark:text-teal-400">OCCTO GRID OBSERVATORY</p>
-              <h1 className="text-2xl font-semibold leading-tight md:text-3xl">
+              <h1 className="text-lg font-semibold leading-tight md:text-3xl">
                 発電実績 ×送電潮流実績 ダッシュボード
               </h1>
               <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -1990,7 +2035,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   </span>
                 ) : null}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="hidden text-xs text-slate-500 md:block dark:text-slate-400">
                 公開データ範囲: {earliestAvailableDate} から {latestAvailableDate}
               </p>
               <div className="flex items-center gap-2">
@@ -2014,7 +2059,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </div>
           </div>
         </header>
-        <section className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/85">
+        <section className="rounded-3xl border border-white/70 bg-white/85 p-3 shadow-sm backdrop-blur md:p-4 dark:border-slate-700 dark:bg-slate-800/85">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">表示するパネル</h2>
@@ -2243,7 +2288,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           <section className="grid grid-cols-1 gap-4">
             <Panel title="主要線路の潮流ヒートマップ">
               <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
-              <ReactECharts option={flowHeatmapOption} style={{ height: 420 }} />
+              <ReactECharts option={flowHeatmapOption} style={{ height: isMobileViewport ? 340 : 420 }} />
             </Panel>
           </section>
           </ChartErrorBoundary>
@@ -2254,7 +2299,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           <section className="grid grid-cols-1 gap-4">
             <Panel title="潮流変動率が大きい送電線">
               <p className="mb-2 text-xs text-slate-500">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
-              <ReactECharts option={volatilityHeatmapOption} style={{ height: 480 }} />
+              <ReactECharts option={volatilityHeatmapOption} style={{ height: isMobileViewport ? 360 : 480 }} />
             </Panel>
           </section>
           </ChartErrorBoundary>
@@ -2262,31 +2307,31 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
         {visibleSectionSet.has("rankings") ? (
           <ChartErrorBoundary sectionName="ランキング">
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-sm md:p-4 dark:border-slate-700 dark:bg-slate-800/90">
             <h2 className="mb-3 text-lg font-semibold">高発電ユニット上位</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            <div className="-mx-2 overflow-x-auto px-2">
+              <table className="min-w-full text-xs md:text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                    <th className="py-2 pr-3">エリア</th>
-                    <th className="py-2 pr-3">発電所</th>
-                    <th className="py-2 pr-3">ユニット</th>
-                    <th className="py-2 pr-3">方式</th>
-                    <th className="py-2 text-right">最大出力(万kW)</th>
-                    <th className="py-2 text-right">日量(kWh)</th>
+                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">エリア</th>
+                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">発電所</th>
+                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">ユニット</th>
+                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">方式</th>
+                    <th className="whitespace-nowrap py-2 text-right">最大出力(万kW)</th>
+                    <th className="whitespace-nowrap py-2 text-right">日量(kWh)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTopUnits.slice(0, 24).map((unit) => (
                     <tr key={`${unit.area}-${unit.plantName}-${unit.unitName}`} className="border-b border-slate-100">
-                      <td className="py-2 pr-3">{unit.area}</td>
-                      <td className="py-2 pr-3">{unit.plantName}</td>
-                      <td className="py-2 pr-3">{unit.unitName}</td>
-                      <td className="py-2 pr-3">{unit.sourceType}</td>
-                      <td className="py-2 text-right">
+                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.area}</td>
+                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.plantName}</td>
+                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.unitName}</td>
+                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.sourceType}</td>
+                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">
                         {typeof unit.maxOutputManKw === "number" ? manKwFmt.format(unit.maxOutputManKw) : "-"}
                       </td>
-                      <td className="py-2 text-right">{numberFmt.format(unit.dailyKwh)}</td>
+                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">{numberFmt.format(unit.dailyKwh)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2294,27 +2339,27 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </div>
 
             <h3 className="mb-3 mt-6 text-lg font-semibold">高発電発電所上位（ユニット合計）</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            <div className="-mx-2 overflow-x-auto px-2">
+              <table className="min-w-full text-xs md:text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                    <th className="py-2 pr-3">エリア</th>
-                    <th className="py-2 pr-3">発電所</th>
-                    <th className="py-2 pr-3">方式</th>
-                    <th className="py-2 text-right">最大出力(万kW)</th>
-                    <th className="py-2 text-right">日量(kWh)</th>
+                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">エリア</th>
+                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">発電所</th>
+                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">方式</th>
+                    <th className="whitespace-nowrap py-2 text-right">最大出力(万kW)</th>
+                    <th className="whitespace-nowrap py-2 text-right">日量(kWh)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTopPlants.slice(0, 24).map((plant) => (
                     <tr key={`${plant.area}-${plant.plantName}`} className="border-b border-slate-100">
-                      <td className="py-2 pr-3">{plant.area}</td>
-                      <td className="py-2 pr-3">{plant.plantName}</td>
-                      <td className="py-2 pr-3">{plant.sourceType || "不明"}</td>
-                      <td className="py-2 text-right">
+                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{plant.area}</td>
+                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{plant.plantName}</td>
+                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{plant.sourceType || "不明"}</td>
+                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">
                         {typeof plant.maxOutputManKw === "number" ? manKwFmt.format(plant.maxOutputManKw) : "-"}
                       </td>
-                      <td className="py-2 text-right">{numberFmt.format(plant.dailyKwh)}</td>
+                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">{numberFmt.format(plant.dailyKwh)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2325,11 +2370,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {/* ── 表示時刻スナップショット ── */}
-        <section className="sticky top-0 z-30 rounded-3xl border border-teal-200/60 bg-gradient-to-r from-teal-50/95 to-white/95 px-5 py-4 shadow-md backdrop-blur-sm dark:border-teal-800/60 dark:from-teal-950/95 dark:to-slate-800/95">
+        <section className="sticky top-0 z-30 rounded-3xl border border-teal-200/60 bg-gradient-to-r from-teal-50/95 to-white/95 px-3 py-2 shadow-md backdrop-blur-sm md:px-5 md:py-4 dark:border-teal-800/60 dark:from-teal-950/95 dark:to-slate-800/95">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-base font-semibold text-teal-800 dark:text-teal-300">表示時刻スナップショット</h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400">以下のカードはスライダーで選択した時刻のデータを表示します</p>
+              <p className="hidden text-xs text-slate-600 md:block dark:text-slate-400">以下のカードはスライダーで選択した時刻のデータを表示します</p>
             </div>
             <div className="flex items-center gap-3">
               <span data-testid="selected-flow-datetime" className="text-sm font-medium text-teal-700 dark:text-teal-400">
@@ -2340,7 +2385,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               </span>
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-2 md:mt-3">
             <input
               aria-label="ネットワーク潮流の表示時刻"
               type="range"
@@ -2423,8 +2468,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {visibleSectionSet.has("areaCards") ? (
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-4 shadow-sm">
-            <div className="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-sm md:p-4">
+            <div className="mb-3 flex flex-col gap-1 md:mb-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">エリア別需給カード</h2>
                 <p className="text-sm text-slate-600">
@@ -2448,7 +2493,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                     className="overflow-hidden rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(244,248,247,0.96))] shadow-sm"
                   >
                     <div className="h-1.5" style={{ backgroundColor: areaColor }} />
-                    <div className="p-4">
+                    <div className="p-3 md:p-4">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -2464,9 +2509,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                             <ValueProgressBar value={card.sharePercent} max={100} color={areaColor} />
                           </div>
                         </div>
-                        <div className="rounded-2xl bg-slate-900 px-4 py-3 text-white shadow-sm">
+                        <div className="rounded-2xl bg-slate-900 px-3 py-2 text-white shadow-sm md:px-4 md:py-3">
                           <p className="text-xs tracking-[0.16em] text-slate-300">日量発電</p>
-                          <p className="mt-1 text-2xl font-semibold">{formatCompactEnergy(card.totalKwh)}</p>
+                          <p className="mt-1 text-xl font-semibold md:text-2xl">{formatCompactEnergy(card.totalKwh)}</p>
                         </div>
                       </div>
 
@@ -2512,7 +2557,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                         </div>
                       </div>
 
-                      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                         <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
                           <p className="text-xs tracking-[0.16em] text-slate-500">連系収支</p>
                           <div className="mt-3">
@@ -2602,7 +2647,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               <div data-testid="network-flow-chart" role="img" aria-label="ネットワーク潮流グラフ" className="relative" ref={networkFlowChartHostRef}>
                 <ReactECharts
                   option={flowNetworkOption}
-                  style={{ height: 620 }}
+                  style={{ height: isMobileViewport ? 420 : 620 }}
                   onChartReady={registerNetworkFlowChart}
                   onEvents={{
                     finished: (_event: unknown, chart: unknown) => registerNetworkFlowChart(chart),
