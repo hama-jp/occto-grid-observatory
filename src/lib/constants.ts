@@ -113,6 +113,7 @@ export type DashboardSectionId =
   | "composition"
   | "reserve"
   | "totals"
+  | "congestion"
   | "network"
   | "diagnostics"
   | "rankings";
@@ -124,10 +125,37 @@ export const DASHBOARD_SECTION_OPTIONS: Array<{ id: DashboardSectionId; label: s
   { id: "composition", label: "発電構成" },
   { id: "reserve", label: "需要・予備率" },
   { id: "totals", label: "発電・連系概要" },
+  { id: "congestion", label: "連系線混雑度" },
   { id: "network", label: "ネットワーク" },
   { id: "diagnostics", label: "潮流詳細" },
   { id: "rankings", label: "ランキング" },
 ];
+
+/**
+ * 地域間連系線の運用容量（MW）
+ *
+ * 出典: OCCTO「2025〜2034年度の連系線の運用容量（年間・長期）」(2025年3月公表)
+ * https://www.occto.or.jp/news/renkeisenriyou_oshirase_2024_250301_renkeisen_unyouyouryou.html
+ *
+ * 運用容量は年度・季節・作業停止計画により変動するため、ここでは
+ * 2025年度の代表的な値（年間ベース）を設定しています。
+ * 実際の日別運用容量は系統情報サービスで確認できます。
+ */
+export const INTERTIE_RATED_CAPACITY_MW: Record<string, { capacityMw: number; label: string }> = {
+  "北海道・本州間電力連系設備": { capacityMw: 900,   label: "北海道↔東北" },
+  "相馬双葉幹線":             { capacityMw: 5730,  label: "東北↔東京" },
+  "周波数変換設備":           { capacityMw: 2100,  label: "東京↔中部 (FC)" },
+  "三重東近江線":             { capacityMw: 2780,  label: "中部↔関西" },
+  "北陸フェンス":             { capacityMw: 1200,  label: "中部↔北陸" },
+  "越前嶺南線":               { capacityMw: 1930,  label: "北陸↔関西" },
+  "南福光連系所・南福光変電所の連系設備": { capacityMw: 300, label: "北陸↔関西 (DC)" },
+  "西播東岡山線・山崎智頭線":  { capacityMw: 4710,  label: "関西↔中国" },
+  "本四連系線":               { capacityMw: 1200,  label: "中国↔四国" },
+  "関門連系線":               { capacityMw: 2780,  label: "中国↔九州" },
+  "阿南紀北直流幹線":         { capacityMw: 1400,  label: "四国↔関西 (DC)" },
+  "関西フェンス":             { capacityMw: 2600,  label: "関西エリア内" },
+  "中部フェンス":             { capacityMw: 1800,  label: "中部エリア内" },
+};
 
 export const JAPAN_GEO_BOUNDS = {
   latMin: 24.0,

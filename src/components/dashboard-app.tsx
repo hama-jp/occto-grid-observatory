@@ -9,6 +9,7 @@ import {
   FLOW_AREA_COLORS,
   MAX_ANIMATED_FLOW_LINES_PER_AREA,
   DASHBOARD_SECTION_OPTIONS,
+  INTERTIE_RATED_CAPACITY_MW,
   type DashboardSectionId,
 } from "@/lib/constants";
 import {
@@ -1250,6 +1251,20 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       ...intertieBridgeLines.map((line) => line.absMw),
       1,
     );
+    // Compute congestion percentage for a set of intertie names
+    const computeIntertieCongestionPct = (names: Set<string>, absMw: number): number | undefined => {
+      let totalCapacity = 0;
+      let matched = false;
+      for (const name of names) {
+        const cap = INTERTIE_RATED_CAPACITY_MW[name];
+        if (cap) {
+          totalCapacity += cap.capacityMw;
+          matched = true;
+        }
+      }
+      return matched && totalCapacity > 0 ? roundTo((absMw / totalCapacity) * 100, 1) : undefined;
+    };
+
     const intertieAnimationPaths: NetworkAnimationPath[] = [
       ...intertieFacilityLines.map((line, index) => ({
         id: `intertie-facility-${index}`,
@@ -1261,6 +1276,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         kind: "intertie" as const,
         currentType: line.currentType,
         label: `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)}MW`,
+        congestionPct: computeIntertieCongestionPct(line.intertieNames, line.absMw),
       })),
       ...intertieBridgeLines.map((line, index) => ({
         id: `intertie-bridge-${index}`,
@@ -1272,6 +1288,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         kind: "intertie" as const,
         currentType: undefined,
         label: `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)}MW`,
+        congestionPct: computeIntertieCongestionPct(line.intertieNames, line.absMw),
       })),
     ];
 
@@ -1980,6 +1997,205 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     };
   }, [data.flows.intertieSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea]);
 
+  // ---------------------------------------------------------------------------
+  // Congestion (連系線混雑度) — utilization rate = |flow| / rated capacity
+  // ---------------------------------------------------------------------------
+
+  const congestionData = useMemo(() => {
+    const series = data.flows.intertieSeries ?? [];
+    if (series.length === 0) return null;
+
+    const lines = series
+      .filter((row) => INTERTIE_RATED_CAPACITY_MW[row.intertieName] != null)
+      .map((row) => {
+        const cap = INTERTIE_RATED_CAPACITY_MW[row.intertieName]!;
+        const utilizationPct = row.values.map((v) =>
+          cap.capacityMw > 0 ? roundTo((Math.abs(v) / cap.capacityMw) * 100, 1) : 0,
+        );
+        const peakUtilization = Math.max(...utilizationPct);
+        const avgUtilization = roundTo(utilizationPct.reduce((s, v) => s + v, 0) / (utilizationPct.length || 1), 1);
+        return {
+          intertieName: row.intertieName,
+          label: cap.label,
+          sourceArea: row.sourceArea,
+          targetArea: row.targetArea,
+          capacityMw: cap.capacityMw,
+          peakAbsMw: row.peakAbsMw,
+          avgAbsMw: row.avgAbsMw,
+          utilizationPct,
+          peakUtilization,
+          avgUtilization,
+          values: row.values,
+        };
+      })
+      .filter((row) => row.peakUtilization > 0)
+      .sort((a, b) => b.peakUtilization - a.peakUtilization);
+
+    if (lines.length === 0) return null;
+
+    const overallPeakLine = lines[0]!;
+    const overallAvgUtilization = roundTo(
+      lines.reduce((s, l) => s + l.avgUtilization, 0) / lines.length,
+      1,
+    );
+    const highCongestionCount = lines.filter((l) => l.peakUtilization >= 70).length;
+
+    return { lines, overallPeakLine, overallAvgUtilization, highCongestionCount };
+  }, [data.flows.intertieSeries]);
+
+  const congestionTrendOption = useMemo(() => {
+    if (!congestionData) return null;
+    const labels = data.meta.slotLabels.flow;
+    const topLines = congestionData.lines.slice(0, isMobileViewport ? 5 : 8);
+
+    return {
+      tooltip: {
+        trigger: "axis" as const,
+        formatter: (params: Array<{ seriesName: string; value: number; marker: string; dataIndex: number }>) => {
+          const time = labels[params[0]?.dataIndex ?? 0] ?? "";
+          const rows = params
+            .filter((p) => p.value != null)
+            .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+            .map((p) => {
+              const line = topLines.find((l) => l.label === p.seriesName || `${l.sourceArea}→${l.targetArea}` === p.seriesName);
+              const flowMw = line ? Math.abs(line.values[p.dataIndex] ?? 0) : 0;
+              const capMw = line?.capacityMw ?? 0;
+              return `${p.marker} ${p.seriesName}: <b>${p.value}%</b> (${decimalFmt.format(flowMw)}/${numberFmt.format(capMw)} MW)`;
+            });
+          return `<b>${time}</b><br/>${rows.join("<br/>")}`;
+        },
+      },
+      legend: {
+        top: 10,
+        type: "scroll" as const,
+        textStyle: { color: "#334155" },
+      },
+      grid: {
+        top: isMobileViewport ? 48 : 58,
+        left: isMobileViewport ? 40 : 52,
+        right: isMobileViewport ? 10 : 20,
+        bottom: 34,
+      },
+      xAxis: {
+        type: "category" as const,
+        data: labels,
+        axisLabel: { interval: 3 },
+      },
+      yAxis: {
+        type: "value" as const,
+        name: "利用率(%)",
+        max: 100,
+        axisLabel: { formatter: (v: number) => `${v}%` },
+      },
+      visualMap: {
+        show: false,
+        pieces: [
+          { lte: 50, color: "#10b981" },  // emerald-500
+          { gt: 50, lte: 70, color: "#f59e0b" },  // amber-500
+          { gt: 70, lte: 85, color: "#f97316" },  // orange-500
+          { gt: 85, color: "#ef4444" },  // red-500
+        ],
+        dimension: 1,
+        seriesIndex: topLines.map((_, i) => i),
+      },
+      series: topLines.map((line) => {
+        const color = FLOW_AREA_COLORS[line.sourceArea] ?? FLOW_AREA_COLORS[line.targetArea] ?? FLOW_AREA_COLORS.default;
+        return {
+          name: line.label || `${line.sourceArea}→${line.targetArea}`,
+          type: "line" as const,
+          data: line.utilizationPct,
+          smooth: true,
+          symbol: "none",
+          lineStyle: { width: 2.3, color },
+          areaStyle: {
+            color: {
+              type: "linear" as const,
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: color + "18" },
+                { offset: 1, color: color + "02" },
+              ],
+            },
+          },
+          markLine: line === topLines[0] ? {
+            silent: true,
+            symbol: "none",
+            lineStyle: { type: "dashed" as const, width: 1 },
+            data: [
+              { yAxis: 70, lineStyle: { color: "#f97316" }, label: { formatter: "70%", position: "insideEndTop" as const, color: "#f97316", fontSize: 10 } },
+            ],
+          } : undefined,
+        };
+      }),
+    };
+  }, [congestionData, data.meta.slotLabels.flow, isMobileViewport]);
+
+  const congestionHeatmapOption = useMemo(() => {
+    if (!congestionData) return null;
+    const labels = data.meta.slotLabels.flow;
+    const lines = congestionData.lines;
+
+    const heatmapData: Array<[number, number, number]> = [];
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      for (let slotIdx = 0; slotIdx < labels.length; slotIdx++) {
+        heatmapData.push([slotIdx, lineIdx, lines[lineIdx]!.utilizationPct[slotIdx] ?? 0]);
+      }
+    }
+
+    return {
+      tooltip: {
+        position: "top" as const,
+        formatter: (params: { value: [number, number, number] }) => {
+          const [slotIdx, lineIdx, val] = params.value;
+          const line = lines[lineIdx];
+          const time = labels[slotIdx] ?? "";
+          const flowMw = line ? Math.abs(line.values[slotIdx] ?? 0) : 0;
+          return `<b>${line?.label ?? ""}</b><br/>${time}: <b>${val}%</b><br/>${decimalFmt.format(flowMw)} / ${numberFmt.format(line?.capacityMw ?? 0)} MW`;
+        },
+      },
+      grid: {
+        top: 12,
+        left: isMobileViewport ? 90 : 120,
+        right: isMobileViewport ? 40 : 60,
+        bottom: 36,
+      },
+      xAxis: {
+        type: "category" as const,
+        data: labels,
+        axisLabel: { interval: 5, fontSize: 10 },
+        splitArea: { show: true },
+      },
+      yAxis: {
+        type: "category" as const,
+        data: lines.map((l) => l.label || `${l.sourceArea}→${l.targetArea}`),
+        axisLabel: { fontSize: isMobileViewport ? 9 : 11 },
+      },
+      visualMap: {
+        min: 0,
+        max: 100,
+        calculable: true,
+        orient: "horizontal" as const,
+        left: "center",
+        bottom: 0,
+        itemWidth: 12,
+        itemHeight: isMobileViewport ? 80 : 140,
+        textStyle: { fontSize: 10 },
+        inRange: {
+          color: ["#d1fae5", "#6ee7b7", "#fbbf24", "#f97316", "#ef4444", "#b91c1c"],
+        },
+        formatter: (value: number) => `${Math.round(value)}%`,
+      },
+      series: [{
+        type: "heatmap" as const,
+        data: heatmapData,
+        label: { show: false },
+        emphasis: {
+          itemStyle: { shadowBlur: 6, shadowColor: "rgba(0,0,0,0.3)" },
+        },
+      }],
+    };
+  }, [congestionData, data.meta.slotLabels.flow, isMobileViewport]);
+
   return (
     <div className="relative min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4f1de_0%,_#f6f8fb_38%,_#e9f5f2_100%)] text-slate-800 dark:bg-[radial-gradient(circle_at_top_left,_#1a1a2e_0%,_#16213e_38%,_#0f3460_100%)] dark:text-slate-200">
       <a
@@ -2279,6 +2495,102 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
               </div>
             </Panel>
+          </section>
+          </ChartErrorBoundary>
+        ) : null}
+
+        {visibleSectionSet.has("congestion") && congestionData ? (
+          <ChartErrorBoundary sectionName="連系線混雑度">
+          <section className="grid grid-cols-1 gap-4">
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <CompactStatCard
+                label="最混雑線"
+                value={congestionData.overallPeakLine.label || `${congestionData.overallPeakLine.sourceArea}→${congestionData.overallPeakLine.targetArea}`}
+                detail={`ピーク ${congestionData.overallPeakLine.peakUtilization}%`}
+              />
+              <CompactStatCard
+                label="ピーク利用率"
+                value={`${congestionData.overallPeakLine.peakUtilization}%`}
+                detail={`${decimalFmt.format(congestionData.overallPeakLine.peakAbsMw)} / ${numberFmt.format(congestionData.overallPeakLine.capacityMw)} MW`}
+              />
+              <CompactStatCard
+                label="全線平均利用率"
+                value={`${congestionData.overallAvgUtilization}%`}
+                detail={`${congestionData.lines.length} 連系線`}
+              />
+              <CompactStatCard
+                label="高混雑線(≥70%)"
+                value={`${congestionData.highCongestionCount} 線`}
+                detail={congestionData.highCongestionCount > 0 ? "要注意" : "正常"}
+              />
+            </div>
+
+            {/* Utilization bar snapshot */}
+            <Panel title="連系線 利用率スナップショット" testId="congestion-bars-panel">
+              <p className="mb-3 text-xs text-slate-500">
+                運用容量に対する潮流実績の比率（日中ピーク基準）。70%以上は混雑注意、85%以上は高混雑です。
+              </p>
+              <div className="flex flex-col gap-2.5">
+                {congestionData.lines.map((line) => {
+                  const pct = line.peakUtilization;
+                  const barColor =
+                    pct >= 85 ? "bg-red-500" :
+                    pct >= 70 ? "bg-orange-500" :
+                    pct >= 50 ? "bg-amber-400" :
+                    "bg-emerald-500";
+                  const textColor =
+                    pct >= 85 ? "text-red-700 dark:text-red-400" :
+                    pct >= 70 ? "text-orange-700 dark:text-orange-400" :
+                    "text-slate-700 dark:text-slate-300";
+                  return (
+                    <div key={line.intertieName} className="group">
+                      <div className="mb-0.5 flex items-baseline justify-between gap-2">
+                        <span className="truncate text-xs font-medium text-slate-700 dark:text-slate-300">
+                          {line.label || `${line.sourceArea}→${line.targetArea}`}
+                        </span>
+                        <span className={`shrink-0 text-xs font-semibold tabular-nums ${textColor}`}>
+                          {pct}%
+                          <span className="ml-1 font-normal text-slate-400">
+                            ({decimalFmt.format(line.peakAbsMw)}/{numberFmt.format(line.capacityMw)} MW)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/80">
+                        {/* Warning thresholds */}
+                        <div className="absolute inset-y-0 left-[70%] w-px bg-orange-300/60 dark:bg-orange-600/40" />
+                        <div className="absolute inset-y-0 left-[85%] w-px bg-red-300/60 dark:bg-red-600/40" />
+                        {/* Utilization bar */}
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+
+            {/* Time series chart */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {congestionTrendOption ? (
+                <Panel title="利用率トレンド（時系列）" testId="congestion-trend-panel">
+                  <p className="mb-1 text-xs text-slate-500">主要連系線の利用率（%）の時間推移。70%ラインは混雑注意の目安です。</p>
+                  <div data-testid="congestion-trend-chart" role="img" aria-label="連系線利用率トレンドチャート">
+                    <ReactECharts option={congestionTrendOption} style={{ height: 340 }} />
+                  </div>
+                </Panel>
+              ) : null}
+              {congestionHeatmapOption ? (
+                <Panel title="混雑度ヒートマップ" testId="congestion-heatmap-panel">
+                  <p className="mb-1 text-xs text-slate-500">全連系線 × 時間帯の利用率。赤いほど混雑しています。</p>
+                  <div data-testid="congestion-heatmap-chart" role="img" aria-label="連系線混雑度ヒートマップ">
+                    <ReactECharts option={congestionHeatmapOption} style={{ height: 340 }} />
+                  </div>
+                </Panel>
+              ) : null}
+            </div>
           </section>
           </ChartErrorBoundary>
         ) : null}
@@ -2641,7 +2953,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンク（SS・CS・変換所間）として、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
                 </p>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  各エリアの主要潮流を水色の破線アニメーションで、エリア間連係線を橙色（交流）・紫色（直流）の破線アニメーションで表示しています。
+                  各エリアの主要潮流を水色の破線アニメーションで表示しています。エリア間連係線は混雑度に応じて色分け表示：緑(&lt;50%)→黄(50-70%)→橙(70-85%)→赤(≥85%)。運用容量データがない線は橙色（交流）・紫色（直流）で表示します。
                 </p>
               </div>
               <div data-testid="network-flow-chart" role="img" aria-label="ネットワーク潮流グラフ" className="relative" ref={networkFlowChartHostRef}>
@@ -2707,15 +3019,33 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                       })}
                       {intertieAnimationPaths.map((path) => {
                         const isDc = path.currentType === "dc";
-                        const glowColor = isDc
-                          ? `rgba(192,38,211,${0.22 + path.magnitude * 0.18})`
-                          : `rgba(234,88,12,${0.22 + path.magnitude * 0.18})`;
-                        const dashColor = isDc
-                          ? `rgba(192,38,211,${0.7 + path.magnitude * 0.25})`
-                          : `rgba(234,88,12,${0.7 + path.magnitude * 0.25})`;
-                        const shadowColor = isDc
-                          ? "rgba(192,38,211,0.9)"
-                          : "rgba(234,88,12,0.9)";
+                        const pct = path.congestionPct ?? -1;
+                        // Use congestion-based coloring when data is available
+                        const useCongestionColor = pct >= 0;
+                        let glowColor: string;
+                        let dashColor: string;
+                        let shadowColor: string;
+                        if (useCongestionColor) {
+                          // Green → Yellow → Orange → Red based on utilization
+                          const congestionColor =
+                            pct >= 85 ? { r: 239, g: 68, b: 68 }   // red-500
+                            : pct >= 70 ? { r: 249, g: 115, b: 22 }  // orange-500
+                            : pct >= 50 ? { r: 245, g: 158, b: 11 }  // amber-500
+                            : { r: 16, g: 185, b: 129 };             // emerald-500
+                          glowColor = `rgba(${congestionColor.r},${congestionColor.g},${congestionColor.b},0.3)`;
+                          dashColor = `rgba(${congestionColor.r},${congestionColor.g},${congestionColor.b},0.9)`;
+                          shadowColor = `rgba(${congestionColor.r},${congestionColor.g},${congestionColor.b},0.95)`;
+                        } else {
+                          glowColor = isDc
+                            ? `rgba(192,38,211,${0.22 + path.magnitude * 0.18})`
+                            : `rgba(234,88,12,${0.22 + path.magnitude * 0.18})`;
+                          dashColor = isDc
+                            ? `rgba(192,38,211,${0.7 + path.magnitude * 0.25})`
+                            : `rgba(234,88,12,${0.7 + path.magnitude * 0.25})`;
+                          shadowColor = isDc
+                            ? "rgba(192,38,211,0.9)"
+                            : "rgba(234,88,12,0.9)";
+                        }
                         return (
                           <g key={path.id}>
                             <path
@@ -2738,6 +3068,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                                 filter: `drop-shadow(0 0 3px ${shadowColor})`,
                               }}
                             />
+                            {useCongestionColor ? (
+                              <title>{path.label} ({pct}%)</title>
+                            ) : null}
                           </g>
                         );
                       })}
