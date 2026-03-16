@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardData } from "@/lib/dashboard-types";
 import {
   SOURCE_COLORS,
@@ -77,6 +77,35 @@ import {
 import { ChartErrorBoundary } from "@/components/ui/error-boundary";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
+
+/** Wrapper that adds a subtle close button (visible on hover) to a dashboard section. */
+function DismissibleSection({
+  children,
+  sectionId,
+  onDismiss,
+  className,
+}: {
+  children: ReactNode;
+  sectionId: DashboardSectionId;
+  onDismiss: (id: DashboardSectionId) => void;
+  className?: string;
+}) {
+  const label = DASHBOARD_SECTION_OPTIONS.find((s) => s.id === sectionId)?.label ?? "";
+  return (
+    <div className={`group/dismiss relative ${className ?? ""}`}>
+      <button
+        type="button"
+        aria-label={`${label}を非表示`}
+        title={`${label}を非表示`}
+        onClick={() => onDismiss(sectionId)}
+        className="absolute -top-2 -right-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-sm leading-none text-slate-400 opacity-0 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-600 group-hover/dismiss:opacity-100 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-500 dark:hover:border-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+      >
+        &times;
+      </button>
+      {children}
+    </div>
+  );
+}
 
 type DashboardAppProps = {
   initialData: DashboardData;
@@ -190,6 +219,23 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const selectedFlowSlotLabel = flowSlotLabels[clampedNetworkFlowSlotIndex] ?? "-";
   const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
   const visibleSectionSet = useMemo(() => new Set<DashboardSectionId>(visibleSectionIds), [visibleSectionIds]);
+  const hiddenSections = useMemo(
+    () => DASHBOARD_SECTION_OPTIONS.filter((s) => !visibleSectionSet.has(s.id)),
+    [visibleSectionSet],
+  );
+  const removeSection = useCallback((id: DashboardSectionId) => {
+    setVisibleSectionIds((cur) => cur.filter((s) => s !== id));
+  }, []);
+  const restoreSection = useCallback((id: DashboardSectionId) => {
+    setVisibleSectionIds((cur) => {
+      if (cur.includes(id)) return cur;
+      // Insert in the canonical order
+      const order = DASHBOARD_SECTION_OPTIONS.map((s) => s.id);
+      const next = [...cur, id];
+      next.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      return next;
+    });
+  }, []);
   const showGenerationTrend = visibleSectionSet.has("generation");
   const showSourceComposition = visibleSectionSet.has("composition");
   const syncNetworkOverlayViewport = (chart: unknown): void => {
@@ -2328,6 +2374,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         </section>
 
         {visibleSectionSet.has("summary") ? (
+          <DismissibleSection sectionId="summary" onDismiss={removeSection}>
           <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <SummaryCard
               title="全国発電量"
@@ -2392,15 +2439,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               </div>
             </SummaryCard>
           </section>
+          </DismissibleSection>
         ) : null}
 
         {showGenerationTrend || showSourceComposition ? (
           <ChartErrorBoundary sectionName="発電トレンド・構成">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             {showGenerationTrend ? (
+              <DismissibleSection sectionId="generation" onDismiss={removeSection} className={showSourceComposition ? "lg:col-span-7" : "lg:col-span-12"}>
               <Panel
                 title="発電方式別 30分推移"
-                className={showSourceComposition ? "lg:col-span-7" : "lg:col-span-12"}
                 testId="generation-trend-panel"
               >
                 <div className="mb-2 flex justify-end">
@@ -2424,11 +2472,12 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   <ReactECharts option={generationLineOption} style={{ height: 360 }} />
                 </div>
               </Panel>
+              </DismissibleSection>
             ) : null}
             {showSourceComposition ? (
+              <DismissibleSection sectionId="composition" onDismiss={removeSection} className={showGenerationTrend ? "lg:col-span-5" : "lg:col-span-12"}>
               <Panel
                 title="発電方式 構成比"
-                className={showGenerationTrend ? "lg:col-span-5" : "lg:col-span-12"}
                 testId="source-composition-panel"
               >
                 <div className="mb-2 flex justify-end">
@@ -2462,12 +2511,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   />
                 </div>
               </Panel>
+              </DismissibleSection>
             ) : null}
           </section>
           </ChartErrorBoundary>
         ) : null}
 
         {visibleSectionSet.has("reserve") ? (
+          <DismissibleSection sectionId="reserve" onDismiss={removeSection}>
           <ChartErrorBoundary sectionName="予備率推移">
           <section className="grid grid-cols-1 gap-4">
             <Panel title="エリア予備率（30分推移）" testId="reserve-trend-panel">
@@ -2480,9 +2531,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </Panel>
           </section>
           </ChartErrorBoundary>
+          </DismissibleSection>
         ) : null}
 
         {visibleSectionSet.has("totals") ? (
+          <DismissibleSection sectionId="totals" onDismiss={removeSection}>
           <ChartErrorBoundary sectionName="発電・連系概要">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
@@ -2497,9 +2550,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </Panel>
           </section>
           </ChartErrorBoundary>
+          </DismissibleSection>
         ) : null}
 
         {visibleSectionSet.has("congestion") && congestionData ? (
+          <DismissibleSection sectionId="congestion" onDismiss={removeSection}>
           <ChartErrorBoundary sectionName="連系線混雑度">
           <section className="grid grid-cols-1 gap-4">
             {/* Summary cards */}
@@ -2593,9 +2648,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </div>
           </section>
           </ChartErrorBoundary>
+          </DismissibleSection>
         ) : null}
 
         {visibleSectionSet.has("diagnostics") ? (
+          <DismissibleSection sectionId="diagnostics" onDismiss={removeSection}>
           <ChartErrorBoundary sectionName="潮流ヒートマップ">
           <section className="grid grid-cols-1 gap-4">
             <Panel title="主要線路の潮流ヒートマップ">
@@ -2604,6 +2661,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </Panel>
           </section>
           </ChartErrorBoundary>
+          </DismissibleSection>
         ) : null}
 
         {visibleSectionSet.has("diagnostics") ? (
@@ -2618,6 +2676,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {visibleSectionSet.has("rankings") ? (
+          <DismissibleSection sectionId="rankings" onDismiss={removeSection}>
           <ChartErrorBoundary sectionName="ランキング">
           <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-sm md:p-4 dark:border-slate-700 dark:bg-slate-800/90">
             <h2 className="mb-3 text-lg font-semibold">高発電ユニット上位</h2>
@@ -2679,6 +2738,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </div>
           </section>
           </ChartErrorBoundary>
+          </DismissibleSection>
         ) : null}
 
         {/* ── 表示時刻スナップショット ── */}
@@ -2717,6 +2777,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         </section>
 
         {visibleSectionSet.has("summary") ? (
+          <DismissibleSection sectionId="summary" onDismiss={removeSection}>
           <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <SummaryCard
               title="予備率監視"
@@ -2777,9 +2838,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               </div>
             </SummaryCard>
           </section>
+          </DismissibleSection>
         ) : null}
 
         {visibleSectionSet.has("areaCards") ? (
+          <DismissibleSection sectionId="areaCards" onDismiss={removeSection}>
           <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-sm md:p-4">
             <div className="mb-3 flex flex-col gap-1 md:mb-4 md:flex-row md:items-end md:justify-between">
               <div>
@@ -2923,9 +2986,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               })}
             </div>
           </section>
+          </DismissibleSection>
         ) : null}
 
         {visibleSectionSet.has("reserve") ? (
+          <DismissibleSection sectionId="reserve" onDismiss={removeSection}>
           <ChartErrorBoundary sectionName="需要・予備力スナップショット">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Panel title="エリア需要（表示時刻）" testId="demand-current-panel">
@@ -2942,9 +3007,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </Panel>
           </section>
           </ChartErrorBoundary>
+          </DismissibleSection>
         ) : null}
 
         {visibleSectionSet.has("network") ? (
+          <DismissibleSection sectionId="network" onDismiss={removeSection}>
           <ChartErrorBoundary sectionName="ネットワーク">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2" testId="network-flow-panel">
@@ -3087,6 +3154,38 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             </Panel>
           </section>
           </ChartErrorBoundary>
+          </DismissibleSection>
+        ) : null}
+
+        {/* ── 非表示セクション復元バー ── */}
+        {hiddenSections.length > 0 ? (
+          <div className="fixed right-4 bottom-4 left-4 z-40 mx-auto max-w-2xl animate-[slideUp_0.2s_ease-out] rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-800/95">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400">
+                非表示中:
+              </span>
+              {hiddenSections.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => restoreSection(s.id)}
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 transition hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:bg-teal-900/40 dark:hover:text-teal-400"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+                    <path fillRule="evenodd" d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" clipRule="evenodd" />
+                  </svg>
+                  {s.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setVisibleSectionIds(DASHBOARD_SECTION_OPTIONS.map((item) => item.id))}
+                className="ml-auto shrink-0 rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700 transition hover:bg-teal-100 dark:border-teal-600 dark:bg-teal-900/40 dark:text-teal-400 dark:hover:bg-teal-900/60"
+              >
+                すべて復元
+              </button>
+            </div>
+          </div>
         ) : null}
 
         {/* Footer */}
