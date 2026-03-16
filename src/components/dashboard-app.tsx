@@ -247,11 +247,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         type: "scroll",
         textStyle: { color: "#334155" },
       },
-      grid: { top: isMobileViewport ? 48 : 60, left: isMobileViewport ? 40 : 52, right: 18, bottom: 34 },
+      grid: { top: isMobileViewport ? 48 : 60, left: isMobileViewport ? 40 : 52, right: 18, bottom: isMobileViewport ? 48 : 34 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.generation,
-        axisLabel: { interval: 3 },
+        axisLabel: { interval: isMobileViewport ? 5 : 3, fontSize: isMobileViewport ? 10 : 12, rotate: isMobileViewport ? 30 : 0, hideOverlap: true },
       },
       yAxis: {
         type: "value",
@@ -556,11 +556,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         textStyle: { color: "#264653" },
         formatter: (name: string) => normalizeSourceName(name),
       },
-      grid: { top: isMobileViewport ? 40 : 48, left: isMobileViewport ? 36 : 48, right: isMobileViewport ? 10 : 20, bottom: 36 },
+      grid: { top: isMobileViewport ? 40 : 48, left: isMobileViewport ? 36 : 48, right: isMobileViewport ? 10 : 20, bottom: isMobileViewport ? 48 : 36 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.generation,
-        axisLabel: { color: "#4a5568", interval: 3 },
+        axisLabel: { color: "#4a5568", interval: isMobileViewport ? 5 : 3, fontSize: isMobileViewport ? 10 : 12, rotate: isMobileViewport ? 30 : 0, hideOverlap: true },
       },
       yAxis: {
         type: "value",
@@ -1939,11 +1939,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         type: "scroll",
         textStyle: { color: "#334155" },
       },
-      grid: { top: isMobileViewport ? 48 : 58, left: isMobileViewport ? 40 : 52, right: isMobileViewport ? 10 : 20, bottom: 34 },
+      grid: { top: isMobileViewport ? 48 : 58, left: isMobileViewport ? 40 : 52, right: isMobileViewport ? 10 : 20, bottom: isMobileViewport ? 48 : 34 },
       xAxis: {
         type: "category",
         data: data.meta.slotLabels.flow,
-        axisLabel: { interval: 3 },
+        axisLabel: { interval: isMobileViewport ? 5 : 3, fontSize: isMobileViewport ? 10 : 12, rotate: isMobileViewport ? 30 : 0, hideOverlap: true },
       },
       yAxis: {
         type: "value",
@@ -2074,12 +2074,12 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         top: isMobileViewport ? 48 : 58,
         left: isMobileViewport ? 40 : 52,
         right: isMobileViewport ? 10 : 20,
-        bottom: 34,
+        bottom: isMobileViewport ? 48 : 34,
       },
       xAxis: {
         type: "category" as const,
         data: labels,
-        axisLabel: { interval: 3 },
+        axisLabel: { interval: isMobileViewport ? 5 : 3, fontSize: isMobileViewport ? 10 : 12, rotate: isMobileViewport ? 30 : 0, hideOverlap: true },
       },
       yAxis: {
         type: "value" as const,
