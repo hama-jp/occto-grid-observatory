@@ -1,7 +1,7 @@
 {
   "meta": {
     "targetDate": "2026/03/18",
-    "fetchedAt": "2026-03-19T14:05:44.711Z",
+    "fetchedAt": "2026-03-20T13:40:30.056Z",
     "generationRows": 476,
     "flowRows": 463,
     "slotCount": 48,
@@ -42707,18 +42707,6 @@
         "intertieCount": 1,
         "intertieNames": [
           "関門連系線"
-        ]
-      },
-      {
-        "sourceArea": "不明",
-        "targetArea": "不明",
-        "avgMw": 1110.3,
-        "avgAbsMw": 1807.5,
-        "peakAbsMw": 2412,
-        "intertieCount": 2,
-        "intertieNames": [
-          "関西フェンス",
-          "中部フェンス"
         ]
       },
       {
