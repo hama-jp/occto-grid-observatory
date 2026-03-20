@@ -1181,6 +1181,10 @@ function buildInterAreaFlows(intertieSeries: IntertieSeries[]): InterAreaFlow[] 
   >();
 
   for (const line of intertieSeries) {
+    // Skip intra-area fence lines that cannot be mapped to an inter-area pair
+    if (line.sourceArea === "不明" || line.targetArea === "不明") {
+      continue;
+    }
     const key = `${line.sourceArea}→${line.targetArea}`;
     const entry = byPair.get(key) ?? {
       sourceArea: line.sourceArea,

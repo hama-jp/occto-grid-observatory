@@ -1551,6 +1551,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     }
 
     return (data.flows.interAreaFlows ?? [])
+      .filter((row) => row.sourceArea !== "不明" && row.targetArea !== "不明")
       .filter((row) =>
         selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
       )
