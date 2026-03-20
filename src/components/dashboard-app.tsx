@@ -2215,35 +2215,40 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   }, [congestionData, data.meta.slotLabels.flow, isMobileViewport]);
 
   return (
-    <div className="relative min-h-screen bg-[radial-gradient(circle_at_top_left,_#f4f1de_0%,_#f6f8fb_38%,_#e9f5f2_100%)] text-slate-800 dark:bg-[radial-gradient(circle_at_top_left,_#1a1a2e_0%,_#16213e_38%,_#0f3460_100%)] dark:text-slate-200">
+    <div className="relative min-h-screen bg-[radial-gradient(ellipse_at_top_left,_#eef7f5_0%,_#f6f8fb_32%,_#f0f4f8_100%)] text-slate-800 dark:bg-[radial-gradient(ellipse_at_top_left,_#0c1929_0%,_#111827_32%,_#0f172a_100%)] dark:text-slate-200">
       <a
         href="#dashboard-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
       >
         コンテンツへスキップ
       </a>
       <LoadingOverlay visible={isDateLoading} />
-      <div id="dashboard-content" className="mx-auto flex w-full max-w-[1320px] flex-col gap-3 px-2 py-4 md:gap-5 md:px-8 md:py-6">
-        <header className="rounded-3xl border border-white/70 bg-white/80 px-3 py-3 shadow-sm backdrop-blur md:px-5 md:py-5 dark:border-slate-700 dark:bg-slate-800/80">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div id="dashboard-content" className="mx-auto flex w-full max-w-[1360px] flex-col gap-4 px-3 py-5 md:gap-6 md:px-8 md:py-8">
+        <header className="animate-fade-in-up rounded-3xl border border-white/70 bg-white/85 px-4 py-4 shadow-[var(--panel-shadow)] backdrop-blur-sm md:px-6 md:py-6 dark:border-slate-700/80 dark:bg-slate-800/85">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs tracking-[0.18em] text-teal-700 dark:text-teal-400">OCCTO GRID OBSERVATORY</p>
-              <h1 className="text-lg font-semibold leading-tight md:text-3xl">
-                発電実績 ×送電潮流実績 ダッシュボード
+              <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] text-teal-600 dark:text-teal-400">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-500 animate-[pulse-subtle_2s_ease-in-out_infinite]" />
+                OCCTO GRID OBSERVATORY
+              </p>
+              <h1 className="mt-1 text-xl font-bold leading-tight tracking-tight md:text-3xl">
+                発電実績 <span className="text-teal-600 dark:text-teal-400">&times;</span> 送電潮流実績 ダッシュボード
               </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                対象日: {data.meta.targetDate} / 最終取り込み: {fetchedAtLabel}
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                対象日: <span className="font-medium text-slate-700 dark:text-slate-300">{data.meta.targetDate}</span>
+                <span className="mx-2 text-slate-300 dark:text-slate-600">|</span>
+                最終取り込み: {fetchedAtLabel}
               </p>
             </div>
-            <div className="flex flex-col items-start gap-2 md:items-end">
+            <div className="flex flex-col items-start gap-3 md:items-end">
               <div className="flex flex-wrap items-center gap-2">
-                <label htmlFor="dashboard-date" className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                <label htmlFor="dashboard-date" className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   対象日
                 </label>
                 <input
                   id="dashboard-date"
                   type="date"
-                  className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none dark:border-teal-800 dark:bg-slate-800 dark:text-slate-200"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   value={toInputDateValue(selectedDate)}
                   min={toInputDateValue(earliestAvailableDate)}
                   max={toInputDateValue(latestAvailableDate)}
@@ -2269,16 +2274,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   </span>
                 ) : null}
               </div>
-              <p className="hidden text-xs text-slate-500 md:block dark:text-slate-400">
-                公開データ範囲: {earliestAvailableDate} から {latestAvailableDate}
+              <p className="hidden text-xs text-slate-400 md:block dark:text-slate-500">
+                公開データ範囲: {earliestAvailableDate} 〜 {latestAvailableDate}
               </p>
               <div className="flex items-center gap-2">
-                <label htmlFor="area" className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                <label htmlFor="area" className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   エリア
                 </label>
                 <select
                   id="area"
-                  className="rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none dark:border-teal-800 dark:bg-slate-800 dark:text-slate-200"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   value={selectedArea}
                   onChange={(event) => setSelectedArea(event.target.value)}
                 >
@@ -2289,26 +2294,27 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   ))}
                 </select>
               </div>
-              {dateError ? <p className="text-xs text-rose-700 dark:text-rose-400">{dateError}</p> : null}
+              {dateError ? <p className="text-xs font-medium text-rose-600 dark:text-rose-400">{dateError}</p> : null}
             </div>
           </div>
         </header>
-        <section className="rounded-3xl border border-white/70 bg-white/85 p-3 shadow-sm backdrop-blur md:p-4 dark:border-slate-700 dark:bg-slate-800/85">
+        <section className="animate-fade-in-up rounded-3xl border border-white/70 bg-white/85 p-3 shadow-[var(--panel-shadow)] backdrop-blur-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800/85" style={{ animationDelay: '80ms' }}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-4 w-1 rounded-full bg-slate-400 dark:bg-slate-500" />
               <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">表示するパネル</h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-600 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
+                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 hover:border-teal-400 hover:text-teal-700 hover:shadow-sm active:scale-[0.97] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
                 onClick={() => setVisibleSectionIds(DASHBOARD_SECTION_OPTIONS.map((item) => item.id))}
               >
                 すべて表示
               </button>
               <button
                 type="button"
-                className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-600 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
+                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 hover:border-teal-400 hover:text-teal-700 hover:shadow-sm active:scale-[0.97] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
                 onClick={() => setVisibleSectionIds(["summary", "areaCards", "composition", "network"])}
               >
                 俯瞰モード
@@ -2324,10 +2330,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   type="button"
                   role="switch"
                   aria-checked={active}
-                  className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200 active:scale-[0.96] ${
                     active
-                      ? "border-teal-500 bg-teal-600 text-white shadow-sm"
-                      : "border-slate-300 bg-white text-slate-700 hover:border-teal-400 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
+                      ? "border-teal-500 bg-gradient-to-b from-teal-500 to-teal-600 text-white shadow-sm shadow-teal-500/20"
+                      : "border-slate-200 bg-white text-slate-600 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-teal-300 hover:text-teal-700 hover:shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
                   }`}
                   onClick={() =>
                     setVisibleSectionIds((current) => {
@@ -2346,7 +2352,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         </section>
 
         {visibleSectionSet.has("summary") ? (
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <section className="stagger-children grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <SummaryCard
               title="全国発電量"
               value={formatEnergyGwh(dashboardHighlights.totalGenerationKwh)}
@@ -2427,7 +2433,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   </label>
                   <select
                     id="generation-area"
-                    className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                     value={generationTrendArea}
                     onChange={(event) => setGenerationTrendArea(event.target.value)}
                   >
@@ -2455,7 +2461,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   </label>
                   <select
                     id="source-donut-area"
-                    className="rounded-lg border border-teal-200 bg-white px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                     value={sourceDonutArea}
                     onChange={(event) => setSourceDonutArea(event.target.value)}
                   >
@@ -2521,7 +2527,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           <ChartErrorBoundary sectionName="連系線混雑度">
           <section className="grid grid-cols-1 gap-4">
             {/* Summary cards */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="stagger-children grid grid-cols-2 gap-3 md:grid-cols-4">
               <CompactStatCard
                 label="最混雑線"
                 value={congestionData.overallPeakLine.label || `${congestionData.overallPeakLine.sourceArea}→${congestionData.overallPeakLine.targetArea}`}
@@ -2637,29 +2643,37 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
         {visibleSectionSet.has("rankings") ? (
           <ChartErrorBoundary sectionName="ランキング">
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-sm md:p-4 dark:border-slate-700 dark:bg-slate-800/90">
-            <h2 className="mb-3 text-lg font-semibold">高発電ユニット上位</h2>
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-[var(--panel-shadow)] backdrop-blur-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800/90">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
+              <span className="inline-block h-5 w-1 rounded-full bg-teal-500" />
+              高発電ユニット上位
+            </h2>
             <div className="-mx-2 overflow-x-auto px-2">
               <table className="min-w-full text-xs md:text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">エリア</th>
-                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">発電所</th>
-                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">ユニット</th>
-                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">方式</th>
-                    <th className="whitespace-nowrap py-2 text-right">日量(kWh)</th>
-                    <th className="whitespace-nowrap py-2 text-right text-slate-400">参考:最大出力(万kW)</th>
+                  <tr className="border-b-2 border-slate-200/80 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
+                    <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">エリア</th>
+                    <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">発電所</th>
+                    <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">ユニット</th>
+                    <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">方式</th>
+                    <th className="whitespace-nowrap py-2.5 text-right">日量(kWh)</th>
+                    <th className="whitespace-nowrap py-2.5 text-right">参考:最大出力(万kW)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTopUnits.slice(0, 24).map((unit) => (
-                    <tr key={`${unit.area}-${unit.plantName}-${unit.unitName}`} className="border-b border-slate-100">
-                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.area}</td>
-                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.plantName}</td>
-                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.unitName}</td>
-                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{unit.sourceType}</td>
-                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">{numberFmt.format(unit.dailyKwh)}</td>
-                      <td className="whitespace-nowrap py-1.5 text-right text-slate-400 md:py-2">
+                  {filteredTopUnits.slice(0, 24).map((unit, idx) => (
+                    <tr key={`${unit.area}-${unit.plantName}-${unit.unitName}`} className={`border-b border-slate-100/80 transition-colors hover:bg-teal-50/40 dark:border-slate-700/50 dark:hover:bg-teal-950/20 ${idx % 2 === 1 ? 'bg-slate-50/50 dark:bg-slate-800/30' : ''}`}>
+                      <td className="whitespace-nowrap py-2 pr-2 md:py-2.5 md:pr-3">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: FLOW_AREA_COLORS[unit.area] ?? FLOW_AREA_COLORS.default }} />
+                          {unit.area}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap py-2 pr-2 font-medium text-slate-800 md:py-2.5 md:pr-3 dark:text-slate-200">{unit.plantName}</td>
+                      <td className="whitespace-nowrap py-2 pr-2 md:py-2.5 md:pr-3">{unit.unitName}</td>
+                      <td className="whitespace-nowrap py-2 pr-2 md:py-2.5 md:pr-3 text-slate-500 dark:text-slate-400">{unit.sourceType}</td>
+                      <td className="whitespace-nowrap py-2 text-right font-semibold tabular-nums md:py-2.5">{numberFmt.format(unit.dailyKwh)}</td>
+                      <td className="whitespace-nowrap py-2 text-right tabular-nums text-slate-400 md:py-2.5 dark:text-slate-500">
                         {typeof unit.maxOutputManKw === "number" ? manKwFmt.format(unit.maxOutputManKw) : "-"}
                       </td>
                     </tr>
@@ -2668,28 +2682,36 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               </table>
             </div>
 
-            <h3 className="mb-3 mt-6 text-lg font-semibold">高発電発電所上位（ユニット合計）</h3>
+            <h3 className="mb-4 mt-8 flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
+              <span className="inline-block h-5 w-1 rounded-full bg-teal-500" />
+              高発電発電所上位（ユニット合計）
+            </h3>
             <div className="-mx-2 overflow-x-auto px-2">
               <table className="min-w-full text-xs md:text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">エリア</th>
-                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">発電所</th>
-                    <th className="whitespace-nowrap py-2 pr-2 md:pr-3">方式</th>
-                    <th className="whitespace-nowrap py-2 text-right">最大出力(万kW)</th>
-                    <th className="whitespace-nowrap py-2 text-right">日量(kWh)</th>
+                  <tr className="border-b-2 border-slate-200/80 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
+                    <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">エリア</th>
+                    <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">発電所</th>
+                    <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">方式</th>
+                    <th className="whitespace-nowrap py-2.5 text-right">最大出力(万kW)</th>
+                    <th className="whitespace-nowrap py-2.5 text-right">日量(kWh)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTopPlants.slice(0, 24).map((plant) => (
-                    <tr key={`${plant.area}-${plant.plantName}`} className="border-b border-slate-100">
-                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{plant.area}</td>
-                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{plant.plantName}</td>
-                      <td className="whitespace-nowrap py-1.5 pr-2 md:py-2 md:pr-3">{plant.sourceType || "不明"}</td>
-                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">
+                  {filteredTopPlants.slice(0, 24).map((plant, idx) => (
+                    <tr key={`${plant.area}-${plant.plantName}`} className={`border-b border-slate-100/80 transition-colors hover:bg-teal-50/40 dark:border-slate-700/50 dark:hover:bg-teal-950/20 ${idx % 2 === 1 ? 'bg-slate-50/50 dark:bg-slate-800/30' : ''}`}>
+                      <td className="whitespace-nowrap py-2 pr-2 md:py-2.5 md:pr-3">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: FLOW_AREA_COLORS[plant.area] ?? FLOW_AREA_COLORS.default }} />
+                          {plant.area}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap py-2 pr-2 font-medium text-slate-800 md:py-2.5 md:pr-3 dark:text-slate-200">{plant.plantName}</td>
+                      <td className="whitespace-nowrap py-2 pr-2 md:py-2.5 md:pr-3 text-slate-500 dark:text-slate-400">{plant.sourceType || "不明"}</td>
+                      <td className="whitespace-nowrap py-2 text-right tabular-nums md:py-2.5">
                         {typeof plant.maxOutputManKw === "number" ? manKwFmt.format(plant.maxOutputManKw) : "-"}
                       </td>
-                      <td className="whitespace-nowrap py-1.5 text-right md:py-2">{numberFmt.format(plant.dailyKwh)}</td>
+                      <td className="whitespace-nowrap py-2 text-right font-semibold tabular-nums md:py-2.5">{numberFmt.format(plant.dailyKwh)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2700,22 +2722,25 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {/* ── 表示時刻スナップショット ── */}
-        <section className="sticky top-0 z-30 rounded-3xl border border-teal-200/60 bg-gradient-to-r from-teal-50/95 to-white/95 px-3 py-2 shadow-md backdrop-blur-sm md:px-5 md:py-4 dark:border-teal-800/60 dark:from-teal-950/95 dark:to-slate-800/95">
+        <section className="sticky top-0 z-30 overflow-hidden rounded-3xl border border-teal-200/50 bg-gradient-to-r from-teal-50/97 via-white/97 to-teal-50/97 px-4 py-3 shadow-lg shadow-teal-500/5 backdrop-blur-md md:px-6 md:py-4 dark:border-teal-800/50 dark:from-teal-950/97 dark:via-slate-800/97 dark:to-teal-950/97">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-base font-semibold text-teal-800 dark:text-teal-300">表示時刻スナップショット</h2>
-              <p className="hidden text-xs text-slate-600 md:block dark:text-slate-400">以下のカードはスライダーで選択した時刻のデータを表示します</p>
+              <h2 className="flex items-center gap-2 text-base font-semibold text-teal-800 dark:text-teal-300">
+                <span className="inline-block h-4 w-1 rounded-full bg-teal-500" />
+                表示時刻スナップショット
+              </h2>
+              <p className="mt-0.5 hidden text-xs text-slate-500 md:block dark:text-slate-400">以下のカードはスライダーで選択した時刻のデータを表示します</p>
             </div>
             <div className="flex items-center gap-3">
-              <span data-testid="selected-flow-datetime" className="text-sm font-medium text-teal-700 dark:text-teal-400">
+              <span data-testid="selected-flow-datetime" className="rounded-lg bg-teal-600/10 px-3 py-1 text-sm font-semibold tabular-nums text-teal-700 dark:bg-teal-400/10 dark:text-teal-400">
                 {selectedFlowDateTimeLabel}
               </span>
-              <span className="text-xs text-slate-500">
-                スロット {flowSlotLabels.length === 0 ? 0 : clampedNetworkFlowSlotIndex + 1} / {flowSlotLabels.length}
+              <span className="text-xs tabular-nums text-slate-400 dark:text-slate-500">
+                {flowSlotLabels.length === 0 ? 0 : clampedNetworkFlowSlotIndex + 1} / {flowSlotLabels.length}
               </span>
             </div>
           </div>
-          <div className="mt-2 md:mt-3">
+          <div className="mt-3 md:mt-4">
             <input
               aria-label="ネットワーク潮流の表示時刻"
               type="range"
@@ -2725,9 +2750,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               value={clampedNetworkFlowSlotIndex}
               onChange={(event) => setNetworkFlowSlotIndex(Number(event.target.value))}
               disabled={flowSlotLabels.length === 0}
-              className="w-full accent-teal-600"
+              className="w-full"
             />
-            <div className="mt-1 flex justify-between text-[11px] text-slate-500">
+            <div className="mt-1.5 flex justify-between text-[11px] tabular-nums text-slate-400 dark:text-slate-500">
               <span>{flowSlotLabels[0] ?? "-"}</span>
               <span>{flowSlotLabels[maxFlowSlotIndex] ?? "-"}</span>
             </div>
@@ -2735,7 +2760,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         </section>
 
         {visibleSectionSet.has("summary") ? (
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <section className="stagger-children grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <SummaryCard
               title="予備率監視"
               value={
@@ -2798,19 +2823,22 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {visibleSectionSet.has("areaCards") ? (
-          <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-sm md:p-4">
-            <div className="mb-3 flex flex-col gap-1 md:mb-4 md:flex-row md:items-end md:justify-between">
+          <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-[var(--panel-shadow)] backdrop-blur-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800/90">
+            <div className="mb-4 flex flex-col gap-1 md:mb-5 md:flex-row md:items-end md:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">エリア別需給カード</h2>
-                <p className="text-sm text-slate-600">
+                <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
+                  <span className="inline-block h-5 w-1 rounded-full bg-teal-500" />
+                  エリア別需給カード
+                </h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   {selectedArea === "全エリア"
                     ? `全${areaSupplyCards.length}エリアの需要、予備率、電源構成、連系収支を俯瞰`
                     : `${selectedArea} の需要、予備率、電源構成、連系収支を表示`}
                 </p>
               </div>
-              <p className="text-xs text-slate-500">連系値は {selectedFlowDateTimeLabel} 時点</p>
+              <p className="rounded-lg bg-slate-100 px-3 py-1 text-xs tabular-nums text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">{selectedFlowDateTimeLabel} 時点</p>
             </div>
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="stagger-children grid grid-cols-1 gap-4 xl:grid-cols-2">
               {areaSupplyCards.map((card) => {
                 const areaColor = FLOW_AREA_COLORS[card.area] ?? FLOW_AREA_COLORS.default;
                 const netDirection =
@@ -2820,10 +2848,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 return (
                   <article
                     key={card.area}
-                    className="overflow-hidden rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(244,248,247,0.96))] shadow-sm"
+                    className="group/card overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white/98 to-slate-50/96 shadow-[var(--panel-shadow)] transition-all duration-300 hover:shadow-[var(--panel-shadow-hover)] dark:border-slate-700/80 dark:from-slate-800/98 dark:to-slate-850/96"
                   >
-                    <div className="h-1.5" style={{ backgroundColor: areaColor }} />
-                    <div className="p-3 md:p-4">
+                    <div className="h-1 transition-all duration-300 group-hover/card:h-1.5" style={{ background: `linear-gradient(90deg, ${areaColor}, ${areaColor}88)` }} />
+                    <div className="p-4 md:p-5">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -2839,9 +2867,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                             <ValueProgressBar value={card.sharePercent} max={100} color={areaColor} />
                           </div>
                         </div>
-                        <div className="rounded-2xl bg-slate-900 px-3 py-2 text-white shadow-sm md:px-4 md:py-3">
-                          <p className="text-xs tracking-[0.16em] text-slate-300">日量発電</p>
-                          <p className="mt-1 text-xl font-semibold md:text-2xl">{formatCompactEnergy(card.totalKwh)}</p>
+                        <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 px-4 py-3 text-white shadow-md md:px-5 md:py-3.5 dark:from-slate-700 dark:to-slate-800">
+                          <p className="text-[11px] font-medium tracking-[0.16em] text-slate-400">日量発電</p>
+                          <p className="mt-1 text-xl font-bold tabular-nums md:text-2xl">{formatCompactEnergy(card.totalKwh)}</p>
                         </div>
                       </div>
 
@@ -2966,12 +2994,15 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           <ChartErrorBoundary sectionName="ネットワーク">
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2" testId="network-flow-panel">
-              <div className="mb-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
-                <p className="text-[11px] text-slate-600">
+              <div className="mb-3 rounded-xl border border-slate-200/80 bg-gradient-to-r from-slate-50/80 to-white/60 px-4 py-2.5 dark:border-slate-700/60 dark:from-slate-800/60 dark:to-slate-800/40">
+                <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                   注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンク（SS・CS・変換所間）として、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
                 </p>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  各エリアの主要潮流を水色の破線アニメーションで表示しています。エリア間連係線は混雑度に応じて色分け表示：緑(&lt;50%)→黄(50-70%)→橙(70-85%)→赤(≥85%)。運用容量データがない線は橙色（交流）・紫色（直流）で表示します。
+                <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500">
+                  <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-4 rounded-sm bg-emerald-500" />&lt;50%</span>
+                  <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-4 rounded-sm bg-amber-500" />50-70%</span>
+                  <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-4 rounded-sm bg-orange-500" />70-85%</span>
+                  <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-4 rounded-sm bg-red-500" />&ge;85%</span>
                 </p>
               </div>
               <div data-testid="network-flow-chart" role="img" aria-label="ネットワーク潮流グラフ" className="relative" ref={networkFlowChartHostRef}>
@@ -3108,26 +3139,29 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {/* Footer */}
-        <footer className="mt-8 border-t border-slate-200/60 pt-4 pb-2 text-center text-[11px] leading-relaxed text-slate-400 dark:border-slate-700/60 dark:text-slate-500">
-          <p>
+        <footer className="mt-10 rounded-3xl border border-slate-200/40 bg-white/60 px-6 py-6 text-center backdrop-blur-sm dark:border-slate-700/40 dark:bg-slate-800/60">
+          <p className="text-xs font-medium tracking-wide text-teal-600 dark:text-teal-400">
+            OCCTO GRID OBSERVATORY
+          </p>
+          <p className="mt-3 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
             本サイトは
             <a
               href="https://www.occto.or.jp/"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-slate-600 dark:hover:text-slate-300"
+              className="text-slate-500 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-teal-600 hover:decoration-teal-400 dark:text-slate-400 dark:decoration-slate-600 dark:hover:text-teal-400"
             >
               電力広域的運営推進機関（OCCTO）
             </a>
             が公開するデータをもとに作成した非公式の可視化ダッシュボードです。
           </p>
-          <p className="mt-1">
+          <p className="mt-1 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
             正確な情報は必ず
             <a
               href="https://www.occto.or.jp/"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-slate-600 dark:hover:text-slate-300"
+              className="text-slate-500 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-teal-600 hover:decoration-teal-400 dark:text-slate-400 dark:decoration-slate-600 dark:hover:text-teal-400"
             >
               広域機関の公式ページ
             </a>
