@@ -86,6 +86,11 @@ type DashboardAppProps = {
 
 export function DashboardApp({ initialData, availableDates }: DashboardAppProps) {
   const [data, setData] = useState<DashboardData>(initialData);
+  // Exclude intra-area fence lines (関西フェンス, 中部フェンス) that resolve to "不明" areas
+  const filteredIntertieSeries = useMemo(
+    () => (data.flows.intertieSeries ?? []).filter((row) => row.sourceArea !== "不明" && row.targetArea !== "不明"),
+    [data.flows.intertieSeries],
+  );
   const [selectedDate, setSelectedDate] = useState<string>(initialData.meta.targetDate);
   const [isDateLoading, setIsDateLoading] = useState<boolean>(false);
   const [dateError, setDateError] = useState<string | null>(null);
@@ -969,7 +974,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       });
     });
 
-    (data.flows.intertieSeries ?? []).forEach((row) => {
+    filteredIntertieSeries.forEach((row) => {
       visibleAreas.add(row.sourceArea);
       visibleAreas.add(row.targetArea);
       const slotMw = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
@@ -1474,7 +1479,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     };
   }, [
     data.flows.areaSummaries,
-    data.flows.intertieSeries,
+    filteredIntertieSeries,
     data.flows.lineSeries,
     clampedNetworkFlowSlotIndex,
     networkPowerPlants,
@@ -1504,7 +1509,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
   const interAreaFlowTextRows = useMemo(() => {
     const rowLimit = selectedArea === "全エリア" ? (isMobileViewport ? 10 : 14) : (isMobileViewport ? 16 : 22);
-    const scopedInterties = (data.flows.intertieSeries ?? []).filter((row) =>
+    const scopedInterties = filteredIntertieSeries.filter((row) =>
       selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
     );
     const pairMap = new Map<
@@ -1565,7 +1570,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       }))
       .sort((a, b) => b.magnitudeMw - a.magnitudeMw)
       .slice(0, rowLimit);
-  }, [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, data.flows.intertieSeries, isMobileViewport, selectedArea]);
+  }, [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, filteredIntertieSeries, isMobileViewport, selectedArea]);
 
   const dashboardHighlights = useMemo(() => {
     const totalGenerationKwh = data.generation.areaTotals.reduce((sum, item) => sum + item.totalKwh, 0);
@@ -1577,7 +1582,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const peakDemandArea = demandLeadersRaw[0] ?? null;
 
     const netIntertieByArea = new Map<string, number>();
-    (data.flows.intertieSeries ?? []).forEach((row) => {
+    filteredIntertieSeries.forEach((row) => {
       const value = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
       netIntertieByArea.set(row.sourceArea, (netIntertieByArea.get(row.sourceArea) ?? 0) - value);
       netIntertieByArea.set(row.targetArea, (netIntertieByArea.get(row.targetArea) ?? 0) + value);
@@ -1689,7 +1694,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   }, [
     allPlantSummaries,
     clampedNetworkFlowSlotIndex,
-    data.flows.intertieSeries,
+    filteredIntertieSeries,
     data.generation.areaTotals,
     data.generation.sourceTotals,
     data.generation.topUnits,
@@ -1711,7 +1716,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       }
     >();
 
-    (data.flows.intertieSeries ?? []).forEach((row) => {
+    filteredIntertieSeries.forEach((row) => {
       const value = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
       netIntertieByArea.set(row.sourceArea, (netIntertieByArea.get(row.sourceArea) ?? 0) - value);
       netIntertieByArea.set(row.targetArea, (netIntertieByArea.get(row.targetArea) ?? 0) + value);
@@ -1793,7 +1798,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     allPlantSummaries,
     clampedNetworkFlowSlotIndex,
     data.flows.areaSummaries,
-    data.flows.intertieSeries,
+    filteredIntertieSeries,
     data.generation.areaTotals,
     reserveAreaMap,
     selectedArea,
@@ -1917,7 +1922,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   }, [interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel]);
 
   const intertieTrendOption = useMemo(() => {
-    const scopedSeries = (data.flows.intertieSeries ?? []).filter((row) =>
+    const scopedSeries = filteredIntertieSeries.filter((row) =>
       selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
     );
     const topSeries = [...scopedSeries]
@@ -2011,14 +2016,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         }),
       ],
     };
-  }, [data.flows.intertieSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea]);
+  }, [filteredIntertieSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea]);
 
   // ---------------------------------------------------------------------------
   // Congestion (連系線混雑度) — utilization rate = |flow| / rated capacity
   // ---------------------------------------------------------------------------
 
   const congestionData = useMemo(() => {
-    const series = data.flows.intertieSeries ?? [];
+    const series = filteredIntertieSeries ?? [];
     if (series.length === 0) return null;
 
     const lines = series
@@ -2057,7 +2062,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const highCongestionCount = lines.filter((l) => l.peakUtilization >= 70).length;
 
     return { lines, overallPeakLine, overallAvgUtilization, highCongestionCount };
-  }, [data.flows.intertieSeries]);
+  }, [filteredIntertieSeries]);
 
   const congestionTrendOption = useMemo(() => {
     if (!congestionData) return null;
