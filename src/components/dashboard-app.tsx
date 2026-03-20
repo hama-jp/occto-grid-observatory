@@ -2232,7 +2232,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 OCCTO GRID OBSERVATORY
               </p>
               <h1 className="mt-1 text-xl font-bold leading-tight tracking-tight md:text-3xl">
-                発電実績 <span className="text-teal-600 dark:text-teal-400">&times;</span> 送電潮流実績 ダッシュボード
+                発電実績 <span className="text-teal-600 dark:text-teal-400">×</span>送電潮流実績 ダッシュボード
               </h1>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                 対象日: <span className="font-medium text-slate-700 dark:text-slate-300">{data.meta.targetDate}</span>
