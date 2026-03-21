@@ -56,7 +56,6 @@ import {
   buildAreaBridgeEndpoints,
   clampPointToMapBounds,
   isNetworkPowerPlantSource,
-  buildJapanGuideGraphics,
   buildJapanGuideSvgPaths,
   flowMagnitudeColor,
 } from "@/lib/geo";
@@ -76,6 +75,29 @@ import {
   LoadingOverlay,
 } from "@/components/ui/dashboard-ui";
 import { ChartErrorBoundary } from "@/components/ui/error-boundary";
+import {
+  buildReserveTrendOption,
+  buildDemandCurrentOption,
+  buildReserveCurrentOption,
+  buildGenerationLineOption,
+  buildSourceDonutOption,
+  buildAreaTotalsOption,
+  buildInterAreaFlowOption,
+  buildIntertieTrendOption,
+  buildFlowHeatmapOption,
+  buildVolatilityHeatmapOption,
+  buildCongestionData,
+  buildCongestionTrendOption,
+  buildCongestionHeatmapOption,
+  type CongestionSummary,
+} from "@/lib/chart-options";
+import {
+  SELECT_CLASS,
+  SELECT_COMPACT_CLASS,
+  PILL_BUTTON_CLASS,
+  TABLE_HEADER_CLASS,
+  FOOTER_LINK_CLASS,
+} from "@/lib/styles";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -168,16 +190,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     data.generation.areaTotals.forEach((item) => set.add(item.area));
     data.flows.areaSummaries.forEach((item) => set.add(item.area));
     return ["全エリア", ...Array.from(set).sort(compareAreaOrder)];
-  }, [data]);
-  const generationAreas = useMemo(
-    () => {
-      const set = new Set<string>();
-      data.generation.areaTotals.forEach((item) => set.add(item.area));
-      data.flows.areaSummaries.forEach((item) => set.add(item.area));
-      return ["全エリア", ...Array.from(set).sort(compareAreaOrder)];
-    },
-    [data.generation.areaTotals, data.flows.areaSummaries],
-  );
+  }, [data.generation.areaTotals, data.flows.areaSummaries]);
 
   const [selectedArea, setSelectedArea] = useState<string>("全エリア");
   const [generationTrendArea, setGenerationTrendArea] = useState<string>("全エリア");
@@ -241,201 +254,19 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       selectedArea === "全エリア"
         ? reserveAreaSeries
         : reserveAreaSeries.filter((item) => item.area === selectedArea);
-    const hasData = scopedSeries.length > 0;
-
-    return {
-      tooltip: {
-        trigger: "axis",
-        valueFormatter: (value: number) => `${decimalFmt.format(value)} %`,
-      },
-      legend: {
-        top: 8,
-        type: "scroll",
-        textStyle: { color: "#334155" },
-      },
-      grid: { top: isMobileViewport ? 48 : 60, left: isMobileViewport ? 52 : 64, right: 18, bottom: isMobileViewport ? 48 : 34 },
-      xAxis: {
-        type: "category",
-        data: data.meta.slotLabels.generation,
-        axisLabel: { interval: isMobileViewport ? 5 : 3, fontSize: isMobileViewport ? 10 : 12, rotate: isMobileViewport ? 30 : 0, hideOverlap: true },
-      },
-      yAxis: {
-        type: "value",
-        name: "予備率(%)",
-        nameLocation: "middle",
-        nameGap: isMobileViewport ? 34 : 42,
-        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
-        axisLabel: {
-          formatter: (value: number) => decimalFmt.format(value),
-        },
-      },
-      graphic: hasData
-        ? undefined
-        : [
-            {
-              type: "text",
-              left: "center",
-              top: "middle",
-              style: {
-                text: "予備率データが未取得です",
-                fill: "#475569",
-                font: "14px sans-serif",
-              },
-              silent: true,
-            },
-          ],
-      series: scopedSeries.map((item) => ({
-        name: item.area,
-        type: "line",
-        smooth: true,
-        symbol: "none",
-        lineStyle: {
-          width: selectedArea === "全エリア" ? 2.1 : 3,
-          color: FLOW_AREA_COLORS[item.area] ?? FLOW_AREA_COLORS.default,
-        },
-        data: item.reserveRate,
-      })),
-    };
+    return buildReserveTrendOption(scopedSeries, data.meta.slotLabels.generation, isMobileViewport, selectedArea);
   }, [data.meta.slotLabels.generation, isMobileViewport, reserveAreaSeries, selectedArea]);
   const demandCurrentOption = useMemo(() => {
-    const rows = (selectedArea === "全エリア"
+    const rows = selectedArea === "全エリア"
       ? reserveCurrentRows
-      : reserveCurrentRows.filter((item) => item.area === selectedArea)
-    ).sort((a, b) => b.demandMw - a.demandMw);
-    const hasData = rows.length > 0;
-
-    return {
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        formatter: (params: Array<{ data: { row: (typeof rows)[number] } }>) => {
-          const row = params[0]?.data?.row;
-          if (!row) {
-            return "";
-          }
-          return `${row.area}<br/>表示日時: ${selectedFlowDateTimeLabel}<br/>需要: ${decimalFmt.format(
-            row.demandMw,
-          )} MW<br/>供給力: ${decimalFmt.format(row.supplyMw)} MW<br/>使用率: ${decimalFmt.format(row.usageRate)}%`;
-        },
-      },
-      grid: { top: 18, left: isMobileViewport ? 56 : 74, right: 18, bottom: 30 },
-      xAxis: {
-        type: "value",
-        name: "MW",
-      },
-      yAxis: {
-        type: "category",
-        inverse: true,
-        data: rows.map((item) => item.area),
-      },
-      graphic: hasData
-        ? undefined
-        : [
-            {
-              type: "text",
-              left: "center",
-              top: "middle",
-              style: {
-                text: "需要データが未取得です",
-                fill: "#475569",
-                font: "14px sans-serif",
-              },
-              silent: true,
-            },
-          ],
-      series: [
-        {
-          type: "bar",
-          barWidth: 14,
-          data: rows.map((row) => ({
-            value: row.demandMw,
-            row,
-            itemStyle: {
-              color: (FLOW_AREA_COLORS[row.area] ?? FLOW_AREA_COLORS.default),
-              borderRadius: [0, 6, 6, 0],
-            },
-          })),
-          label: {
-            show: true,
-            position: "right",
-            formatter: (params: { data: { row: (typeof rows)[number] } }) =>
-              `${decimalFmt.format(params.data.row.demandMw)} MW`,
-            fontSize: 10,
-            color: "#334155",
-          },
-        },
-      ],
-    };
+      : reserveCurrentRows.filter((item) => item.area === selectedArea);
+    return buildDemandCurrentOption(rows, isMobileViewport, selectedFlowDateTimeLabel);
   }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
   const reserveCurrentOption = useMemo(() => {
-    const rows = (selectedArea === "全エリア"
+    const rows = selectedArea === "全エリア"
       ? reserveCurrentRows
-      : reserveCurrentRows.filter((item) => item.area === selectedArea)
-    ).sort((a, b) => a.reserveRate - b.reserveRate);
-    const hasData = rows.length > 0;
-
-    return {
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        formatter: (params: Array<{ data: { row: (typeof rows)[number] } }>) => {
-          const row = params[0]?.data?.row;
-          if (!row) {
-            return "";
-          }
-          return `${row.area}<br/>表示日時: ${selectedFlowDateTimeLabel}<br/>予備力: ${decimalFmt.format(
-            row.reserveMw,
-          )} MW<br/>予備率: ${decimalFmt.format(row.reserveRate)}%`;
-        },
-      },
-      grid: { top: 18, left: isMobileViewport ? 56 : 74, right: 18, bottom: 30 },
-      xAxis: {
-        type: "value",
-        name: "%",
-      },
-      yAxis: {
-        type: "category",
-        inverse: true,
-        data: rows.map((item) => item.area),
-      },
-      graphic: hasData
-        ? undefined
-        : [
-            {
-              type: "text",
-              left: "center",
-              top: "middle",
-              style: {
-                text: "予備率データが未取得です",
-                fill: "#475569",
-                font: "14px sans-serif",
-              },
-              silent: true,
-            },
-          ],
-      series: [
-        {
-          type: "bar",
-          barWidth: 14,
-          data: rows.map((row) => ({
-            value: row.reserveRate,
-            row,
-            itemStyle: {
-              color: (FLOW_AREA_COLORS[row.area] ?? FLOW_AREA_COLORS.default),
-              borderRadius: [0, 6, 6, 0],
-            },
-          })),
-          label: {
-            show: true,
-            position: "right",
-            formatter: (params: { data: { row: (typeof rows)[number] } }) =>
-              `${decimalFmt.format(params.data.row.reserveMw)} MW (${decimalFmt.format(params.data.row.reserveRate)}%)`,
-            fontSize: 10,
-            color: "#334155",
-          },
-        },
-      ],
-    };
+      : reserveCurrentRows.filter((item) => item.area === selectedArea);
+    return buildReserveCurrentOption(rows, isMobileViewport, selectedFlowDateTimeLabel);
   }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
 
   const sourceTotalsByArea = useMemo(() => {
@@ -554,58 +385,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const sourceKeys = Object.keys(scopedSeries[0]?.values ?? {}).length
       ? Object.keys(scopedSeries[0]?.values ?? {})
       : fallbackKeys;
-
-    return {
-      backgroundColor: "transparent",
-      tooltip: { trigger: "axis", valueFormatter: (value: number) => `${numberFmt.format(value)} MW` },
-      legend: {
-        type: "scroll",
-        top: 8,
-        textStyle: { color: "#264653" },
-        formatter: (name: string) => normalizeSourceName(name),
-      },
-      grid: { top: isMobileViewport ? 40 : 48, left: isMobileViewport ? 52 : 64, right: isMobileViewport ? 10 : 20, bottom: isMobileViewport ? 48 : 36 },
-      xAxis: {
-        type: "category",
-        data: data.meta.slotLabels.generation,
-        axisLabel: { color: "#4a5568", interval: isMobileViewport ? 5 : 3, fontSize: isMobileViewport ? 10 : 12, rotate: isMobileViewport ? 30 : 0, hideOverlap: true },
-      },
-      yAxis: {
-        type: "value",
-        name: "発電量(MW)",
-        nameLocation: "middle",
-        nameGap: isMobileViewport ? 36 : 44,
-        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
-        axisLabel: { color: "#4a5568", formatter: (v: number) => numberFmt.format(v) },
-      },
-      graphic:
-        sourceKeys.length > 0
-          ? undefined
-          : [
-              {
-                type: "text",
-                left: "center",
-                top: "middle",
-                style: {
-                  text: "このエリアの発電方式別データはありません",
-                  fill: "#475569",
-                  font: "14px sans-serif",
-                },
-                silent: true,
-              },
-            ],
-      series: sourceKeys.map((source, idx) => ({
-        name: normalizeSourceName(source),
-        type: "line",
-        stack: "generation",
-        smooth: true,
-        areaStyle: { opacity: 0.12 },
-        symbol: "none",
-        lineStyle: { width: 2 },
-        color: sourceColorByName.get(source) ?? SOURCE_COLOR_MAP[source] ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
-        data: scopedSeries.map((point) => point.values[source] ?? 0),
-      })),
-    };
+    return buildGenerationLineOption(scopedSeries, data.meta.slotLabels.generation, sourceKeys, sourceColorByName, isMobileViewport);
   }, [data.generation.hourlyBySource, data.generation.hourlyBySourceByArea, data.meta.slotLabels.generation, generationTrendArea, isMobileViewport, sourceColorByName]);
 
   const sourceCompositionItems = useMemo(() => {
@@ -622,259 +402,25 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     }));
   }, [data.generation.sourceTotals, sourceColorByName, sourceDonutArea, sourceTotalsByArea]);
 
-  const sourceDonutOption = useMemo(() => {
-    return {
-      tooltip: { trigger: "item", valueFormatter: (value: number) => formatCompactEnergy(value) },
-      series: [
-        {
-          name: "発電方式",
-          type: "pie",
-          radius: useInlineDonutLegend ? ["44%", "74%"] : ["38%", "60%"],
-          center: useInlineDonutLegend ? ["50%", "50%"] : ["50%", "42%"],
-          avoidLabelOverlap: true,
-          label: {
-            show: false,
-            color: "#1b3a4b",
-            fontSize: useInlineDonutLegend ? 12 : 11,
-          },
-          labelLine: {
-            show: false,
-          },
-          emphasis: {
-            scale: true,
-            label: {
-              show: true,
-              formatter: (params: { percent?: number; name: string }) =>
-                `${normalizeSourceName(params.name)}\n${decimalFmt.format(params.percent ?? 0)}%`,
-              fontSize: 13,
-              fontWeight: 600,
-            },
-          },
-          data: sourceCompositionItems.map((item) => ({
-            name: item.name,
-            value: item.totalKwh,
-            itemStyle: { color: item.color },
-          })),
-        },
-      ],
-    };
-  }, [sourceCompositionItems, useInlineDonutLegend]);
+  const sourceDonutOption = useMemo(
+    () => buildSourceDonutOption(sourceCompositionItems, useInlineDonutLegend),
+    [sourceCompositionItems, useInlineDonutLegend],
+  );
 
   const areaTotalsOption = useMemo(
-    () => {
-      const sortedAreaTotals = [...data.generation.areaTotals].sort((a, b) => b.totalKwh - a.totalKwh);
-      return {
-        tooltip: {
-          trigger: "axis",
-          axisPointer: { type: "shadow" },
-          valueFormatter: (value: number) => `${decimalFmt.format(value / 1_000_000)} GWh`,
-        },
-        grid: { top: 18, left: isMobileViewport ? 56 : 74, right: 18, bottom: 30 },
-        xAxis: {
-          type: "value",
-          name: "GWh",
-          axisLabel: { formatter: (v: number) => `${decimalFmt.format(v / 1_000_000)}` },
-        },
-        yAxis: {
-          type: "category",
-          inverse: true,
-          data: sortedAreaTotals.map((item) => item.area),
-          axisLabel: { color: "#4a5568" },
-        },
-        series: [
-          {
-            type: "bar",
-            data: sortedAreaTotals.map((item, idx) => ({
-              value: item.totalKwh,
-              itemStyle: {
-                color: idx % 2 === 0 ? "#2a9d8f" : "#1d3557",
-                borderRadius: [0, 6, 6, 0],
-              },
-            })),
-          },
-        ],
-      };
-    },
+    () => buildAreaTotalsOption(data.generation.areaTotals, isMobileViewport),
     [data.generation.areaTotals, isMobileViewport],
   );
 
-  const flowHeatmapOption = useMemo(() => {
-    const topLines = filteredLines.slice(0, 18);
-    const yLabels = topLines.map((line) =>
-      isMobileViewport ? line.lineName.slice(0, 6) : `${line.area} | ${line.lineName}`,
-    );
-    const heatmapData: Array<[number, number, number]> = [];
+  const flowHeatmapOption = useMemo(
+    () => buildFlowHeatmapOption(filteredLines, data.meta.slotLabels.flow, isMobileViewport),
+    [data.meta.slotLabels.flow, filteredLines, isMobileViewport],
+  );
 
-    topLines.forEach((line, rowIdx) => {
-      line.values.forEach((value, colIdx) => {
-        heatmapData.push([colIdx, rowIdx, Math.round(value)]);
-      });
-    });
-
-    return {
-      tooltip: {
-        position: "top",
-        formatter: (params: { data: [number, number, number] }) => {
-          const [col, row, value] = params.data;
-          return `${yLabels[row]}<br/>${data.meta.slotLabels.flow[col]}: ${numberFmt.format(value)} MW`;
-        },
-      },
-      grid: { top: 20, left: isMobileViewport ? 60 : 160, right: isMobileViewport ? 10 : 80, bottom: isMobileViewport ? 46 : 20 },
-      xAxis: {
-        type: "category",
-        data: data.meta.slotLabels.flow,
-        splitArea: { show: true },
-        axisLabel: { interval: 3 },
-      },
-      yAxis: {
-        type: "category",
-        data: yLabels,
-        splitArea: { show: true },
-      },
-      visualMap: isMobileViewport
-        ? {
-            min: -800,
-            max: 800,
-            calculable: false,
-            orient: "horizontal",
-            left: "center",
-            bottom: 0,
-            itemWidth: 12,
-            itemHeight: 80,
-            inRange: {
-              color: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"],
-            },
-          }
-        : {
-            min: -800,
-            max: 800,
-            calculable: true,
-            orient: "vertical",
-            right: 0,
-            top: 0,
-            inRange: {
-              color: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"],
-            },
-          },
-      series: [
-        {
-          name: "潮流",
-          type: "heatmap",
-          data: heatmapData,
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowColor: "rgba(0, 0, 0, 0.35)",
-            },
-          },
-        },
-      ],
-    };
-  }, [data.meta.slotLabels.flow, filteredLines, isMobileViewport]);
-
-  const volatilityHeatmapOption = useMemo(() => {
-    // Compute coefficient of variation for each line and pick top 18
-    const scored = filteredLines
-      .map((line) => {
-        const vals = line.values;
-        const n = vals.length;
-        if (n === 0) return null;
-        const meanAbs = vals.reduce((s, v) => s + Math.abs(v), 0) / n;
-        if (meanAbs < 1) return null; // skip near-zero lines
-        const mean = vals.reduce((s, v) => s + v, 0) / n;
-        const stdDev = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / n);
-        const cv = stdDev / meanAbs; // coefficient of variation
-        return { ...line, cv, mean, stdDev, meanAbs };
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null)
-      .sort((a, b) => b.cv - a.cv)
-      .slice(0, 18);
-
-    const yLabels = scored.map((l) =>
-      isMobileViewport
-        ? `${l.lineName.slice(0, 6)} CV${(l.cv * 100).toFixed(0)}%`
-        : `${l.area} | ${l.lineName}  (CV ${(l.cv * 100).toFixed(0)}%)`,
-    );
-
-    // Each cell = deviation from that line's mean, as % of meanAbs
-    const heatmapData: Array<[number, number, number]> = [];
-    scored.forEach((line, rowIdx) => {
-      line.values.forEach((value, colIdx) => {
-        const pctDev = ((value - line.mean) / line.meanAbs) * 100;
-        heatmapData.push([colIdx, rowIdx, Math.round(pctDev)]);
-      });
-    });
-
-    return {
-      tooltip: {
-        position: "top",
-        formatter: (params: { data: [number, number, number] }) => {
-          const [col, row, pct] = params.data;
-          const line = scored[row];
-          const rawMw = line ? Math.round(line.values[col]) : 0;
-          return [
-            `<b>${yLabels[row]}</b>`,
-            `${data.meta.slotLabels.flow[col]}`,
-            `潮流: ${numberFmt.format(rawMw)} MW`,
-            `平均比偏差: ${pct > 0 ? "+" : ""}${pct}%`,
-          ].join("<br/>");
-        },
-      },
-      grid: { top: 20, left: isMobileViewport ? 60 : 220, right: isMobileViewport ? 10 : 80, bottom: isMobileViewport ? 46 : 20 },
-      xAxis: {
-        type: "category",
-        data: data.meta.slotLabels.flow,
-        splitArea: { show: true },
-        axisLabel: { interval: 3 },
-      },
-      yAxis: {
-        type: "category",
-        data: yLabels,
-        splitArea: { show: true },
-        axisLabel: { fontSize: 11 },
-      },
-      visualMap: isMobileViewport
-        ? {
-            min: -150,
-            max: 150,
-            calculable: false,
-            orient: "horizontal",
-            left: "center",
-            bottom: 0,
-            itemWidth: 12,
-            itemHeight: 80,
-            text: ["+150%", "−150%"],
-            inRange: {
-              color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"],
-            },
-          }
-        : {
-            min: -150,
-            max: 150,
-            calculable: true,
-            orient: "vertical",
-            right: 0,
-            top: 0,
-            text: ["+150%", "−150%"],
-            inRange: {
-              color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"],
-            },
-          },
-      series: [
-        {
-          name: "変動率",
-          type: "heatmap",
-          data: heatmapData,
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowColor: "rgba(0, 0, 0, 0.35)",
-            },
-          },
-        },
-      ],
-    };
-  }, [data.meta.slotLabels.flow, filteredLines, isMobileViewport]);
+  const volatilityHeatmapOption = useMemo(
+    () => buildVolatilityHeatmapOption(filteredLines, data.meta.slotLabels.flow, isMobileViewport),
+    [data.meta.slotLabels.flow, filteredLines, isMobileViewport],
+  );
 
   const flowNetworkOption = useMemo(() => {
     type NetworkLink = {
@@ -1814,122 +1360,15 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     [areaSupplyCards],
   );
 
-  const interAreaFlowOption = useMemo(() => {
-    const rows = interAreaFlowTextRows.map((row) => {
-      const signedMw = roundTo(row.upMw - row.downMw, 1);
-      return {
-        ...row,
-        signedMw,
-        absMw: Math.abs(signedMw),
-      };
-    });
-    const hasData = rows.length > 0;
-    const maxAbsSignedMw = Math.max(...rows.map((row) => row.absMw), 1);
-    const axisLimit = Math.max(10, Math.ceil(maxAbsSignedMw * 1.12));
-    const showDirectionLabels = !isMobileViewport;
-
-    return {
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        formatter: (params: Array<{ data: { row: (typeof rows)[number] } }>) => {
-          const row = params[0]?.data?.row;
-          if (!row) {
-            return "";
-          }
-          return `${row.sourceArea} ⇄ ${row.targetArea}<br/>表示日時: ${selectedFlowDateTimeLabel}<br/>潮流: ${decimalFmt.format(
-            row.signedMw,
-          )} MW<br/>${decimalFmt.format(row.upMw)}MW ↑ / ${decimalFmt.format(
-            row.downMw,
-          )}MW ↓<br/>連系線: ${row.intertieNames.join(" / ")}`;
-        },
-      },
-      grid: {
-        top: 20,
-        left: isMobileViewport ? 88 : 124,
-        right: isMobileViewport ? 12 : 20,
-        bottom: isMobileViewport ? 56 : 40,
-      },
-      xAxis: {
-        type: "value",
-        min: -axisLimit,
-        max: axisLimit,
-        splitNumber: isMobileViewport ? 4 : 6,
-        name: "MW",
-        nameLocation: "middle",
-        nameGap: isMobileViewport ? 34 : 28,
-        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
-        axisLabel: {
-          formatter: (value: number) => `${Math.round(value)}`,
-          rotate: isMobileViewport ? 28 : 18,
-          hideOverlap: true,
-          fontSize: isMobileViewport ? 10 : 11,
-        },
-      },
-      yAxis: {
-        type: "category",
-        inverse: true,
-        data: rows.map((row) => `${row.sourceArea} ⇄ ${row.targetArea}`),
-        axisLabel: { color: "#334155", fontSize: isMobileViewport ? 10 : 11 },
-      },
-      graphic: hasData
-        ? undefined
-        : [
-            {
-              type: "text",
-              left: "center",
-              top: "middle",
-              style: {
-                text: "連系線潮流実績データが未取得です",
-                fill: "#475569",
-                font: "14px sans-serif",
-              },
-              silent: true,
-            },
-          ],
-      series: [
-        {
-          type: "bar",
-          barWidth: 14,
-          data: rows.map((row) => ({
-            value: row.signedMw,
-            row,
-            itemStyle: {
-              color:
-                row.signedMw >= 0
-                  ? (FLOW_AREA_COLORS[row.sourceArea] ?? FLOW_AREA_COLORS.default)
-                  : (FLOW_AREA_COLORS[row.targetArea] ?? FLOW_AREA_COLORS.default),
-              borderRadius: row.signedMw >= 0 ? [0, 5, 5, 0] : [5, 0, 0, 5],
-            },
-          })),
-          label: {
-            show: showDirectionLabels,
-            position: (params: { value: number }) => (params.value >= 0 ? "right" : "left"),
-            formatter: (params: { data: { row: (typeof rows)[number] } }) =>
-              `${decimalFmt.format(params.data.row.upMw)}MW ↑  ${decimalFmt.format(params.data.row.downMw)}MW ↓`,
-            color: "#334155",
-            fontSize: 10,
-          },
-          markLine: {
-            silent: true,
-            symbol: ["none", "none"],
-            lineStyle: { color: "#64748b", type: "dashed", width: 1 },
-            data: [{ xAxis: 0 }],
-          },
-        },
-      ],
-    };
-  }, [interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel]);
+  const interAreaFlowOption = useMemo(
+    () => buildInterAreaFlowOption(interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel),
+    [interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel],
+  );
 
   const intertieTrendOption = useMemo(() => {
     const scopedSeries = filteredIntertieSeries.filter((row) =>
       selectedArea === "全エリア" ? true : row.sourceArea === selectedArea || row.targetArea === selectedArea,
     );
-    const topSeries = [...scopedSeries]
-      .sort((a, b) => b.avgAbsMw - a.avgAbsMw)
-      .slice(0, selectedArea === "全エリア" ? 6 : 8);
-    const hasData = topSeries.length > 0;
-
     const netImportSeries =
       selectedArea === "全エリア"
         ? null
@@ -1937,288 +1376,32 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             let sum = 0;
             for (const row of scopedSeries) {
               const value = row.values[idx] ?? 0;
-              if (row.sourceArea === selectedArea) {
-                sum -= value;
-              }
-              if (row.targetArea === selectedArea) {
-                sum += value;
-              }
+              if (row.sourceArea === selectedArea) sum -= value;
+              if (row.targetArea === selectedArea) sum += value;
             }
             return roundTo(sum, 1);
           });
-
-    return {
-      tooltip: {
-        trigger: "axis",
-        valueFormatter: (value: number) => `${decimalFmt.format(value)} MW`,
-      },
-      legend: {
-        top: 10,
-        type: "scroll",
-        textStyle: { color: "#334155" },
-      },
-      grid: { top: isMobileViewport ? 48 : 58, left: isMobileViewport ? 52 : 64, right: isMobileViewport ? 10 : 20, bottom: isMobileViewport ? 48 : 34 },
-      xAxis: {
-        type: "category",
-        data: data.meta.slotLabels.flow,
-        axisLabel: { interval: isMobileViewport ? 5 : 3, fontSize: isMobileViewport ? 10 : 12, rotate: isMobileViewport ? 30 : 0, hideOverlap: true },
-      },
-      yAxis: {
-        type: "value",
-        name: "潮流実績(MW)",
-        nameLocation: "middle",
-        nameGap: isMobileViewport ? 34 : 42,
-        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
-      },
-      graphic: hasData
-        ? undefined
-        : [
-            {
-              type: "text",
-              left: "center",
-              top: "middle",
-              style: {
-                text: "連系線潮流実績データが未取得です",
-                fill: "#475569",
-                font: "14px sans-serif",
-              },
-              silent: true,
-            },
-          ],
-      series: [
-        ...(netImportSeries
-          ? [
-              {
-                name: `${selectedArea} 純流入(+)`,
-                type: "line",
-                data: netImportSeries,
-                smooth: true,
-                symbol: "none",
-                color: "#111827",
-                lineStyle: { width: 3, color: "#111827", type: "dashed" },
-              },
-            ]
-          : []),
-        ...topSeries.map((row) => {
-          const seriesColor = FLOW_AREA_COLORS[row.sourceArea] ?? FLOW_AREA_COLORS.default;
-          return {
-            name: `${row.sourceArea}→${row.targetArea}`,
-            type: "line",
-            data: row.values,
-            smooth: true,
-            symbol: "none",
-            color: seriesColor,
-            lineStyle: {
-              width: 2.3,
-              color: seriesColor,
-            },
-          };
-        }),
-      ],
-    };
+    return buildIntertieTrendOption(scopedSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea, netImportSeries);
   }, [filteredIntertieSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea]);
 
   // ---------------------------------------------------------------------------
   // Congestion (連系線混雑度) — utilization rate = |flow| / rated capacity
   // ---------------------------------------------------------------------------
 
-  const congestionData = useMemo(() => {
-    const series = filteredIntertieSeries ?? [];
-    if (series.length === 0) return null;
+  const congestionData = useMemo<CongestionSummary | null>(
+    () => buildCongestionData(filteredIntertieSeries),
+    [filteredIntertieSeries],
+  );
 
-    const lines = series
-      .filter((row) => INTERTIE_RATED_CAPACITY_MW[row.intertieName] != null)
-      .map((row) => {
-        const cap = INTERTIE_RATED_CAPACITY_MW[row.intertieName]!;
-        const utilizationPct = row.values.map((v) =>
-          cap.capacityMw > 0 ? roundTo((Math.abs(v) / cap.capacityMw) * 100, 1) : 0,
-        );
-        const peakUtilization = Math.max(...utilizationPct);
-        const avgUtilization = roundTo(utilizationPct.reduce((s, v) => s + v, 0) / (utilizationPct.length || 1), 1);
-        return {
-          intertieName: row.intertieName,
-          label: cap.label,
-          sourceArea: row.sourceArea,
-          targetArea: row.targetArea,
-          capacityMw: cap.capacityMw,
-          peakAbsMw: row.peakAbsMw,
-          avgAbsMw: row.avgAbsMw,
-          utilizationPct,
-          peakUtilization,
-          avgUtilization,
-          values: row.values,
-        };
-      })
-      .filter((row) => row.peakUtilization > 0)
-      .sort((a, b) => b.peakUtilization - a.peakUtilization);
+  const congestionTrendOption = useMemo(
+    () => congestionData ? buildCongestionTrendOption(congestionData, data.meta.slotLabels.flow, isMobileViewport) : null,
+    [congestionData, data.meta.slotLabels.flow, isMobileViewport],
+  );
 
-    if (lines.length === 0) return null;
-
-    const overallPeakLine = lines[0]!;
-    const overallAvgUtilization = roundTo(
-      lines.reduce((s, l) => s + l.avgUtilization, 0) / lines.length,
-      1,
-    );
-    const highCongestionCount = lines.filter((l) => l.peakUtilization >= 70).length;
-
-    return { lines, overallPeakLine, overallAvgUtilization, highCongestionCount };
-  }, [filteredIntertieSeries]);
-
-  const congestionTrendOption = useMemo(() => {
-    if (!congestionData) return null;
-    const labels = data.meta.slotLabels.flow;
-    const topLines = congestionData.lines.slice(0, isMobileViewport ? 5 : 8);
-
-    return {
-      tooltip: {
-        trigger: "axis" as const,
-        formatter: (params: Array<{ seriesName: string; value: number; marker: string; dataIndex: number }>) => {
-          const time = labels[params[0]?.dataIndex ?? 0] ?? "";
-          const rows = params
-            .filter((p) => p.value != null)
-            .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
-            .map((p) => {
-              const line = topLines.find((l) => l.label === p.seriesName || `${l.sourceArea}→${l.targetArea}` === p.seriesName);
-              const flowMw = line ? Math.abs(line.values[p.dataIndex] ?? 0) : 0;
-              const capMw = line?.capacityMw ?? 0;
-              return `${p.marker} ${p.seriesName}: <b>${p.value}%</b> (${decimalFmt.format(flowMw)}/${numberFmt.format(capMw)} MW)`;
-            });
-          return `<b>${time}</b><br/>${rows.join("<br/>")}`;
-        },
-      },
-      legend: {
-        top: 10,
-        type: "scroll" as const,
-        textStyle: { color: "#334155" },
-      },
-      grid: {
-        top: isMobileViewport ? 48 : 58,
-        left: isMobileViewport ? 52 : 64,
-        right: isMobileViewport ? 10 : 20,
-        bottom: isMobileViewport ? 48 : 34,
-      },
-      xAxis: {
-        type: "category" as const,
-        data: labels,
-        axisLabel: { interval: isMobileViewport ? 5 : 3, fontSize: isMobileViewport ? 10 : 12, rotate: isMobileViewport ? 30 : 0, hideOverlap: true },
-      },
-      yAxis: {
-        type: "value" as const,
-        name: "利用率(%)",
-        nameLocation: "middle" as const,
-        nameGap: isMobileViewport ? 30 : 38,
-        nameTextStyle: { color: "#64748b", fontSize: isMobileViewport ? 10 : 11 },
-        max: 100,
-        axisLabel: { formatter: (v: number) => `${v}%` },
-      },
-      visualMap: {
-        show: false,
-        pieces: [
-          { lte: 50, color: "#10b981" },  // emerald-500
-          { gt: 50, lte: 70, color: "#f59e0b" },  // amber-500
-          { gt: 70, lte: 85, color: "#f97316" },  // orange-500
-          { gt: 85, color: "#ef4444" },  // red-500
-        ],
-        dimension: 1,
-        seriesIndex: topLines.map((_, i) => i),
-      },
-      series: topLines.map((line) => {
-        const color = FLOW_AREA_COLORS[line.sourceArea] ?? FLOW_AREA_COLORS[line.targetArea] ?? FLOW_AREA_COLORS.default;
-        return {
-          name: line.label || `${line.sourceArea}→${line.targetArea}`,
-          type: "line" as const,
-          data: line.utilizationPct,
-          smooth: true,
-          symbol: "none",
-          lineStyle: { width: 2.3, color },
-          areaStyle: {
-            color: {
-              type: "linear" as const,
-              x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [
-                { offset: 0, color: color + "18" },
-                { offset: 1, color: color + "02" },
-              ],
-            },
-          },
-          markLine: line === topLines[0] ? {
-            silent: true,
-            symbol: "none",
-            lineStyle: { type: "dashed" as const, width: 1 },
-            data: [
-              { yAxis: 70, lineStyle: { color: "#f97316" }, label: { formatter: "70%", position: "insideEndTop" as const, color: "#f97316", fontSize: 10 } },
-            ],
-          } : undefined,
-        };
-      }),
-    };
-  }, [congestionData, data.meta.slotLabels.flow, isMobileViewport]);
-
-  const congestionHeatmapOption = useMemo(() => {
-    if (!congestionData) return null;
-    const labels = data.meta.slotLabels.flow;
-    const lines = congestionData.lines;
-
-    const heatmapData: Array<[number, number, number]> = [];
-    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-      for (let slotIdx = 0; slotIdx < labels.length; slotIdx++) {
-        heatmapData.push([slotIdx, lineIdx, lines[lineIdx]!.utilizationPct[slotIdx] ?? 0]);
-      }
-    }
-
-    return {
-      tooltip: {
-        position: "top" as const,
-        formatter: (params: { value: [number, number, number] }) => {
-          const [slotIdx, lineIdx, val] = params.value;
-          const line = lines[lineIdx];
-          const time = labels[slotIdx] ?? "";
-          const flowMw = line ? Math.abs(line.values[slotIdx] ?? 0) : 0;
-          return `<b>${line?.label ?? ""}</b><br/>${time}: <b>${val}%</b><br/>${decimalFmt.format(flowMw)} / ${numberFmt.format(line?.capacityMw ?? 0)} MW`;
-        },
-      },
-      grid: {
-        top: 12,
-        left: isMobileViewport ? 90 : 120,
-        right: isMobileViewport ? 40 : 60,
-        bottom: 36,
-      },
-      xAxis: {
-        type: "category" as const,
-        data: labels,
-        axisLabel: { interval: 5, fontSize: 10 },
-        splitArea: { show: true },
-      },
-      yAxis: {
-        type: "category" as const,
-        data: lines.map((l) => l.label || `${l.sourceArea}→${l.targetArea}`),
-        axisLabel: { fontSize: isMobileViewport ? 9 : 11 },
-      },
-      visualMap: {
-        min: 0,
-        max: 100,
-        calculable: true,
-        orient: "horizontal" as const,
-        left: "center",
-        bottom: 0,
-        itemWidth: 12,
-        itemHeight: isMobileViewport ? 80 : 140,
-        textStyle: { fontSize: 10 },
-        inRange: {
-          color: ["#d1fae5", "#6ee7b7", "#fbbf24", "#f97316", "#ef4444", "#b91c1c"],
-        },
-        formatter: (value: number) => `${Math.round(value)}%`,
-      },
-      series: [{
-        type: "heatmap" as const,
-        data: heatmapData,
-        label: { show: false },
-        emphasis: {
-          itemStyle: { shadowBlur: 6, shadowColor: "rgba(0,0,0,0.3)" },
-        },
-      }],
-    };
-  }, [congestionData, data.meta.slotLabels.flow, isMobileViewport]);
+  const congestionHeatmapOption = useMemo(
+    () => congestionData ? buildCongestionHeatmapOption(congestionData, data.meta.slotLabels.flow, isMobileViewport) : null,
+    [congestionData, data.meta.slotLabels.flow, isMobileViewport],
+  );
 
   return (
     <div className="relative min-h-screen bg-[radial-gradient(ellipse_at_top_left,_#eef7f5_0%,_#f6f8fb_32%,_#f0f4f8_100%)] text-slate-800 dark:bg-[radial-gradient(ellipse_at_top_left,_#0c1929_0%,_#111827_32%,_#0f172a_100%)] dark:text-slate-200">
@@ -2254,7 +1437,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 <input
                   id="dashboard-date"
                   type="date"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  className={SELECT_CLASS}
                   value={toInputDateValue(selectedDate)}
                   min={toInputDateValue(earliestAvailableDate)}
                   max={toInputDateValue(latestAvailableDate)}
@@ -2289,7 +1472,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                 </label>
                 <select
                   id="area"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  className={SELECT_CLASS}
                   value={selectedArea}
                   onChange={(event) => setSelectedArea(event.target.value)}
                 >
@@ -2313,14 +1496,14 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 hover:border-teal-400 hover:text-teal-700 hover:shadow-sm active:scale-[0.97] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
+                className={PILL_BUTTON_CLASS}
                 onClick={() => setVisibleSectionIds(DASHBOARD_SECTION_OPTIONS.map((item) => item.id))}
               >
                 すべて表示
               </button>
               <button
                 type="button"
-                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 hover:border-teal-400 hover:text-teal-700 hover:shadow-sm active:scale-[0.97] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
+                className={PILL_BUTTON_CLASS}
                 onClick={() => setVisibleSectionIds(["summary", "areaCards", "composition", "network"])}
               >
                 俯瞰モード
@@ -2439,11 +1622,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   </label>
                   <select
                     id="generation-area"
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    className={SELECT_COMPACT_CLASS}
                     value={generationTrendArea}
                     onChange={(event) => setGenerationTrendArea(event.target.value)}
                   >
-                    {generationAreas.map((area) => (
+                    {areas.map((area) => (
                       <option key={area} value={area}>
                         {area}
                       </option>
@@ -2467,11 +1650,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   </label>
                   <select
                     id="source-donut-area"
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    className={SELECT_COMPACT_CLASS}
                     value={sourceDonutArea}
                     onChange={(event) => setSourceDonutArea(event.target.value)}
                   >
-                    {generationAreas.map((area) => (
+                    {areas.map((area) => (
                       <option key={area} value={area}>
                         {area}
                       </option>
@@ -2657,7 +1840,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             <div className="-mx-2 overflow-x-auto px-2">
               <table className="min-w-full text-xs md:text-sm">
                 <thead>
-                  <tr className="border-b-2 border-slate-200/80 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
+                  <tr className={TABLE_HEADER_CLASS}>
                     <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">エリア</th>
                     <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">発電所</th>
                     <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">ユニット</th>
@@ -2695,7 +1878,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             <div className="-mx-2 overflow-x-auto px-2">
               <table className="min-w-full text-xs md:text-sm">
                 <thead>
-                  <tr className="border-b-2 border-slate-200/80 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
+                  <tr className={TABLE_HEADER_CLASS}>
                     <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">エリア</th>
                     <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">発電所</th>
                     <th className="whitespace-nowrap py-2.5 pr-2 md:pr-3">方式</th>
@@ -3155,7 +2338,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               href="https://www.occto.or.jp/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-500 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-teal-600 hover:decoration-teal-400 dark:text-slate-400 dark:decoration-slate-600 dark:hover:text-teal-400"
+              className={FOOTER_LINK_CLASS}
             >
               電力広域的運営推進機関（OCCTO）
             </a>
@@ -3167,7 +2350,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               href="https://www.occto.or.jp/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-500 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-teal-600 hover:decoration-teal-400 dark:text-slate-400 dark:decoration-slate-600 dark:hover:text-teal-400"
+              className={FOOTER_LINK_CLASS}
             >
               広域機関の公式ページ
             </a>
