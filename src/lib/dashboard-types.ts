@@ -149,6 +149,7 @@ export type DashboardData = {
       flowCsv: string;
       intertieCsv?: string;
       reserveJson?: string;
+      jepxSpotCsv?: string;
     };
   };
   generation: {

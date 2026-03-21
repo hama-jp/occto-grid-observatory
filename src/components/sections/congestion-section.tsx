@@ -37,7 +37,7 @@ export function CongestionSection({
         />
         <CompactStatCard
           label="高混雑線(≥70%)"
-          value={`${congestionData.highCongestionCount} 線`}
+          value={`${congestionData.highCongestionCount} 回線`}
           detail={congestionData.highCongestionCount > 0 ? "要注意" : "正常"}
         />
       </div>

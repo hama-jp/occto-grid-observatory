@@ -14,8 +14,10 @@ import type {
   HourlySourcePoint,
   InterAreaFlow,
   IntertieSeries,
+  JepxSpotPrice,
   LineSeries,
 } from "../src/lib/dashboard-types";
+import { fetchAndParseJepxCsv, getFiscalYear } from "./enrich-jepx";
 
 const HKS_BASE = "https://hatsuden-kokai.occto.or.jp/hks-web-public";
 const OCCTO_LOGIN_URL =
@@ -145,6 +147,26 @@ async function main(): Promise<void> {
       intertieCsvName: downloadResult.intertieCsvByLine.map((file) => path.basename(file)).join(","),
       reserveJsonName: path.basename(downloadResult.reserveJson),
     });
+
+    // Enrich with JEPX spot market data (best-effort; failure is non-fatal)
+    try {
+      const fiscalYear = getFiscalYear(targetDate);
+      const spotByDate = await fetchAndParseJepxCsv(fiscalYear, targetDate);
+      const spotData = spotByDate?.get(targetDate);
+      if (spotData) {
+        dashboard.jepx = { spot: spotData };
+        dashboard.meta.sources = {
+          ...dashboard.meta.sources,
+          jepxSpotCsv: `spot_${fiscalYear}.csv`,
+        };
+        console.log(`[ingest] enriched with JEPX spot data for ${targetDate}`);
+      } else {
+        console.log(`[ingest] no JEPX spot data available for ${targetDate}`);
+      }
+    } catch (jepxError: unknown) {
+      const msg = jepxError instanceof Error ? jepxError.message : String(jepxError);
+      console.warn(`[ingest] JEPX enrichment failed (non-fatal): ${msg}`);
+    }
 
     const payload = JSON.stringify(dashboard, null, 2);
     await fs.writeFile(datedOutputPath, payload, "utf-8");

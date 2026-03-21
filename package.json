@@ -13,6 +13,7 @@
     "test:ui:public": "playwright test",
     "ingest": "tsx scripts/ingest.ts",
     "enrich:reserve": "tsx scripts/enrich-reserve.ts",
+    "enrich:jepx": "tsx scripts/enrich-jepx.ts",
     "sync-public-data": "tsx scripts/sync-public-data.ts",
     "geocode:db": "tsx scripts/geocode-station-db.ts",
     "geocode:fill-from-hints": "tsx scripts/fill-station-db-from-hints.ts",
