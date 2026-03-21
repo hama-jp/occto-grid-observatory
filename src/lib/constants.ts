@@ -108,6 +108,7 @@ export const FLOW_AREA_NAME_SET = new Set<string>([
 
 export type DashboardSectionId =
   | "summary"
+  | "jepx"
   | "areaCards"
   | "generation"
   | "composition"
@@ -120,6 +121,7 @@ export type DashboardSectionId =
 
 export const DASHBOARD_SECTION_OPTIONS: Array<{ id: DashboardSectionId; label: string }> = [
   { id: "summary", label: "全国サマリー" },
+  { id: "jepx", label: "JEPXスポット" },
   { id: "areaCards", label: "エリア需給" },
   { id: "generation", label: "発電トレンド" },
   { id: "composition", label: "発電構成" },
