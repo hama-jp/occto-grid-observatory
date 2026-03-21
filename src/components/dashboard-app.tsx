@@ -64,6 +64,7 @@ import { NetworkSection } from "@/components/sections/network-section";
 import { SummaryCardsTop, SummaryCardsBottom } from "@/components/sections/summary-cards-section";
 import { GenerationSection } from "@/components/sections/generation-section";
 import { DashboardHeader, SectionToggle } from "@/components/sections/dashboard-header";
+import { JepxMarketCard, JepxAreaBreakdown } from "@/components/sections/jepx-market-section";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -532,6 +533,21 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             dashboardHighlights={dashboardHighlights}
             areaTotalsLength={data.generation.areaTotals.length}
           />
+        ) : null}
+
+        {visibleSectionSet.has("jepx") && data.jepx?.spot ? (
+          <section className="stagger-children grid grid-cols-1 gap-4 md:grid-cols-2">
+            <JepxMarketCard
+              spot={data.jepx.spot}
+              slotLabels={data.meta.slotLabels.generation}
+              selectedArea={selectedArea}
+              clampedSlotIndex={clampedNetworkFlowSlotIndex}
+            />
+            <JepxAreaBreakdown
+              spot={data.jepx.spot}
+              slotLabels={data.meta.slotLabels.generation}
+            />
+          </section>
         ) : null}
 
         {showGenerationTrend || showSourceComposition ? (

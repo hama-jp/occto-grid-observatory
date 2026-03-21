@@ -120,6 +120,19 @@ export type AreaReserveSeries = {
   blockUsageRate: number[];
 };
 
+export type JepxSpotPrice = {
+  /** システムプライス（円/kWh） - 48コマ（30分単位） */
+  systemPrices: number[];
+  /** エリアプライス（円/kWh） - エリア名→48コマ */
+  areaPrices: Record<string, number[]>;
+  /** 約定量（MWh） - 48コマ */
+  volumes: number[];
+  /** 売り入札量（MWh） - 48コマ */
+  sellVolumes?: number[];
+  /** 買い入札量（MWh） - 48コマ */
+  buyVolumes?: number[];
+};
+
 export type DashboardData = {
   meta: {
     targetDate: string;
@@ -164,5 +177,8 @@ export type DashboardData = {
   };
   insights: {
     areaBalance: AreaBalance[];
+  };
+  jepx?: {
+    spot: JepxSpotPrice;
   };
 };
