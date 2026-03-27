@@ -9,6 +9,7 @@ import {
   formatSvgMatrixTransform,
   flowMagnitudeColor,
 } from "@/lib/geo";
+import { MAX_ANIMATED_FLOW_LINES_PER_AREA } from "@/lib/constants";
 import { Panel } from "@/components/ui/dashboard-ui";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
@@ -24,6 +25,8 @@ type NetworkSectionProps = {
   japanGuidePaths: Array<{ name: string; d: string }>;
   majorFlowAnimationPaths: NetworkAnimationPath[];
   intertieAnimationPaths: NetworkAnimationPath[];
+  maxAnimatedFlowLinesPerArea: number;
+  onMaxAnimatedFlowLinesPerAreaChange: (value: number) => void;
 };
 
 export function NetworkSection({
@@ -37,6 +40,8 @@ export function NetworkSection({
   japanGuidePaths,
   majorFlowAnimationPaths,
   intertieAnimationPaths,
+  maxAnimatedFlowLinesPerArea,
+  onMaxAnimatedFlowLinesPerAreaChange,
 }: NetworkSectionProps) {
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -51,6 +56,25 @@ export function NetworkSection({
             <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-4 rounded-sm bg-orange-500" />70-85%</span>
             <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-4 rounded-sm bg-red-500" />&ge;85%</span>
           </p>
+        </div>
+        <div className="mb-3 flex items-center gap-3 rounded-lg border border-slate-200/60 bg-slate-50/60 px-3 py-2 dark:border-slate-700/50 dark:bg-slate-800/40">
+          <label htmlFor="flow-lines-slider" className="shrink-0 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            アニメーション数
+          </label>
+          <input
+            id="flow-lines-slider"
+            type="range"
+            min={0}
+            max={MAX_ANIMATED_FLOW_LINES_PER_AREA * 2}
+            step={1}
+            value={maxAnimatedFlowLinesPerArea}
+            onChange={(e) => onMaxAnimatedFlowLinesPerAreaChange(Number(e.target.value))}
+            className="flow-lines-slider h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-slate-200 accent-teal-500 dark:bg-slate-700"
+            aria-label="エリアあたりのアニメーション表示数"
+          />
+          <span className="min-w-[3ch] text-right text-[11px] tabular-nums text-slate-600 dark:text-slate-300">
+            {maxAnimatedFlowLinesPerArea}
+          </span>
         </div>
         <div data-testid="network-flow-chart" role="img" aria-label="ネットワーク潮流グラフ" className="relative" ref={networkFlowChartHostRef}>
           <ReactECharts
