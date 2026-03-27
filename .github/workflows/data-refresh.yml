@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "Run mode"
+        description: "Run mode (daily = fetch yesterday, now = fetch today intraday, backfill = date range)"
         required: true
-        default: "now"
+        default: "daily"
         type: choice
         options:
-          - now
           - daily
+          - now
           - backfill
       date:
         description: "Target date (YYYY-MM-DD). Used mainly with mode=now or mode=daily."
@@ -27,7 +27,7 @@ on:
       force:
         description: "Force refresh even if normalized file already exists."
         required: false
-        default: false
+        default: true
         type: boolean
   schedule:
     # 15:10 / 18:10 JST: intraday snapshot for today + yesterday
