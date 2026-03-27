@@ -58,6 +58,9 @@ export function DashboardHeader({
             <span className="mx-2 text-slate-300 dark:text-slate-600">|</span>
             最終取り込み: {fetchedAtLabel}
           </p>
+          <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+            ※ 対象日の確定データは概ね翌日 13〜14 時 (JST) 頃に反映されます
+          </p>
         </div>
         <div className="flex flex-col items-start gap-3 md:items-end">
           <div className="flex flex-wrap items-center gap-2">
