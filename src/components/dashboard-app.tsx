@@ -7,6 +7,7 @@ import {
   SOURCE_COLORS,
   SOURCE_COLOR_MAP,
   DASHBOARD_SECTION_OPTIONS,
+  MAX_ANIMATED_FLOW_LINES_PER_AREA,
   type DashboardSectionId,
 } from "@/lib/constants";
 import {
@@ -169,6 +170,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const flowSlotLabels = data.meta.slotLabels.flow ?? [];
   const maxFlowSlotIndex = Math.max(flowSlotLabels.length - 1, 0);
   const [networkFlowSlotIndex, setNetworkFlowSlotIndex] = useState<number>(maxFlowSlotIndex);
+  const [maxAnimatedFlowLinesPerArea, setMaxAnimatedFlowLinesPerArea] = useState<number>(MAX_ANIMATED_FLOW_LINES_PER_AREA);
   const [networkOverlayViewport, setNetworkOverlayViewport] = useState<NetworkOverlayViewport>(
     DEFAULT_NETWORK_OVERLAY_VIEWPORT,
   );
@@ -367,8 +369,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       clampedNetworkFlowSlotIndex,
       networkPowerPlants,
       selectedFlowDateTimeLabel,
+      maxAnimatedFlowLinesPerArea,
     }),
-    [data.flows.areaSummaries, filteredIntertieSeries, data.flows.lineSeries, clampedNetworkFlowSlotIndex, networkPowerPlants, selectedFlowDateTimeLabel],
+    [data.flows.areaSummaries, filteredIntertieSeries, data.flows.lineSeries, clampedNetworkFlowSlotIndex, networkPowerPlants, selectedFlowDateTimeLabel, maxAnimatedFlowLinesPerArea],
   );
   const majorFlowAnimationPaths = useMemo(
     () =>
@@ -727,6 +730,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               japanGuidePaths={japanGuidePaths}
               majorFlowAnimationPaths={majorFlowAnimationPaths}
               intertieAnimationPaths={intertieAnimationPaths}
+              maxAnimatedFlowLinesPerArea={maxAnimatedFlowLinesPerArea}
+              onMaxAnimatedFlowLinesPerAreaChange={setMaxAnimatedFlowLinesPerArea}
             />
           </ChartErrorBoundary>
         ) : null}

@@ -54,6 +54,7 @@ export type NetworkFlowBuilderParams = {
     maxOutputManKw: number;
   }>;
   selectedFlowDateTimeLabel: string;
+  maxAnimatedFlowLinesPerArea?: number;
 };
 
 export type NetworkLink = {
@@ -77,6 +78,7 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
     clampedNetworkFlowSlotIndex,
     networkPowerPlants,
     selectedFlowDateTimeLabel,
+    maxAnimatedFlowLinesPerArea = MAX_ANIMATED_FLOW_LINES_PER_AREA,
   } = params;
 
   const areaScope = new Set<string>();
@@ -387,7 +389,7 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
     .flatMap(([, linesByArea]) =>
       linesByArea
         .sort((a, b) => b.absAvgMw - a.absAvgMw)
-        .slice(0, MAX_ANIMATED_FLOW_LINES_PER_AREA),
+        .slice(0, maxAnimatedFlowLinesPerArea),
     )
     .map((line) => {
       const from = nodePointById.get(String(line.source));
