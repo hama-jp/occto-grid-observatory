@@ -162,7 +162,7 @@ export function AreaCardsSection({
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
-                  <p className="text-xs tracking-[0.16em] text-slate-500">主要発電所</p>
+                  <p className="text-xs tracking-[0.16em] text-slate-500">エリア内主要発電所</p>
                   <p className="mt-1 text-base font-semibold text-slate-900">
                     {card.primaryPlant?.plantName ?? "-"}
                   </p>
