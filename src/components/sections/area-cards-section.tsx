@@ -13,6 +13,10 @@ import {
   SupplyDemandMeter,
   NetFlowMeter,
 } from "@/components/ui/dashboard-ui";
+import dynamic from "next/dynamic";
+import { useMemo } from "react";
+
+const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
 type AreaCardsSectionProps = {
   areaSupplyCards: AreaSupplyCard[];
@@ -21,7 +25,104 @@ type AreaCardsSectionProps = {
   selectedFlowDateTimeLabel: string;
   maxAreaNetIntertieAbsMw: number;
   maxAreaPeakAbsMw: number;
+  flowSlotLabels: string[];
+  currentSlotIndex: number;
 };
+
+function buildSupplyDemandSparkline(
+  card: AreaSupplyCard,
+  slotLabels: string[],
+  currentSlotIndex: number,
+  areaColor: string,
+): Record<string, unknown> {
+  const hasData = card.demandSeries.length > 0;
+  return {
+    animation: false,
+    grid: { top: 8, right: 4, bottom: 20, left: 4 },
+    xAxis: {
+      type: "category",
+      data: slotLabels,
+      show: true,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        show: true,
+        fontSize: 9,
+        color: "#94a3b8",
+        interval: (_index: number, value: string) => value === "06:00" || value === "12:00" || value === "18:00",
+      },
+    },
+    yAxis: {
+      type: "value",
+      show: false,
+    },
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(30,41,59,0.95)",
+      borderColor: "transparent",
+      textStyle: { color: "#f1f5f9", fontSize: 11 },
+      formatter: (params: Array<{ seriesName: string; value: number; marker: string }>) => {
+        const slot = params[0] ? slotLabels[(params[0] as unknown as { dataIndex: number }).dataIndex] : "";
+        const lines = params.map(
+          (p: { marker: string; seriesName: string; value: number }) =>
+            `${p.marker} ${p.seriesName}: ${decimalFmt.format(p.value)} MW`,
+        );
+        return `<div style="font-size:11px"><b>${slot}</b><br/>${lines.join("<br/>")}</div>`;
+      },
+    },
+    series: hasData
+      ? [
+          {
+            name: "供給力",
+            type: "line",
+            data: card.supplySeries,
+            symbol: "none",
+            lineStyle: { width: 1.5, color: "#94a3b8" },
+            areaStyle: { color: "rgba(148,163,184,0.08)" },
+            z: 1,
+          },
+          {
+            name: "需要",
+            type: "line",
+            data: card.demandSeries,
+            symbol: "none",
+            lineStyle: { width: 2, color: areaColor },
+            areaStyle: { color: `${areaColor}18` },
+            z: 2,
+          },
+          {
+            name: "予備力",
+            type: "line",
+            data: card.reserveSeries,
+            symbol: "none",
+            lineStyle: { width: 1, color: "#10b981", type: "dashed" },
+            z: 3,
+          },
+          {
+            type: "line",
+            markLine: {
+              silent: true,
+              symbol: "none",
+              lineStyle: { color: "#f59e0b", width: 1, type: "solid" },
+              data: [{ xAxis: currentSlotIndex }],
+              label: { show: false },
+            },
+            data: [],
+          },
+        ]
+      : [],
+    graphic: hasData
+      ? []
+      : [
+          {
+            type: "text",
+            left: "center",
+            top: "middle",
+            style: { text: "データなし", fill: "#94a3b8", fontSize: 11 },
+          },
+        ],
+  };
+}
 
 export function AreaCardsSection({
   areaSupplyCards,
@@ -30,7 +131,26 @@ export function AreaCardsSection({
   selectedFlowDateTimeLabel,
   maxAreaNetIntertieAbsMw,
   maxAreaPeakAbsMw,
+  flowSlotLabels,
+  currentSlotIndex,
 }: AreaCardsSectionProps) {
+  const sparklineOptions = useMemo(
+    () =>
+      areaSupplyCards.map((card) => ({
+        area: card.area,
+        option: buildSupplyDemandSparkline(
+          card,
+          flowSlotLabels,
+          currentSlotIndex,
+          FLOW_AREA_COLORS[card.area] ?? FLOW_AREA_COLORS.default,
+        ),
+      })),
+    [areaSupplyCards, flowSlotLabels, currentSlotIndex],
+  );
+  const sparklineMap = useMemo(
+    () => new Map(sparklineOptions.map((item) => [item.area, item.option])),
+    [sparklineOptions],
+  );
   return (
     <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-[var(--panel-shadow)] backdrop-blur-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800/90">
       <div className="mb-4 flex flex-col gap-1 md:mb-5 md:flex-row md:items-end md:justify-between">
@@ -97,6 +217,29 @@ export function AreaCardsSection({
                         color={areaColor}
                       />
                     </div>
+                    {card.demandSeries.length > 0 && (
+                      <div className="mt-2">
+                        <ReactECharts
+                          option={sparklineMap.get(card.area) ?? {}}
+                          style={{ height: 100 }}
+                          opts={{ renderer: "svg" }}
+                        />
+                        <div className="mt-1 flex items-center gap-3 text-[10px] text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <span className="inline-block h-0.5 w-3 rounded" style={{ backgroundColor: areaColor }} />
+                            需要
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="inline-block h-0.5 w-3 rounded bg-slate-400" />
+                            供給力
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="inline-block h-0.5 w-3 rounded border-t border-dashed border-emerald-500" />
+                            予備力
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
                     <div className="flex items-center justify-between gap-2">

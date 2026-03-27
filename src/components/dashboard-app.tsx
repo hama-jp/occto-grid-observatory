@@ -695,6 +695,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             selectedFlowDateTimeLabel={selectedFlowDateTimeLabel}
             maxAreaNetIntertieAbsMw={maxAreaNetIntertieAbsMw}
             maxAreaPeakAbsMw={maxAreaPeakAbsMw}
+            flowSlotLabels={flowSlotLabels}
+            currentSlotIndex={clampedNetworkFlowSlotIndex}
           />
         ) : null}
 

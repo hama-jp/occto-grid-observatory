@@ -94,6 +94,10 @@ export type AreaSupplyCard = {
   supplyMw: number;
   reserveMw: number;
   reserveRate: number;
+  /** 48-slot half-hourly time series for sparkline */
+  demandSeries: number[];
+  supplySeries: number[];
+  reserveSeries: number[];
 };
 
 // ---------------------------------------------------------------------------
@@ -471,6 +475,9 @@ export function buildAreaSupplyCards(params: {
       supplyMw: reserve?.supplyMw[clampedNetworkFlowSlotIndex] ?? 0,
       reserveMw: reserve?.reserveMw[clampedNetworkFlowSlotIndex] ?? 0,
       reserveRate: reserve?.reserveRate[clampedNetworkFlowSlotIndex] ?? 0,
+      demandSeries: reserve?.demandMw ?? [],
+      supplySeries: reserve?.supplyMw ?? [],
+      reserveSeries: reserve?.reserveMw ?? [],
     };
   });
 
