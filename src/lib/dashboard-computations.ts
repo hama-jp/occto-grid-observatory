@@ -582,6 +582,32 @@ export function buildGeneratorStatusCards(params: {
     unitsByArea.set(unit.area, list);
   });
 
+  // Supplement: plants not covered by topUnits get added as pseudo-units
+  // so every area has complete coverage
+  for (const [area, plants] of byArea) {
+    const existingPlantNames = new Set(
+      (unitsByArea.get(area) ?? []).map((u) => u.plantName),
+    );
+    const missing = plants.filter((p) => !existingPlantNames.has(p.plantName));
+    if (missing.length > 0) {
+      const list = unitsByArea.get(area) ?? [];
+      for (const plant of missing) {
+        list.push({
+          area: plant.area,
+          plantName: plant.plantName,
+          unitName: "",
+          sourceType: plant.sourceType,
+          maxOutputManKw: plant.maxOutputManKw,
+          dailyKwh: plant.dailyKwh,
+          values: plant.values,
+        });
+      }
+      // Re-sort by dailyKwh descending
+      list.sort((a, b) => b.dailyKwh - a.dailyKwh);
+      unitsByArea.set(area, list);
+    }
+  }
+
   const treemapItems: GeneratorTreemapItem[] = [];
   const cards: GeneratorStatusCard[] = [];
 
