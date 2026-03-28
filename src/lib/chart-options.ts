@@ -847,11 +847,9 @@ export function buildAreaGenerationTimeSeriesOption(
     series: seriesList.map((s) => ({
       name: s.name,
       type: "line",
-      stack: "gen",
       smooth: true,
       symbol: "none",
-      lineStyle: { width: 0 },
-      areaStyle: { opacity: 0.85 },
+      lineStyle: { width: 1.5 },
       color: s.color,
       data: s.data,
       emphasis: { focus: "series" },
