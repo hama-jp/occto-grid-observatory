@@ -196,6 +196,7 @@ async function main(): Promise<void> {
     ];
 
     let chunkOutput = "";
+    let chunkFailed = false;
     try {
       chunkOutput = execFileSync(cmd[0], cmd.slice(1), {
         cwd: process.cwd(),
@@ -205,6 +206,7 @@ async function main(): Promise<void> {
       }) as unknown as string;
       process.stdout.write(chunkOutput);
     } catch (error: unknown) {
+      chunkFailed = true;
       failedChunks++;
       if (error && typeof error === "object" && "stdout" in error) {
         chunkOutput = String((error as { stdout: unknown }).stdout ?? "");
@@ -223,6 +225,12 @@ async function main(): Promise<void> {
       consecutiveEmpty = 0;
       // Update existing set so future chunks can skip properly
       for (const stamp of filesAfter) existing.add(stamp);
+    } else if (chunkFailed) {
+      // Chunk crashed (e.g. download timeout) — do NOT count toward the
+      // consecutive-empty heuristic, otherwise a persistent download bug
+      // causes the script to skip entire months of valid data.
+      totalNoData += chunk.days;
+      console.log(`[backfill] chunk produced 0 files due to error — not counting toward consecutive-empty skip`);
     } else {
       totalNoData += chunk.days;
       consecutiveEmpty++;
