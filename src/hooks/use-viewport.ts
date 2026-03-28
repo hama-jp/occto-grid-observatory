@@ -18,7 +18,8 @@ export function useViewport() {
   }, []);
 
   const isMobileViewport = viewportWidth < 768;
+  const isWideViewport = viewportWidth >= 1536;
   const useInlineDonutLegend = viewportWidth >= 1024;
 
-  return { viewportWidth, isMobileViewport, useInlineDonutLegend };
+  return { viewportWidth, isMobileViewport, isWideViewport, useInlineDonutLegend };
 }

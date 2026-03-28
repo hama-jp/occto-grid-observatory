@@ -74,7 +74,7 @@ type DashboardAppProps = {
 };
 
 export function DashboardApp({ initialData, availableDates }: DashboardAppProps) {
-  const { isMobileViewport, useInlineDonutLegend } = useViewport();
+  const { isMobileViewport, isWideViewport, useInlineDonutLegend } = useViewport();
 
   const {
     data,
@@ -453,7 +453,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         コンテンツへスキップ
       </a>
       <LoadingOverlay visible={isDateLoading} />
-      <div id="dashboard-content" className="mx-auto flex w-full max-w-[1360px] flex-col gap-4 px-3 py-5 md:gap-6 md:px-8 md:py-8">
+      <div id="dashboard-content" className="mx-auto flex w-full max-w-[1360px] flex-col gap-4 px-3 py-5 md:gap-6 md:px-8 md:py-8 2xl:max-w-[1800px] 2xl:px-10">
         <DashboardHeader
           targetDate={data.meta.targetDate}
           fetchedAtLabel={fetchedAtLabel}
@@ -556,18 +556,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
 
         {visibleSectionSet.has("diagnostics") ? (
           <ChartErrorBoundary sectionName="潮流ヒートマップ">
-          <section className="grid grid-cols-1 gap-4">
+          <section className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
             <Panel title="主要線路の潮流ヒートマップ">
               <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
               <ReactECharts option={flowHeatmapOption} style={{ height: isMobileViewport ? 340 : 420 }} />
             </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("diagnostics") ? (
-          <ChartErrorBoundary sectionName="潮流変動率ヒートマップ">
-          <section className="grid grid-cols-1 gap-4">
             <Panel title="潮流変動率が大きい送電線">
               <p className="mb-2 text-xs text-slate-500">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
               <ReactECharts option={volatilityHeatmapOption} style={{ height: isMobileViewport ? 360 : 480 }} />
@@ -668,6 +661,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               flowNetworkOption={flowNetworkOption}
               interAreaFlowOption={interAreaFlowOption}
               isMobileViewport={isMobileViewport}
+              isWideViewport={isWideViewport}
               selectedFlowDateTimeLabel={selectedFlowDateTimeLabel}
               networkFlowChartHostRef={networkFlowChartHostRef}
               registerNetworkFlowChart={registerNetworkFlowChart}

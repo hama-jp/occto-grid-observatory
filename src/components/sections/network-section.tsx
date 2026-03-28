@@ -18,6 +18,7 @@ type NetworkSectionProps = {
   flowNetworkOption: Record<string, unknown>;
   interAreaFlowOption: Record<string, unknown>;
   isMobileViewport: boolean;
+  isWideViewport?: boolean;
   selectedFlowDateTimeLabel: string;
   networkFlowChartHostRef: MutableRefObject<NetworkFlowChartHostElement | null>;
   registerNetworkFlowChart: (chart: unknown) => void;
@@ -33,6 +34,7 @@ export function NetworkSection({
   flowNetworkOption,
   interAreaFlowOption,
   isMobileViewport,
+  isWideViewport,
   selectedFlowDateTimeLabel,
   networkFlowChartHostRef,
   registerNetworkFlowChart,
@@ -44,8 +46,8 @@ export function NetworkSection({
   onMaxAnimatedFlowLinesPerAreaChange,
 }: NetworkSectionProps) {
   return (
-    <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2" testId="network-flow-panel">
+    <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 2xl:grid-cols-4">
+      <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2 2xl:col-span-3" testId="network-flow-panel">
         <div className="mb-3 rounded-xl border border-slate-200/80 bg-gradient-to-r from-slate-50/80 to-white/60 px-4 py-2.5 dark:border-slate-700/60 dark:from-slate-800/60 dark:to-slate-800/40">
           <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
             注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンク（SS・CS・変換所間）として、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
@@ -79,7 +81,7 @@ export function NetworkSection({
         <div data-testid="network-flow-chart" role="img" aria-label="ネットワーク潮流グラフ" className="relative" ref={networkFlowChartHostRef}>
           <ReactECharts
             option={flowNetworkOption}
-            style={{ height: isMobileViewport ? 420 : 620 }}
+            style={{ height: isMobileViewport ? 420 : isWideViewport ? 720 : 620 }}
             onChartReady={registerNetworkFlowChart}
             onEvents={{
               finished: (_event: unknown, chart: unknown) => registerNetworkFlowChart(chart),
