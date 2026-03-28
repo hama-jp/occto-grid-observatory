@@ -4,7 +4,6 @@ import {
   MiniBarList,
   DataChip,
 } from "@/components/ui/dashboard-ui";
-import { decimalFmt } from "@/lib/formatters";
 import type { JepxSpotPrice } from "@/lib/dashboard-types";
 import type { BarListItem } from "@/components/ui/dashboard-ui";
 import { FLOW_AREA_COLORS, AREA_DISPLAY_ORDER } from "@/lib/constants";
@@ -57,7 +56,6 @@ export type JepxHighlights = {
 
 export function buildJepxHighlights(
   spot: JepxSpotPrice,
-  slotLabels: string[],
 ): JepxHighlights {
   const prices = spot.systemPrices;
   const volumes = spot.volumes;
@@ -128,7 +126,7 @@ export function JepxMarketCard({
   selectedArea,
   clampedSlotIndex,
 }: JepxMarketCardProps) {
-  const highlights = buildJepxHighlights(spot, slotLabels);
+  const highlights = buildJepxHighlights(spot);
   const currentPrice = spot.systemPrices[clampedSlotIndex] ?? highlights.systemAvgPrice;
   const currentVolume = spot.volumes[clampedSlotIndex] ?? 0;
   const currentSlotLabel = slotLabels[clampedSlotIndex] ?? "-";
@@ -245,8 +243,8 @@ type JepxAreaBreakdownProps = {
   slotLabels: string[];
 };
 
-export function JepxAreaBreakdown({ spot, slotLabels }: JepxAreaBreakdownProps) {
-  const highlights = buildJepxHighlights(spot, slotLabels);
+export function JepxAreaBreakdown({ spot }: JepxAreaBreakdownProps) {
+  const highlights = buildJepxHighlights(spot);
 
   if (highlights.areaPriceItems.length === 0) return null;
 

@@ -6,16 +6,11 @@ import type { DashboardData } from "@/lib/dashboard-types";
 import {
   SOURCE_COLORS,
   SOURCE_COLOR_MAP,
-  DASHBOARD_SECTION_OPTIONS,
   MAX_ANIMATED_FLOW_LINES_PER_AREA,
-  type DashboardSectionId,
 } from "@/lib/constants";
 import {
   normalizeSourceName,
-  formatJstDateTime,
-  toDateStamp,
   roundTo,
-  clamp,
   compareAreaOrder,
 } from "@/lib/formatters";
 import {
@@ -66,6 +61,10 @@ import { SummaryCardsTop, SummaryCardsBottom } from "@/components/sections/summa
 import { GenerationSection } from "@/components/sections/generation-section";
 import { DashboardHeader, SectionToggle } from "@/components/sections/dashboard-header";
 import { JepxMarketCard, JepxAreaBreakdown } from "@/components/sections/jepx-market-section";
+import { useViewport } from "@/hooks/use-viewport";
+import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { useTimeSlider } from "@/hooks/use-time-slider";
+import { useSectionVisibility } from "@/hooks/use-section-visibility";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -75,83 +74,38 @@ type DashboardAppProps = {
 };
 
 export function DashboardApp({ initialData, availableDates }: DashboardAppProps) {
-  const [data, setData] = useState<DashboardData>(initialData);
-  // Exclude intra-area fence lines (関西フェンス, 中部フェンス) that resolve to "不明" areas
-  const filteredIntertieSeries = useMemo(
-    () => (data.flows.intertieSeries ?? []).filter((row) => row.sourceArea !== "不明" && row.targetArea !== "不明"),
-    [data.flows.intertieSeries],
-  );
-  const [selectedDate, setSelectedDate] = useState<string>(initialData.meta.targetDate);
-  const [isDateLoading, setIsDateLoading] = useState<boolean>(false);
-  const [dateError, setDateError] = useState<string | null>(null);
-  const [viewportWidth, setViewportWidth] = useState<number>(1280);
-  const isMobileViewport = viewportWidth < 768;
-  const useInlineDonutLegend = viewportWidth >= 1024;
-  const fetchedAtLabel = useMemo(() => formatJstDateTime(initialData.meta.fetchedAt), [initialData.meta.fetchedAt]);
+  const { isMobileViewport, useInlineDonutLegend } = useViewport();
 
-  useEffect(() => {
-    const updateViewportWidth = (): void => {
-      setViewportWidth(window.innerWidth);
-    };
+  const {
+    data,
+    filteredIntertieSeries,
+    fetchedAtLabel,
+    selectedDate,
+    setSelectedDate,
+    isDateLoading,
+    dateError,
+    setDateError,
+    availableDateSet,
+    earliestAvailableDate,
+    latestAvailableDate,
+  } = useDashboardData(initialData, availableDates);
 
-    updateViewportWidth();
-    window.addEventListener("resize", updateViewportWidth);
-    return () => {
-      window.removeEventListener("resize", updateViewportWidth);
-    };
-  }, []);
+  const flowSlotLabels = data.meta.slotLabels.flow ?? [];
+  const {
+    maxFlowSlotIndex,
+    networkFlowSlotIndex: clampedNetworkFlowSlotIndex,
+    setNetworkFlowSlotIndex,
+    selectedFlowSlotLabel,
+  } = useTimeSlider(flowSlotLabels);
 
-  const selectableDates = useMemo(() => {
-    const merged = new Set<string>([...availableDates, initialData.meta.targetDate, data.meta.targetDate]);
-    return Array.from(merged).sort((a, b) => toDateStamp(b).localeCompare(toDateStamp(a), "en"));
-  }, [availableDates, data.meta.targetDate, initialData.meta.targetDate]);
-  const availableDateSet = useMemo(() => new Set<string>(selectableDates), [selectableDates]);
-  const earliestAvailableDate = selectableDates.at(-1) ?? data.meta.targetDate;
-  const latestAvailableDate = selectableDates[0] ?? data.meta.targetDate;
-  const selectedDateIsAvailable = availableDateSet.has(selectedDate);
+  const {
+    visibleSectionSet,
+    setVisibleSectionIds,
+    showGenerationTrend,
+    showSourceComposition,
+  } = useSectionVisibility();
 
-  useEffect(() => {
-    if (!selectedDateIsAvailable || selectedDate === data.meta.targetDate) {
-      return;
-    }
-
-    let cancelled = false;
-    const previousDate = data.meta.targetDate;
-
-    const fetchByDate = async (): Promise<void> => {
-      setIsDateLoading(true);
-      setDateError(null);
-
-      try {
-        const dateStamp = toDateStamp(selectedDate);
-        const dataBasePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-        const response = await fetch(`${dataBasePath}/data/normalized/dashboard-${dateStamp}.json`, { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`data not found for ${selectedDate}`);
-        }
-        const nextData = (await response.json()) as DashboardData;
-        if (cancelled) {
-          return;
-        }
-        setData(nextData);
-      } catch (error: unknown) {
-        if (cancelled) {
-          return;
-        }
-        setDateError(error instanceof Error ? error.message : "対象日のデータを読み込めませんでした");
-        setSelectedDate(previousDate);
-      } finally {
-        if (!cancelled) {
-          setIsDateLoading(false);
-        }
-      }
-    };
-
-    void fetchByDate();
-    return () => {
-      cancelled = true;
-    };
-  }, [data.meta.targetDate, selectedDate, selectedDateIsAvailable]);
+  const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
 
   const areas = useMemo(() => {
     const set = new Set<string>();
@@ -163,26 +117,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const [selectedArea, setSelectedArea] = useState<string>("全エリア");
   const [generationTrendArea, setGenerationTrendArea] = useState<string>("全エリア");
   const [sourceDonutArea, setSourceDonutArea] = useState<string>("全エリア");
-  const [visibleSectionIds, setVisibleSectionIds] = useState<DashboardSectionId[]>(
-    DASHBOARD_SECTION_OPTIONS.map((item) => item.id),
-  );
+
+  // --- Network flow chart ---
   const networkFlowChartHostRef = useRef<NetworkFlowChartHostElement | null>(null);
-  const flowSlotLabels = data.meta.slotLabels.flow ?? [];
-  const maxFlowSlotIndex = Math.max(flowSlotLabels.length - 1, 0);
-  const DEFAULT_SNAPSHOT_SLOT_INDEX = 34; // 17:00 – reserve margins tend to be tightest around this hour year-round
-  const [networkFlowSlotIndex, setNetworkFlowSlotIndex] = useState<number>(
-    Math.min(DEFAULT_SNAPSHOT_SLOT_INDEX, maxFlowSlotIndex),
-  );
   const [maxAnimatedFlowLinesPerArea, setMaxAnimatedFlowLinesPerArea] = useState<number>(MAX_ANIMATED_FLOW_LINES_PER_AREA);
   const [networkOverlayViewport, setNetworkOverlayViewport] = useState<NetworkOverlayViewport>(
     DEFAULT_NETWORK_OVERLAY_VIEWPORT,
   );
-  const clampedNetworkFlowSlotIndex = clamp(Math.round(networkFlowSlotIndex), 0, maxFlowSlotIndex);
-  const selectedFlowSlotLabel = flowSlotLabels[clampedNetworkFlowSlotIndex] ?? "-";
-  const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
-  const visibleSectionSet = useMemo(() => new Set<DashboardSectionId>(visibleSectionIds), [visibleSectionIds]);
-  const showGenerationTrend = visibleSectionSet.has("generation");
-  const showSourceComposition = visibleSectionSet.has("composition");
   const syncNetworkOverlayViewport = (chart: unknown): void => {
     const nextViewport = readNetworkOverlayViewport(chart);
     if (!nextViewport) {
@@ -204,6 +145,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       }
     };
   }, []);
+
+  // --- Reserve data ---
   const reserveAreaSeries = useMemo(() => data.reserves?.areaSeries ?? [], [data.reserves?.areaSeries]);
   const reserveAreaMap = useMemo(
     () => new Map(reserveAreaSeries.map((item) => [item.area, item])),
@@ -221,6 +164,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     }));
     return rows.sort((a, b) => a.reserveRate - b.reserveRate);
   }, [clampedNetworkFlowSlotIndex, reserveAreaSeries]);
+
+  // --- Chart options ---
   const reserveTrendOption = useMemo(() => {
     const scopedSeries =
       selectedArea === "全エリア"
@@ -241,6 +186,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     return buildReserveCurrentOption(rows, isMobileViewport, selectedFlowDateTimeLabel);
   }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
 
+  // --- Generation data ---
   const sourceTotalsByArea = useMemo(() => {
     const byArea: Record<string, Array<{ source: string; totalKwh: number }>> = {};
     const areaSeries = data.generation.hourlyBySourceByArea ?? {};
@@ -417,12 +363,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       sourceColorByName,
     }),
     [
+      data,
       allPlantSummaries,
       clampedNetworkFlowSlotIndex,
       filteredIntertieSeries,
-      data.generation.areaTotals,
-      data.generation.sourceTotals,
-      data.generation.topUnits,
       interAreaFlowTextRows,
       reserveCurrentRows,
       sourceColorByName,
@@ -441,11 +385,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       sourceTotalsByArea,
     }),
     [
+      data,
       allPlantSummaries,
       clampedNetworkFlowSlotIndex,
-      data.flows.areaSummaries,
       filteredIntertieSeries,
-      data.generation.areaTotals,
       reserveAreaMap,
       selectedArea,
       sourceColorByName,
@@ -485,10 +428,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     return buildIntertieTrendOption(scopedSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea, netImportSeries);
   }, [filteredIntertieSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea]);
 
-  // ---------------------------------------------------------------------------
-  // Congestion (連系線混雑度) — utilization rate = |flow| / rated capacity
-  // ---------------------------------------------------------------------------
-
+  // --- Congestion ---
   const congestionData = useMemo<CongestionSummary | null>(
     () => buildCongestionData(filteredIntertieSeries),
     [filteredIntertieSeries],
@@ -775,4 +715,3 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     </div>
   );
 }
-

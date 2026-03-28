@@ -1,37 +1,25 @@
+/**
+ * Builds the ECharts graph option for the network flow visualization.
+ *
+ * Data extraction logic is in network-flow-data.ts; this module focuses on
+ * assembling the final chart configuration.
+ */
+
 import type { DashboardData } from "@/lib/dashboard-types";
+import { FLOW_AREA_COLORS, MAX_ANIMATED_FLOW_LINES_PER_AREA } from "@/lib/constants";
+import { numberFmt, decimalFmt, formatVoltageKv } from "@/lib/formatters";
 import {
-  FLOW_AREA_COLORS,
-  MAX_ANIMATED_FLOW_LINES_PER_AREA,
-  INTERTIE_RATED_CAPACITY_MW,
-} from "@/lib/constants";
-import {
-  numberFmt,
-  decimalFmt,
-  formatVoltageKv,
-  roundTo,
-  clamp,
-  compareAreaOrder,
-} from "@/lib/formatters";
-import {
-  type NetworkAnimationPath,
-  INTERTIE_STATION_ENDPOINTS,
-  AREA_ANCHORS,
-  parseDirection,
-  buildStationNodeId,
-  buildPowerNodeId,
+  extractIntraAreaLinks,
+  extractIntertieData,
+  buildNetworkNodes,
+  buildRenderedLinks,
+  buildIntertieBridgeLines,
+  buildIntertieFacilityLines,
+  buildFlowAnimationPaths,
+  buildIntertieAnimationPaths,
   buildStationLayout,
-  resolvePlantGeoBase,
-  isPseudoAreaNodeName,
-  isLineLikeNodeName,
-  isCompositeFacilityNodeName,
-  isVirtualBranchNodeName,
-  isConverterStationName,
-  buildLinkCurvenessMap,
-  buildCurvedLineCoords,
-  buildSvgQuadraticPath,
-  buildAreaBridgeEndpoints,
-  clampPointToMapBounds,
-} from "@/lib/geo";
+  compareAreaOrder,
+} from "@/lib/network-flow-data";
 
 export type NetworkFlowBuilderParams = {
   areaSummaries: DashboardData["flows"]["areaSummaries"];
@@ -57,18 +45,7 @@ export type NetworkFlowBuilderParams = {
   maxAnimatedFlowLinesPerArea?: number;
 };
 
-export type NetworkLink = {
-  kind: "intra";
-  source: string;
-  target: string;
-  value: number;
-  absAvgMw: number;
-  area?: string;
-  lineName?: string;
-  voltageKv?: string;
-  positiveDirection?: string;
-  peakAbsMw?: number;
-};
+export type { NetworkLink } from "@/lib/network-flow-data";
 
 export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
   const {
@@ -81,150 +58,28 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
     maxAnimatedFlowLinesPerArea = MAX_ANIMATED_FLOW_LINES_PER_AREA,
   } = params;
 
+  // 1. Extract intra-area links
+  const { links, visibleAreas, stationsByArea, nodeDegree } = extractIntraAreaLinks(
+    lineSeries,
+    clampedNetworkFlowSlotIndex,
+  );
+
+  // 2. Extract intertie data
   const areaScope = new Set<string>();
   lineSeries.forEach((line) => areaScope.add(line.area));
   if (areaScope.size === 0) {
     areaSummaries.forEach((row) => areaScope.add(row.area));
   }
 
-  const networkLines = lineSeries;
+  const { intertieFacilityMap, intertieBridgeMap } = extractIntertieData(
+    filteredIntertieSeries,
+    clampedNetworkFlowSlotIndex,
+    visibleAreas,
+    stationsByArea,
+    nodeDegree,
+  );
 
-  const visibleAreas = new Set<string>();
-  const stationsByArea = new Map<string, Set<string>>();
-  const nodeDegree = new Map<string, number>();
-  const links: NetworkLink[] = [];
-  const intertieFacilityMap = new Map<
-    string,
-    {
-      sourceNodeId: string;
-      targetNodeId: string;
-      sourceArea: string;
-      targetArea: string;
-      absMw: number;
-      peakAbsMw: number;
-      intertieNames: Set<string>;
-      currentType: "ac" | "dc";
-    }
-  >();
-  const intertieBridgeMap = new Map<
-    string,
-    {
-      sourceArea: string;
-      targetArea: string;
-      value: number;
-      absMw: number;
-      peakAbsMw: number;
-      intertieNames: Set<string>;
-    }
-  >();
-
-  networkLines.forEach((line) => {
-    const direction = parseDirection(line.positiveDirection);
-    if (!direction) {
-      return;
-    }
-    visibleAreas.add(line.area);
-    const slotMw = line.values[clampedNetworkFlowSlotIndex] ?? line.avgMw ?? 0;
-
-    const sourceName = slotMw >= 0 ? direction.source : direction.target;
-    const targetName = slotMw >= 0 ? direction.target : direction.source;
-    if (
-      isPseudoAreaNodeName(sourceName) ||
-      isPseudoAreaNodeName(targetName) ||
-      isLineLikeNodeName(sourceName) ||
-      isLineLikeNodeName(targetName) ||
-      isVirtualBranchNodeName(sourceName) ||
-      isVirtualBranchNodeName(targetName) ||
-      isCompositeFacilityNodeName(sourceName) ||
-      isCompositeFacilityNodeName(targetName)
-    ) {
-      return;
-    }
-    const source = buildStationNodeId(line.area, sourceName);
-    const target = buildStationNodeId(line.area, targetName);
-
-    const stationSet = stationsByArea.get(line.area) ?? new Set<string>();
-    stationSet.add(sourceName);
-    stationSet.add(targetName);
-    stationsByArea.set(line.area, stationSet);
-
-    nodeDegree.set(source, (nodeDegree.get(source) ?? 0) + 1);
-    nodeDegree.set(target, (nodeDegree.get(target) ?? 0) + 1);
-
-    links.push({
-      kind: "intra",
-      source,
-      target,
-      value: slotMw,
-      absAvgMw: Math.abs(slotMw),
-      area: line.area,
-      lineName: line.lineName,
-      voltageKv: line.voltageKv,
-      positiveDirection: line.positiveDirection,
-      peakAbsMw: line.peakAbsMw,
-    });
-  });
-
-  filteredIntertieSeries.forEach((row) => {
-    visibleAreas.add(row.sourceArea);
-    visibleAreas.add(row.targetArea);
-    const slotMw = row.values[clampedNetworkFlowSlotIndex] ?? row.avgMw ?? 0;
-    const explicitEndpoints = INTERTIE_STATION_ENDPOINTS[row.intertieName];
-    if (explicitEndpoints) {
-      const flowSourceArea = slotMw >= 0 ? explicitEndpoints.sourceArea : explicitEndpoints.targetArea;
-      const flowSourceStation = slotMw >= 0 ? explicitEndpoints.sourceStation : explicitEndpoints.targetStation;
-      const flowTargetArea = slotMw >= 0 ? explicitEndpoints.targetArea : explicitEndpoints.sourceArea;
-      const flowTargetStation = slotMw >= 0 ? explicitEndpoints.targetStation : explicitEndpoints.sourceStation;
-      const sourceNodeId = buildStationNodeId(flowSourceArea, flowSourceStation);
-      const targetNodeId = buildStationNodeId(flowTargetArea, flowTargetStation);
-
-      const sourceStationSet = stationsByArea.get(flowSourceArea) ?? new Set<string>();
-      sourceStationSet.add(flowSourceStation);
-      stationsByArea.set(flowSourceArea, sourceStationSet);
-
-      const targetStationSet = stationsByArea.get(flowTargetArea) ?? new Set<string>();
-      targetStationSet.add(flowTargetStation);
-      stationsByArea.set(flowTargetArea, targetStationSet);
-
-      nodeDegree.set(sourceNodeId, (nodeDegree.get(sourceNodeId) ?? 0) + 1);
-      nodeDegree.set(targetNodeId, (nodeDegree.get(targetNodeId) ?? 0) + 1);
-
-      const key = `${sourceNodeId}=>${targetNodeId}`;
-      const current = intertieFacilityMap.get(key) ?? {
-        sourceNodeId,
-        targetNodeId,
-        sourceArea: flowSourceArea,
-        targetArea: flowTargetArea,
-        absMw: 0,
-        peakAbsMw: 0,
-        intertieNames: new Set<string>(),
-        currentType: explicitEndpoints.currentType,
-      };
-      current.absMw += Math.abs(slotMw);
-      current.peakAbsMw = Math.max(current.peakAbsMw, row.peakAbsMw ?? 0);
-      current.intertieNames.add(row.intertieName);
-      intertieFacilityMap.set(key, current);
-      return;
-    }
-
-    const sourceArea = slotMw >= 0 ? row.sourceArea : row.targetArea;
-    const targetArea = slotMw >= 0 ? row.targetArea : row.sourceArea;
-    const key = `${sourceArea}=>${targetArea}`;
-    const current = intertieBridgeMap.get(key) ?? {
-      sourceArea,
-      targetArea,
-      value: 0,
-      absMw: 0,
-      peakAbsMw: 0,
-      intertieNames: new Set<string>(),
-    };
-    current.value += Math.abs(slotMw);
-    current.absMw += Math.abs(slotMw);
-    current.peakAbsMw = Math.max(current.peakAbsMw, row.peakAbsMw ?? 0);
-    current.intertieNames.add(row.intertieName);
-    intertieBridgeMap.set(key, current);
-  });
-
+  // 3. Build station positions and nodes
   const stationPositions = buildStationLayout(stationsByArea);
 
   if (visibleAreas.size === 0) {
@@ -233,140 +88,20 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
 
   const areaCategories = Array.from(visibleAreas).sort(compareAreaOrder);
   const categoryIndex = new Map(areaCategories.map((area, index) => [area, index]));
-  const stationLabelIds = new Set(
-    Array.from(nodeDegree.entries())
-      .filter(([nodeId, degree]) => nodeId.startsWith("station::") && degree >= 3)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 70)
-      .map(([nodeId]) => nodeId),
+
+  const nodes = buildNetworkNodes(
+    stationsByArea,
+    nodeDegree,
+    stationPositions,
+    categoryIndex,
+    networkPowerPlants,
+    areaScope,
   );
 
-  const nodes: Array<Record<string, unknown>> = [];
-  const stationNodeIdsByArea = new Map<string, string[]>();
-  stationsByArea.forEach((stationSet, area) => {
-    Array.from(stationSet)
-      .sort((a, b) => a.localeCompare(b, "ja-JP"))
-      .forEach((station) => {
-        const stationNodeId = buildStationNodeId(area, station);
-        const degree = nodeDegree.get(stationNodeId) ?? 0;
-        const anchor = AREA_ANCHORS[area] ?? AREA_ANCHORS.default;
-        const position = stationPositions.get(stationNodeId) ?? anchor;
-        nodes.push({
-          id: stationNodeId,
-          name: station,
-          area,
-          category: categoryIndex.get(area) ?? 0,
-          value: degree,
-          nodeType: isConverterStationName(station) ? "converter" : "ss",
-          shouldLabel: stationLabelIds.has(stationNodeId),
-          x: position.x,
-          y: position.y,
-          symbolSize: isConverterStationName(station) ? 8 : 6,
-          symbol: isConverterStationName(station) ? "diamond" : "circle",
-          itemStyle: {
-            color: isConverterStationName(station)
-              ? "#0f766e"
-              : (FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default),
-            borderColor: "#ffffff",
-            borderWidth: 1,
-          },
-        });
-        const ids = stationNodeIdsByArea.get(area) ?? [];
-        ids.push(stationNodeId);
-        stationNodeIdsByArea.set(area, ids);
-      });
-  });
+  // 4. Build rendered links
+  const renderedLinks = buildRenderedLinks(links, stationPositions);
 
-  const scopedPowerPlants = networkPowerPlants
-    .filter((plant) => areaScope.has(plant.area))
-    .sort((a, b) => b.dailyKwh - a.dailyKwh);
-  const maxPlantDaily = Math.max(...scopedPowerPlants.map((item) => item.dailyKwh), 1);
-
-  scopedPowerPlants.forEach((plant) => {
-    const base =
-      resolvePlantGeoBase(plant.area, plant.plantName) ?? clampPointToMapBounds(AREA_ANCHORS[plant.area] ?? AREA_ANCHORS.default);
-    const ratio = plant.dailyKwh / maxPlantDaily;
-    const powerNodeId = buildPowerNodeId(plant.area, plant.plantName);
-    nodes.push({
-      id: powerNodeId,
-      name: plant.plantName,
-      area: plant.area,
-      category: categoryIndex.get(plant.area) ?? 0,
-      value: roundTo(plant.avgOutputMw, 1),
-      nodeType: "power",
-      sourceType: plant.sourceType,
-      dailyKwh: plant.dailyKwh,
-      maxOutputManKw: roundTo(plant.maxOutputManKw, 2),
-      shouldLabel: ratio >= 0.5,
-      x: base.x,
-      y: base.y,
-      symbol: "rect",
-      symbolSize: 4.2 + ratio * 7.4,
-      itemStyle: {
-        color: FLOW_AREA_COLORS[plant.area] ?? FLOW_AREA_COLORS.default,
-        borderColor: "#ffffff",
-        borderWidth: 1,
-        shadowBlur: 4,
-        shadowColor: "rgba(15,23,42,0.16)",
-      },
-    });
-  });
-
-  const maxAbsIntra = Math.max(
-    ...links.filter((line) => line.kind === "intra").map((line) => line.absAvgMw),
-    1,
-  );
-
-  const linkCurveness = buildLinkCurvenessMap(links, stationPositions);
-
-  const renderedLinks = links.map((line) => {
-    const ratio = line.absAvgMw / maxAbsIntra;
-    const curveness = linkCurveness.get(`${line.source}=>${line.target}`) ?? 0.04;
-    return {
-      ...line,
-      lineStyle: {
-        width: 0.7 + ratio * 2.8,
-        opacity: 0.58,
-        curveness,
-        color: line.value >= 0 ? "rgba(249,115,22,0.9)" : "rgba(30,64,175,0.9)",
-      },
-      z: 2,
-    };
-  });
-
-  const maxAbsIntertie = Math.max(...Array.from(intertieBridgeMap.values()).map((item) => item.absMw), 1);
-  const intertieBridgeLines = Array.from(intertieBridgeMap.values())
-    .map((bridge) => {
-      const endpoints = buildAreaBridgeEndpoints(bridge.sourceArea, bridge.targetArea);
-      if (!endpoints) {
-        return null;
-      }
-      const ratio = bridge.absMw / maxAbsIntertie;
-      const bridgeLabelText = `${Array.from(bridge.intertieNames).join("/")} ${decimalFmt.format(bridge.absMw)} MW`;
-      return {
-        ...bridge,
-        name: bridgeLabelText,
-        coords: buildCurvedLineCoords(endpoints.from, endpoints.to, endpoints.curveness),
-        lineStyle: {
-          width: 1.2 + ratio * 3.2,
-          opacity: 0.46,
-          color: bridge.value >= 0 ? "rgba(234,88,12,0.55)" : "rgba(37,99,235,0.55)",
-          type: "solid",
-        },
-        label: {
-          show: true,
-          formatter: bridgeLabelText,
-          position: "middle" as const,
-          fontSize: 9,
-          color: "#334155",
-          backgroundColor: "rgba(255,255,255,0.82)",
-          borderRadius: 3,
-          padding: [1, 4] as [number, number],
-        },
-      };
-    })
-    .filter((item) => item !== null);
-
+  // 5. Build intertie lines
   const nodePointById = new Map<string, { x: number; y: number }>();
   nodes.forEach((node) => {
     const id = String(node.id ?? "");
@@ -376,130 +111,15 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
       nodePointById.set(id, { x, y });
     }
   });
-  const animatedFlowLines = Array.from(
-    renderedLinks.reduce((lineGroups, line) => {
-      const area = line.area ?? "不明";
-      const group = lineGroups.get(area) ?? [];
-      group.push(line);
-      lineGroups.set(area, group);
-      return lineGroups;
-    }, new Map<string, typeof renderedLinks>()),
-  )
-    .sort(([leftArea], [rightArea]) => compareAreaOrder(leftArea, rightArea))
-    .flatMap(([, linesByArea]) =>
-      linesByArea
-        .sort((a, b) => b.absAvgMw - a.absAvgMw)
-        .slice(0, maxAnimatedFlowLinesPerArea),
-    )
-    .map((line) => {
-      const from = nodePointById.get(String(line.source));
-      const to = nodePointById.get(String(line.target));
-      if (!from || !to) {
-        return null;
-      }
-      return {
-        coords: buildCurvedLineCoords(from, to, line.lineStyle.curveness),
-        absAvgMw: line.absAvgMw,
-        lineStyle: {
-          color: "rgba(125,211,252,0.42)",
-          width: Math.max(0.9, line.lineStyle.width * 0.45),
-          opacity: 0.34,
-        },
-      };
-    })
-    .filter((item) => item !== null);
-  const maxAnimatedFlowMw = Math.max(...animatedFlowLines.map((line) => line.absAvgMw), 1);
-  const majorFlowAnimationPaths: NetworkAnimationPath[] = animatedFlowLines.map((line, index) => ({
-    id: `major-flow-${index}`,
-    d: buildSvgQuadraticPath(line.coords),
-    strokeWidth: Math.max(1.3, line.lineStyle.width + 0.2),
-    durationSeconds: roundTo(1.7 + (index % 4) * 0.18, 2),
-    delaySeconds: roundTo((index % 5) * 0.12, 2),
-    magnitude: clamp(line.absAvgMw / maxAnimatedFlowMw, 0, 1),
-  }));
-  const maxAbsIntertieFacility = Math.max(...Array.from(intertieFacilityMap.values()).map((item) => item.absMw), 1);
-  const intertieFacilityLines = Array.from(intertieFacilityMap.values())
-    .map((line) => {
-      const from = nodePointById.get(line.sourceNodeId);
-      const to = nodePointById.get(line.targetNodeId);
-      if (!from || !to) {
-        return null;
-      }
-      const ratio = line.absMw / maxAbsIntertieFacility;
-      const strokeColor =
-        line.currentType === "dc" ? "rgba(192,38,211,0.82)" : "rgba(234,88,12,0.74)";
-      const labelText = `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)} MW`;
-      return {
-        ...line,
-        name: labelText,
-        coords: buildCurvedLineCoords(from, to, line.currentType === "dc" ? 0.08 : 0.05),
-        lineStyle: {
-          width: 1.5 + ratio * 3.2,
-          opacity: 0.72,
-          color: strokeColor,
-          type: line.currentType === "dc" ? "dashed" : "solid",
-        },
-        label: {
-          show: true,
-          formatter: labelText,
-          position: "middle" as const,
-          fontSize: 9,
-          color: "#334155",
-          backgroundColor: "rgba(255,255,255,0.82)",
-          borderRadius: 3,
-          padding: [1, 4] as [number, number],
-        },
-      };
-    })
-    .filter((item) => item !== null);
 
-  // Build inter-area animation paths for SVG overlay
-  const maxAbsIntertieForAnim = Math.max(
-    ...intertieFacilityLines.map((line) => line.absMw),
-    ...intertieBridgeLines.map((line) => line.absMw),
-    1,
-  );
-  // Compute congestion percentage for a set of intertie names
-  const computeIntertieCongestionPct = (names: Set<string>, absMw: number): number | undefined => {
-    let totalCapacity = 0;
-    let matched = false;
-    for (const name of names) {
-      const cap = INTERTIE_RATED_CAPACITY_MW[name];
-      if (cap) {
-        totalCapacity += cap.capacityMw;
-        matched = true;
-      }
-    }
-    return matched && totalCapacity > 0 ? roundTo((absMw / totalCapacity) * 100, 1) : undefined;
-  };
+  const intertieBridgeLineData = buildIntertieBridgeLines(intertieBridgeMap);
+  const intertieFacilityLineData = buildIntertieFacilityLines(intertieFacilityMap, nodePointById);
 
-  const intertieAnimationPaths: NetworkAnimationPath[] = [
-    ...intertieFacilityLines.map((line, index) => ({
-      id: `intertie-facility-${index}`,
-      d: buildSvgQuadraticPath(line.coords),
-      strokeWidth: Math.max(2.6, line.lineStyle.width + 0.5),
-      durationSeconds: roundTo(2.2 + (index % 3) * 0.22, 2),
-      delaySeconds: roundTo((index % 4) * 0.15, 2),
-      magnitude: clamp(line.absMw / maxAbsIntertieForAnim, 0, 1),
-      kind: "intertie" as const,
-      currentType: line.currentType,
-      label: `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)}MW`,
-      congestionPct: computeIntertieCongestionPct(line.intertieNames, line.absMw),
-    })),
-    ...intertieBridgeLines.map((line, index) => ({
-      id: `intertie-bridge-${index}`,
-      d: buildSvgQuadraticPath(line.coords),
-      strokeWidth: Math.max(2.4, (line.lineStyle?.width ?? 2) + 0.4),
-      durationSeconds: roundTo(2.4 + (index % 3) * 0.2, 2),
-      delaySeconds: roundTo((index % 4) * 0.18, 2),
-      magnitude: clamp(line.absMw / maxAbsIntertieForAnim, 0, 1),
-      kind: "intertie" as const,
-      currentType: undefined,
-      label: `${Array.from(line.intertieNames).join("/")} ${decimalFmt.format(line.absMw)}MW`,
-      congestionPct: computeIntertieCongestionPct(line.intertieNames, line.absMw),
-    })),
-  ];
+  // 6. Build animation paths
+  const majorFlowAnimationPaths = buildFlowAnimationPaths(renderedLinks, nodePointById, maxAnimatedFlowLinesPerArea);
+  const intertieAnimationPaths = buildIntertieAnimationPaths(intertieFacilityLineData, intertieBridgeLineData);
 
+  // 7. Assemble chart option
   return {
     animationDurationUpdate: 360,
     __majorFlowAnimationPaths: majorFlowAnimationPaths,
@@ -566,7 +186,7 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
         polyline: true,
         silent: false,
         z: 3,
-        data: intertieFacilityLines,
+        data: intertieFacilityLineData,
         tooltip: {
           formatter: (params: {
             data: {
@@ -596,7 +216,7 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
         polyline: true,
         silent: false,
         z: 1,
-        data: intertieBridgeLines,
+        data: intertieBridgeLineData,
         tooltip: {
           formatter: (params: {
             data: {
