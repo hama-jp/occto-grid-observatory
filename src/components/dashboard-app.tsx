@@ -52,6 +52,7 @@ import {
   buildInterAreaFlowTextRows,
   buildDashboardHighlights,
   buildAreaSupplyCards,
+  buildGeneratorStatusCards,
 } from "@/lib/dashboard-computations";
 import { CongestionSection } from "@/components/sections/congestion-section";
 import { RankingsSection } from "@/components/sections/rankings-section";
@@ -61,6 +62,7 @@ import { SummaryCardsTop, SummaryCardsBottom } from "@/components/sections/summa
 import { GenerationSection } from "@/components/sections/generation-section";
 import { DashboardHeader, SectionToggle } from "@/components/sections/dashboard-header";
 import { JepxMarketCard, JepxAreaBreakdown } from "@/components/sections/jepx-market-section";
+import { GeneratorStatusSection } from "@/components/sections/generator-status-section";
 import { useViewport } from "@/hooks/use-viewport";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useTimeSlider } from "@/hooks/use-time-slider";
@@ -395,6 +397,16 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       sourceTotalsByArea,
     ],
   );
+  const generatorStatus = useMemo(
+    () => buildGeneratorStatusCards({
+      allPlantSummaries,
+      areaTotals: data.generation.areaTotals,
+      selectedArea,
+      sourceColorByName,
+    }),
+    [allPlantSummaries, data.generation.areaTotals, selectedArea, sourceColorByName],
+  );
+
   const maxAreaNetIntertieAbsMw = useMemo(
     () => Math.max(...areaSupplyCards.map((card) => Math.abs(card.netIntertieMw)), 1),
     [areaSupplyCards],
@@ -634,6 +646,17 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             flowSlotLabels={flowSlotLabels}
             currentSlotIndex={clampedNetworkFlowSlotIndex}
           />
+        ) : null}
+
+        {visibleSectionSet.has("generatorStatus") ? (
+          <ChartErrorBoundary sectionName="発電機別ステータス">
+            <GeneratorStatusSection
+              cards={generatorStatus.cards}
+              treemapItems={generatorStatus.treemapItems}
+              selectedArea={selectedArea}
+              isMobileViewport={isMobileViewport}
+            />
+          </ChartErrorBoundary>
         ) : null}
 
         {visibleSectionSet.has("reserve") ? (

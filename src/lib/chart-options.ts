@@ -674,6 +674,212 @@ export function buildVolatilityHeatmapOption(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Generator status — treemap
+// ---------------------------------------------------------------------------
+
+import type { GeneratorTreemapItem, GeneratorStatusItem } from "./dashboard-computations";
+
+export function buildGeneratorTreemapOption(
+  items: GeneratorTreemapItem[],
+  isMobile: boolean,
+): Record<string, unknown> {
+  if (items.length === 0) {
+    return { graphic: emptyGraphic("発電機データなし") };
+  }
+
+  // Group by area
+  const byArea = new Map<string, GeneratorTreemapItem[]>();
+  items.forEach((item) => {
+    const list = byArea.get(item.area) ?? [];
+    list.push(item);
+    byArea.set(item.area, list);
+  });
+
+  const children = Array.from(byArea.entries()).map(([area, plants]) => ({
+    name: area,
+    itemStyle: {
+      borderColor: FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default,
+      borderWidth: 3,
+      gapWidth: 2,
+    },
+    children: plants.map((p) => ({
+      name: p.plantName,
+      value: p.dailyKwh,
+      itemStyle: {
+        color: p.color,
+        borderColor: "rgba(255,255,255,0.4)",
+        borderWidth: 1,
+      },
+      sourceType: p.sourceType,
+      area: p.area,
+    })),
+  }));
+
+  return {
+    tooltip: {
+      backgroundColor: "rgba(30,41,59,0.95)",
+      borderColor: "transparent",
+      textStyle: { color: "#f1f5f9", fontSize: 12 },
+      formatter: (params: { name: string; value: number; data: { area?: string; sourceType?: string } }) => {
+        const { name, value, data } = params;
+        if (!data.sourceType) return `<b>${name}</b>`;
+        return `<div style="font-size:12px"><b>${data.area}</b><br/>${name}<br/>${data.sourceType}<br/>${formatCompactEnergy(value)}</div>`;
+      },
+    },
+    series: [
+      {
+        type: "treemap",
+        roam: false,
+        width: "100%",
+        height: "100%",
+        nodeClick: false,
+        breadcrumb: { show: false },
+        label: {
+          show: true,
+          formatter: "{b}",
+          fontSize: isMobile ? 9 : 11,
+          color: "#fff",
+          textShadowBlur: 3,
+          textShadowColor: "rgba(0,0,0,0.5)",
+        },
+        upperLabel: {
+          show: true,
+          height: isMobile ? 20 : 24,
+          fontSize: isMobile ? 10 : 12,
+          fontWeight: "bold",
+          color: "#fff",
+          textShadowBlur: 2,
+          textShadowColor: "rgba(0,0,0,0.4)",
+          backgroundColor: "transparent",
+        },
+        levels: [
+          {
+            itemStyle: {
+              borderColor: "rgba(100,116,139,0.3)",
+              borderWidth: 4,
+              gapWidth: 4,
+            },
+          },
+          {
+            itemStyle: {
+              borderColor: "rgba(255,255,255,0.3)",
+              borderWidth: 2,
+              gapWidth: 2,
+            },
+            colorSaturation: [0.5, 0.8],
+          },
+        ],
+        data: children,
+        animationDurationUpdate: 800,
+        animationEasing: "cubicInOut",
+      },
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Generator status — per-area horizontal bar chart
+// ---------------------------------------------------------------------------
+
+export function buildGeneratorBarOption(
+  generators: GeneratorStatusItem[],
+  areaColor: string,
+  isMobile: boolean,
+): Record<string, unknown> {
+  if (generators.length === 0) {
+    return { graphic: emptyGraphic("データなし") };
+  }
+
+  // Reverse so top generator is at the top of horizontal bar chart
+  const items = [...generators].reverse();
+  const names = items.map((g) => g.plantName);
+  const kwhValues = items.map((g) => g.dailyKwh);
+  const utilValues = items.map((g) => g.utilizationPercent);
+  const colors = items.map((g) => g.color);
+
+  return {
+    animation: true,
+    animationDuration: 600,
+    animationEasing: "cubicOut",
+    grid: {
+      top: 8,
+      left: isMobile ? 90 : 110,
+      right: isMobile ? 55 : 70,
+      bottom: 8,
+    },
+    xAxis: {
+      type: "value",
+      show: false,
+    },
+    yAxis: {
+      type: "category",
+      data: names,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        fontSize: isMobile ? 10 : 11,
+        color: "#64748b",
+        width: isMobile ? 80 : 100,
+        overflow: "truncate",
+      },
+    },
+    tooltip: {
+      backgroundColor: "rgba(30,41,59,0.95)",
+      borderColor: "transparent",
+      textStyle: { color: "#f1f5f9", fontSize: 11 },
+      formatter: (params: { dataIndex: number; name: string; value: number }) => {
+        const idx = params.dataIndex;
+        const gen = items[idx];
+        return `<div style="font-size:11px">
+          <b>${gen.plantName}</b><br/>
+          ${gen.sourceType}<br/>
+          日量: ${formatCompactEnergy(gen.dailyKwh)}<br/>
+          エリア内シェア: ${decimalFmt.format(gen.sharePercent)}%<br/>
+          稼働率: ${decimalFmt.format(gen.utilizationPercent)}%<br/>
+          最大出力: ${gen.maxOutputManKw > 0 ? decimalFmt.format(gen.maxOutputManKw) + " 万kW" : "-"}
+        </div>`;
+      },
+    },
+    series: [
+      {
+        type: "bar",
+        data: kwhValues.map((val, idx) => ({
+          value: val,
+          itemStyle: {
+            color: {
+              type: "linear",
+              x: 0, y: 0, x2: 1, y2: 0,
+              colorStops: [
+                { offset: 0, color: colors[idx] + "cc" },
+                { offset: 1, color: colors[idx] },
+              ],
+            },
+            borderRadius: [0, 4, 4, 0],
+          },
+        })),
+        barWidth: isMobile ? 14 : 18,
+        label: {
+          show: true,
+          position: "right",
+          fontSize: isMobile ? 9 : 10,
+          color: "#64748b",
+          formatter: (params: { dataIndex: number }) => {
+            const u = utilValues[params.dataIndex];
+            return u > 0 ? `${decimalFmt.format(u)}%` : "";
+          },
+        },
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: "rgba(0,0,0,0.2)",
+          },
+        },
+      },
+    ],
+  };
+}
+
 // Re-export congestion builders from dedicated module for backwards compatibility
 export {
   buildCongestionData,
