@@ -511,6 +511,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           </section>
         ) : null}
 
+        {/* ── 発電グループ ── */}
+
         {showGenerationTrend || showSourceComposition ? (
           <GenerationSection
             showGenerationTrend={showGenerationTrend}
@@ -526,6 +528,41 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             useInlineDonutLegend={useInlineDonutLegend}
           />
         ) : null}
+
+        {visibleSectionSet.has("totals") ? (
+          <ChartErrorBoundary sectionName="エリア別日量発電">
+          <section className="grid grid-cols-1 gap-4">
+            <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
+              <div data-testid="area-total-generation-chart" role="img" aria-label="エリア別日量発電チャート">
+                <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
+              </div>
+            </Panel>
+          </section>
+          </ChartErrorBoundary>
+        ) : null}
+
+        {visibleSectionSet.has("generatorStatus") ? (
+          <ChartErrorBoundary sectionName="発電機別ステータス">
+            <GeneratorStatusSection
+              cards={generatorStatus.cards}
+              treemapItems={generatorStatus.treemapItems}
+              selectedArea={selectedArea}
+              isMobileViewport={isMobileViewport}
+              slotLabels={data.meta.slotLabels.generation}
+            />
+          </ChartErrorBoundary>
+        ) : null}
+
+        {visibleSectionSet.has("rankings") ? (
+          <ChartErrorBoundary sectionName="ランキング">
+            <RankingsSection
+              filteredTopUnits={filteredTopUnits}
+              filteredTopPlants={filteredTopPlants}
+            />
+          </ChartErrorBoundary>
+        ) : null}
+
+        {/* ── 需給・潮流グループ ── */}
 
         {visibleSectionSet.has("reserve") ? (
           <ChartErrorBoundary sectionName="予備率推移">
@@ -543,13 +580,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {visibleSectionSet.has("totals") ? (
-          <ChartErrorBoundary sectionName="発電・連系概要">
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
-              <div data-testid="area-total-generation-chart" role="img" aria-label="エリア別日量発電チャート">
-                <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
+          <ChartErrorBoundary sectionName="連系線潮流トレンド">
+          <section className="grid grid-cols-1 gap-4">
             <Panel title="連系線潮流トレンド（時系列）" testId="intertie-trend-panel">
               <div data-testid="intertie-trend-chart" role="img" aria-label="連系線潮流トレンドチャート">
                 <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
@@ -581,15 +613,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               <ReactECharts option={volatilityHeatmapOption} style={{ height: isMobileViewport ? 360 : 480 }} />
             </Panel>
           </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("rankings") ? (
-          <ChartErrorBoundary sectionName="ランキング">
-            <RankingsSection
-              filteredTopUnits={filteredTopUnits}
-              filteredTopPlants={filteredTopPlants}
-            />
           </ChartErrorBoundary>
         ) : null}
 
@@ -649,18 +672,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             flowSlotLabels={flowSlotLabels}
             currentSlotIndex={clampedNetworkFlowSlotIndex}
           />
-        ) : null}
-
-        {visibleSectionSet.has("generatorStatus") ? (
-          <ChartErrorBoundary sectionName="発電機別ステータス">
-            <GeneratorStatusSection
-              cards={generatorStatus.cards}
-              treemapItems={generatorStatus.treemapItems}
-              selectedArea={selectedArea}
-              isMobileViewport={isMobileViewport}
-              slotLabels={data.meta.slotLabels.generation}
-            />
-          </ChartErrorBoundary>
         ) : null}
 
         {visibleSectionSet.has("reserve") ? (

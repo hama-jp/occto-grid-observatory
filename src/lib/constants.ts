@@ -123,16 +123,18 @@ export type DashboardSectionId =
 export const DASHBOARD_SECTION_OPTIONS: Array<{ id: DashboardSectionId; label: string }> = [
   { id: "summary", label: "全国サマリー" },
   { id: "jepx", label: "JEPXスポット" },
-  { id: "areaCards", label: "エリア需給" },
-  { id: "generatorStatus", label: "発電機別状況" },
+  // ── 発電グループ ──
   { id: "generation", label: "発電トレンド" },
   { id: "composition", label: "発電構成" },
-  { id: "reserve", label: "需要・予備率" },
   { id: "totals", label: "発電・連系概要" },
-  { id: "congestion", label: "連系線混雑度" },
-  { id: "network", label: "ネットワーク" },
-  { id: "diagnostics", label: "潮流詳細" },
+  { id: "generatorStatus", label: "発電機別状況" },
   { id: "rankings", label: "ランキング" },
+  // ── 需給・潮流グループ ──
+  { id: "reserve", label: "需要・予備率" },
+  { id: "congestion", label: "連系線混雑度" },
+  { id: "diagnostics", label: "潮流詳細" },
+  { id: "areaCards", label: "エリア需給" },
+  { id: "network", label: "ネットワーク" },
 ];
 
 /**
