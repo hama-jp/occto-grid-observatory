@@ -810,7 +810,7 @@ export function buildAreaGenerationTimeSeriesOption(
     backgroundColor: "transparent",
     grid: {
       top: 6,
-      left: 4,
+      left: isMobile ? 40 : 48,
       right: 4,
       bottom: 20,
       containLabel: false,
@@ -831,7 +831,20 @@ export function buildAreaGenerationTimeSeriesOption(
     },
     yAxis: {
       type: "value",
-      show: false,
+      show: true,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { show: true, lineStyle: { color: "#e2e8f0", opacity: 0.4 } },
+      axisLabel: {
+        show: true,
+        fontSize: isMobile ? 8 : 9,
+        color: "#94a3b8",
+        formatter: (v: number) => {
+          if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+          if (v >= 1_000) return `${Math.round(v / 1_000)}k`;
+          return String(v);
+        },
+      },
     },
     tooltip: {
       trigger: "axis",
