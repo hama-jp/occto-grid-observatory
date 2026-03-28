@@ -169,7 +169,10 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const networkFlowChartHostRef = useRef<NetworkFlowChartHostElement | null>(null);
   const flowSlotLabels = data.meta.slotLabels.flow ?? [];
   const maxFlowSlotIndex = Math.max(flowSlotLabels.length - 1, 0);
-  const [networkFlowSlotIndex, setNetworkFlowSlotIndex] = useState<number>(maxFlowSlotIndex);
+  const DEFAULT_SNAPSHOT_SLOT_INDEX = 34; // 17:00 – reserve margins tend to be tightest around this hour year-round
+  const [networkFlowSlotIndex, setNetworkFlowSlotIndex] = useState<number>(
+    Math.min(DEFAULT_SNAPSHOT_SLOT_INDEX, maxFlowSlotIndex),
+  );
   const [maxAnimatedFlowLinesPerArea, setMaxAnimatedFlowLinesPerArea] = useState<number>(MAX_ANIMATED_FLOW_LINES_PER_AREA);
   const [networkOverlayViewport, setNetworkOverlayViewport] = useState<NetworkOverlayViewport>(
     DEFAULT_NETWORK_OVERLAY_VIEWPORT,
