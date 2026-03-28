@@ -530,14 +530,32 @@ export type GeneratorTreemapItem = {
   color: string;
 };
 
+/** Deterministic palette for differentiating units within the same source type */
+const UNIT_HUE_OFFSETS = [0, 30, -30, 55, -55, 15, -15, 40, -40, 70];
+
+function unitColor(baseColor: string, unitIndex: number): string {
+  // Shift lightness/saturation slightly so units of the same source type are distinguishable
+  const offset = UNIT_HUE_OFFSETS[unitIndex % UNIT_HUE_OFFSETS.length];
+  // Simple approach: adjust hex brightness
+  const r = parseInt(baseColor.slice(1, 3), 16);
+  const g = parseInt(baseColor.slice(3, 5), 16);
+  const b = parseInt(baseColor.slice(5, 7), 16);
+  const clampByte = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  const nr = clampByte(r + offset);
+  const ng = clampByte(g + offset * 0.7);
+  const nb = clampByte(b + offset * 0.5);
+  return `#${nr.toString(16).padStart(2, "0")}${ng.toString(16).padStart(2, "0")}${nb.toString(16).padStart(2, "0")}`;
+}
+
 export function buildGeneratorStatusCards(params: {
   allPlantSummaries: PlantSummaryRow[];
+  topUnits: TopUnit[];
   areaTotals: Array<{ area: string; totalKwh: number }>;
   selectedArea: string;
   sourceColorByName: Map<string, string>;
   hourlyBySourceByArea?: Record<string, Array<{ time: string; values: Record<string, number> }>>;
 }): { cards: GeneratorStatusCard[]; treemapItems: GeneratorTreemapItem[] } {
-  const { allPlantSummaries, areaTotals, selectedArea, sourceColorByName, hourlyBySourceByArea } = params;
+  const { allPlantSummaries, topUnits, areaTotals, selectedArea, sourceColorByName, hourlyBySourceByArea } = params;
 
   const areaTotalMap = new Map(areaTotals.map((item) => [item.area, item.totalKwh]));
   const byArea = new Map<string, PlantSummaryRow[]>();
@@ -545,6 +563,14 @@ export function buildGeneratorStatusCards(params: {
     const list = byArea.get(plant.area) ?? [];
     list.push(plant);
     byArea.set(plant.area, list);
+  });
+
+  // Group topUnits by area (for per-unit time-series)
+  const unitsByArea = new Map<string, TopUnit[]>();
+  topUnits.forEach((unit) => {
+    const list = unitsByArea.get(unit.area) ?? [];
+    list.push(unit);
+    unitsByArea.set(unit.area, list);
   });
 
   const treemapItems: GeneratorTreemapItem[] = [];
@@ -577,33 +603,32 @@ export function buildGeneratorStatusCards(params: {
       };
     });
 
-    // Build time-series: prefer per-plant values, fall back to per-source
+    // Build time-series: prefer per-unit values, fall back to per-source
     let timeSeries: GeneratorTimeSeriesItem[] = [];
     let isPlantLevel = false;
 
-    const topPlantsWithValues = plants.slice(0, 10).filter((p) => p.values && p.values.length > 0);
-    if (topPlantsWithValues.length > 0) {
+    const areaUnits = unitsByArea.get(area) ?? [];
+    const unitsWithValues = areaUnits.filter((u) => u.values && u.values.length > 0);
+
+    if (unitsWithValues.length > 0) {
       isPlantLevel = true;
-      // Top N plants with their own time-series
-      const topN = topPlantsWithValues.slice(0, 8);
-      timeSeries = topN.map((plant) => ({
-        name: plant.plantName,
-        color: sourceColorByName.get(plant.sourceType)
-          ?? SOURCE_COLOR_MAP[plant.sourceType]
-          ?? SOURCE_COLORS[0],
-        data: plant.values!,
-      }));
-      // "その他" = remaining plants summed
-      const topKeys = new Set(topN.map((p) => p.plantName));
-      const otherPlants = plants.filter((p) => !topKeys.has(p.plantName) && p.values && p.values.length > 0);
-      if (otherPlants.length > 0) {
-        const slotCount = otherPlants[0].values!.length;
-        const otherData = new Array(slotCount).fill(0);
-        otherPlants.forEach((p) => {
-          p.values!.forEach((v, i) => { otherData[i] += v; });
-        });
-        timeSeries.push({ name: "その他", color: "#cbd5e1", data: otherData });
-      }
+      // Per-unit time-series — each unit gets its own line
+      const sourceUnitIndex = new Map<string, number>();
+      timeSeries = unitsWithValues.map((unit) => {
+        const baseColor = sourceColorByName.get(unit.sourceType)
+          ?? SOURCE_COLOR_MAP[unit.sourceType]
+          ?? SOURCE_COLORS[0];
+        const idx = sourceUnitIndex.get(unit.sourceType) ?? 0;
+        sourceUnitIndex.set(unit.sourceType, idx + 1);
+        const label = unit.unitName
+          ? `${unit.plantName} ${unit.unitName}`
+          : unit.plantName;
+        return {
+          name: label,
+          color: idx === 0 ? baseColor : unitColor(baseColor, idx),
+          data: unit.values!,
+        };
+      });
     } else if (hourlyBySourceByArea?.[area]) {
       // Fallback: per-source time-series
       const areaSourceSeries = hourlyBySourceByArea[area];
