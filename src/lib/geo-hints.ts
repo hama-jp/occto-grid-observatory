@@ -147,12 +147,12 @@ export const INTERTIE_STATION_ENDPOINTS: Record<
     targetStation: "北九州ss",
     currentType: "ac",
   },
-  // 四国 ↔ 関西（直流）
+  // 関西 ↔ 四国（直流）— OCCTO正方向: 四国向（関西→四国）
   阿南紀北直流幹線: {
-    sourceArea: "四国",
-    sourceStation: "阿南CS",
-    targetArea: "関西",
-    targetStation: "紀北変換所",
+    sourceArea: "関西",
+    sourceStation: "紀北変換所",
+    targetArea: "四国",
+    targetStation: "阿南CS",
     currentType: "dc",
   },
 };

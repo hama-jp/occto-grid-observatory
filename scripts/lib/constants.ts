@@ -55,7 +55,7 @@ export const INTERTIE_AREA_MAP: Record<string, IntertieAreaDefinition> = {
   "南福光連系所・南福光変電所の連系設備": { sourceArea: "北陸", targetArea: "関西" },
   越前嶺南線: { sourceArea: "北陸", targetArea: "関西" },
   "西播東岡山線・山崎智頭線": { sourceArea: "関西", targetArea: "中国" },
-  阿南紀北直流幹線: { sourceArea: "四国", targetArea: "関西" },
+  阿南紀北直流幹線: { sourceArea: "関西", targetArea: "四国" },
   本四連系線: { sourceArea: "中国", targetArea: "四国" },
   関門連系線: { sourceArea: "中国", targetArea: "九州" },
   北陸フェンス: { sourceArea: "中部", targetArea: "北陸" },
