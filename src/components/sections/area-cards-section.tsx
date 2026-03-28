@@ -167,7 +167,7 @@ export function AreaCardsSection({
         </div>
         <p className="rounded-lg bg-slate-100 px-3 py-1 text-xs tabular-nums text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">{selectedFlowDateTimeLabel} 時点</p>
       </div>
-      <div className="stagger-children grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="stagger-children grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
         {areaSupplyCards.map((card) => {
           const areaColor = FLOW_AREA_COLORS[card.area] ?? FLOW_AREA_COLORS.default;
           const netDirection =
