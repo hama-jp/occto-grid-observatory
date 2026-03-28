@@ -4,6 +4,7 @@ import type {
   IntertieSeries,
   PlantSummary,
   TopUnit,
+  UnitSeries,
   AreaReserveSeries,
 } from "@/lib/dashboard-types";
 import type { BarListItem } from "@/components/ui/dashboard-ui";
@@ -55,8 +56,6 @@ export type PlantSummaryRow = {
   dailyKwh: number;
   maxOutputManKw: number;
   summedUnitMaxOutputManKw?: number;
-  /** 48-slot time-series (if available from plantSummaries) */
-  values?: number[];
 };
 
 export type DashboardHighlights = {
@@ -557,68 +556,72 @@ function unitColor(baseColor: string, unitIndex: number): string {
 }
 
 export function buildGeneratorStatusCards(params: {
+  unitSeries: UnitSeries[];
   allPlantSummaries: PlantSummaryRow[];
-  topUnits: TopUnit[];
   areaTotals: Array<{ area: string; totalKwh: number }>;
   selectedArea: string;
   sourceColorByName: Map<string, string>;
-  hourlyBySourceByArea?: Record<string, Array<{ time: string; values: Record<string, number> }>>;
 }): { cards: GeneratorStatusCard[]; treemapItems: GeneratorTreemapItem[] } {
-  const { allPlantSummaries, topUnits, areaTotals, selectedArea, sourceColorByName, hourlyBySourceByArea } = params;
+  const { unitSeries, allPlantSummaries, areaTotals, selectedArea, sourceColorByName } = params;
 
   const areaTotalMap = new Map(areaTotals.map((item) => [item.area, item.totalKwh]));
-  const byArea = new Map<string, PlantSummaryRow[]>();
-  allPlantSummaries.forEach((plant) => {
-    const list = byArea.get(plant.area) ?? [];
-    list.push(plant);
-    byArea.set(plant.area, list);
-  });
 
-  // Group topUnits by area (for per-unit time-series)
-  const unitsByArea = new Map<string, TopUnit[]>();
-  topUnits.forEach((unit) => {
+  // Group units by area
+  const unitsByArea = new Map<string, UnitSeries[]>();
+  unitSeries.forEach((unit) => {
     const list = unitsByArea.get(unit.area) ?? [];
     list.push(unit);
     unitsByArea.set(unit.area, list);
   });
 
-  // Supplement: plants not covered by topUnits get added as pseudo-units
-  // so every area has complete coverage
-  for (const [area, plants] of byArea) {
-    const existingPlantNames = new Set(
-      (unitsByArea.get(area) ?? []).map((u) => u.plantName),
-    );
-    const missing = plants.filter((p) => !existingPlantNames.has(p.plantName));
-    if (missing.length > 0) {
-      const list = unitsByArea.get(area) ?? [];
-      for (const plant of missing) {
-        list.push({
-          area: plant.area,
-          plantName: plant.plantName,
-          unitName: "",
-          sourceType: plant.sourceType,
-          maxOutputManKw: plant.maxOutputManKw,
-          dailyKwh: plant.dailyKwh,
-          values: plant.values,
-        });
-      }
-      // Re-sort by dailyKwh descending
-      list.sort((a, b) => b.dailyKwh - a.dailyKwh);
-      unitsByArea.set(area, list);
-    }
-  }
+  // plantSummaries for treemap
+  const plantsByArea = new Map<string, PlantSummaryRow[]>();
+  allPlantSummaries.forEach((plant) => {
+    const list = plantsByArea.get(plant.area) ?? [];
+    list.push(plant);
+    plantsByArea.set(plant.area, list);
+  });
+
+  const allAreaNames = new Set<string>();
+  unitsByArea.forEach((_, area) => allAreaNames.add(area));
+  plantsByArea.forEach((_, area) => allAreaNames.add(area));
 
   const treemapItems: GeneratorTreemapItem[] = [];
   const cards: GeneratorStatusCard[] = [];
 
-  const areaNames = Array.from(byArea.keys()).sort(compareAreaOrder);
+  const areaNames = Array.from(allAreaNames).sort(compareAreaOrder);
   for (const area of areaNames) {
     if (selectedArea !== "全エリア" && area !== selectedArea) continue;
 
-    const plants = byArea.get(area) ?? [];
-    const areaKwh = areaTotalMap.get(area) ?? plants.reduce((s, p) => s + p.dailyKwh, 0);
+    const areaUnits = unitsByArea.get(area) ?? [];
+    const plants = plantsByArea.get(area) ?? [];
+    const areaKwh = areaTotalMap.get(area) ?? areaUnits.reduce((s, u) => s + u.dailyKwh, 0);
     const areaColor = FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default;
 
+    // Build per-unit time-series and unit list
+    const sourceUnitIndex = new Map<string, number>();
+    const timeSeries: GeneratorTimeSeriesItem[] = [];
+    const units: UnitListItem[] = [];
+
+    for (const unit of areaUnits) {
+      const baseColor = sourceColorByName.get(unit.sourceType)
+        ?? SOURCE_COLOR_MAP[unit.sourceType]
+        ?? SOURCE_COLORS[0];
+      const idx = sourceUnitIndex.get(unit.sourceType) ?? 0;
+      sourceUnitIndex.set(unit.sourceType, idx + 1);
+      const color = idx === 0 ? baseColor : unitColor(baseColor, idx);
+      const label = unit.unitName
+        ? `${unit.plantName} ${unit.unitName}`
+        : unit.plantName;
+
+      units.push({ label, sourceType: unit.sourceType, dailyKwh: unit.dailyKwh, color });
+
+      if (unit.values.length > 0) {
+        timeSeries.push({ name: label, color, data: unit.values });
+      }
+    }
+
+    // generators (plant-level summary for treemap header info)
     const generators: GeneratorStatusItem[] = plants.slice(0, 10).map((plant) => {
       const color = sourceColorByName.get(plant.sourceType)
         ?? SOURCE_COLOR_MAP[plant.sourceType]
@@ -638,75 +641,19 @@ export function buildGeneratorStatusCards(params: {
       };
     });
 
-    // Build time-series: prefer per-unit values, fall back to per-source
-    let timeSeries: GeneratorTimeSeriesItem[] = [];
-    let isPlantLevel = false;
-
-    const areaUnits = unitsByArea.get(area) ?? [];
-    const unitsWithValues = areaUnits.filter((u) => u.values && u.values.length > 0);
-
-    if (unitsWithValues.length > 0) {
-      isPlantLevel = true;
-      // Per-unit time-series — each unit gets its own line
-      const sourceUnitIndex = new Map<string, number>();
-      timeSeries = unitsWithValues.map((unit) => {
-        const baseColor = sourceColorByName.get(unit.sourceType)
-          ?? SOURCE_COLOR_MAP[unit.sourceType]
-          ?? SOURCE_COLORS[0];
-        const idx = sourceUnitIndex.get(unit.sourceType) ?? 0;
-        sourceUnitIndex.set(unit.sourceType, idx + 1);
-        const label = unit.unitName
-          ? `${unit.plantName} ${unit.unitName}`
-          : unit.plantName;
-        return {
-          name: label,
-          color: idx === 0 ? baseColor : unitColor(baseColor, idx),
-          data: unit.values!,
-        };
-      });
-    } else if (hourlyBySourceByArea?.[area]) {
-      // Fallback: per-source time-series
-      const areaSourceSeries = hourlyBySourceByArea[area];
-      const sourceNames = Object.keys(areaSourceSeries[0]?.values ?? {});
-      timeSeries = sourceNames
-        .filter((s) => areaSourceSeries.some((p) => (p.values[s] ?? 0) > 0))
-        .map((source) => ({
-          name: normalizeSourceName(source),
-          color: sourceColorByName.get(source) ?? SOURCE_COLOR_MAP[source] ?? "#6b7280",
-          data: areaSourceSeries.map((p) => p.values[source] ?? 0),
-        }))
-        .sort((a, b) => b.data.reduce((s, v) => s + v, 0) - a.data.reduce((s, v) => s + v, 0));
-    }
-
-    // Build unit list (always available, even without values)
-    const unitSourceIndex = new Map<string, number>();
-    const units: UnitListItem[] = areaUnits.map((unit) => {
-      const baseColor = sourceColorByName.get(unit.sourceType)
-        ?? SOURCE_COLOR_MAP[unit.sourceType]
-        ?? SOURCE_COLORS[0];
-      const idx = unitSourceIndex.get(unit.sourceType) ?? 0;
-      unitSourceIndex.set(unit.sourceType, idx + 1);
-      return {
-        label: unit.unitName ? `${unit.plantName} ${unit.unitName}` : unit.plantName,
-        sourceType: unit.sourceType,
-        dailyKwh: unit.dailyKwh,
-        color: idx === 0 ? baseColor : unitColor(baseColor, idx),
-      };
+    cards.push({
+      area, areaColor, totalKwh: areaKwh, generators, units, timeSeries,
+      isPlantLevel: timeSeries.length > 0,
     });
 
-    cards.push({ area, areaColor, totalKwh: areaKwh, generators, units, timeSeries, isPlantLevel });
-
-    // treemap items: top 8 per area
+    // treemap items: top 8 plants per area
     plants.slice(0, 8).forEach((plant) => {
       const color = sourceColorByName.get(plant.sourceType)
         ?? SOURCE_COLOR_MAP[plant.sourceType]
         ?? SOURCE_COLORS[0];
       treemapItems.push({
-        area,
-        plantName: plant.plantName,
-        sourceType: plant.sourceType,
-        dailyKwh: plant.dailyKwh,
-        color,
+        area, plantName: plant.plantName, sourceType: plant.sourceType,
+        dailyKwh: plant.dailyKwh, color,
       });
     });
   }
