@@ -779,104 +779,83 @@ export function buildGeneratorTreemapOption(
 }
 
 // ---------------------------------------------------------------------------
-// Generator status — per-area horizontal bar chart
+// Generator status — per-area stacked area chart (time-series)
 // ---------------------------------------------------------------------------
 
-export function buildGeneratorBarOption(
-  generators: GeneratorStatusItem[],
+export type AreaGenerationSeries = {
+  /** Series label — plant name or source type */
+  name: string;
+  /** Color for this series */
+  color: string;
+  /** 48 values (one per 30-min slot) */
+  data: number[];
+};
+
+export function buildAreaGenerationTimeSeriesOption(
+  seriesList: AreaGenerationSeries[],
+  slotLabels: string[],
   areaColor: string,
   isMobile: boolean,
 ): Record<string, unknown> {
-  if (generators.length === 0) {
+  if (seriesList.length === 0 || slotLabels.length === 0) {
     return { graphic: emptyGraphic("データなし") };
   }
 
-  // Reverse so top generator is at the top of horizontal bar chart
-  const items = [...generators].reverse();
-  const names = items.map((g) => g.plantName);
-  const kwhValues = items.map((g) => g.dailyKwh);
-  const utilValues = items.map((g) => g.utilizationPercent);
-  const colors = items.map((g) => g.color);
-
   return {
     animation: true,
-    animationDuration: 600,
+    animationDuration: 500,
     animationEasing: "cubicOut",
+    backgroundColor: "transparent",
     grid: {
-      top: 8,
-      left: isMobile ? 90 : 110,
-      right: isMobile ? 55 : 70,
-      bottom: 8,
+      top: 6,
+      left: 4,
+      right: 4,
+      bottom: 20,
+      containLabel: false,
     },
     xAxis: {
-      type: "value",
-      show: false,
-    },
-    yAxis: {
       type: "category",
-      data: names,
+      data: slotLabels,
+      show: true,
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        fontSize: isMobile ? 10 : 11,
-        color: "#64748b",
-        width: isMobile ? 80 : 100,
-        overflow: "truncate",
+        show: true,
+        fontSize: 9,
+        color: "#94a3b8",
+        interval: (_index: number, value: string) =>
+          value === "06:00" || value === "12:00" || value === "18:00",
       },
     },
+    yAxis: {
+      type: "value",
+      show: false,
+    },
     tooltip: {
+      trigger: "axis",
       backgroundColor: "rgba(30,41,59,0.95)",
       borderColor: "transparent",
       textStyle: { color: "#f1f5f9", fontSize: 11 },
-      formatter: (params: { dataIndex: number; name: string; value: number }) => {
-        const idx = params.dataIndex;
-        const gen = items[idx];
-        return `<div style="font-size:11px">
-          <b>${gen.plantName}</b><br/>
-          ${gen.sourceType}<br/>
-          日量: ${formatCompactEnergy(gen.dailyKwh)}<br/>
-          エリア内シェア: ${decimalFmt.format(gen.sharePercent)}%<br/>
-          稼働率: ${decimalFmt.format(gen.utilizationPercent)}%<br/>
-          最大出力: ${gen.maxOutputManKw > 0 ? decimalFmt.format(gen.maxOutputManKw) + " 万kW" : "-"}
-        </div>`;
+      formatter: (params: Array<{ seriesName: string; value: number; marker: string; dataIndex: number }>) => {
+        const slot = slotLabels[params[0]?.dataIndex ?? 0] ?? "";
+        const lines = params
+          .filter((p) => p.value > 0)
+          .map((p) => `${p.marker} ${p.seriesName}: ${numberFmt.format(p.value)} kWh`);
+        return `<div style="font-size:11px;max-height:260px;overflow-y:auto"><b>${slot}</b><br/>${lines.join("<br/>")}</div>`;
       },
     },
-    series: [
-      {
-        type: "bar",
-        data: kwhValues.map((val, idx) => ({
-          value: val,
-          itemStyle: {
-            color: {
-              type: "linear",
-              x: 0, y: 0, x2: 1, y2: 0,
-              colorStops: [
-                { offset: 0, color: colors[idx] + "cc" },
-                { offset: 1, color: colors[idx] },
-              ],
-            },
-            borderRadius: [0, 4, 4, 0],
-          },
-        })),
-        barWidth: isMobile ? 14 : 18,
-        label: {
-          show: true,
-          position: "right",
-          fontSize: isMobile ? 9 : 10,
-          color: "#64748b",
-          formatter: (params: { dataIndex: number }) => {
-            const u = utilValues[params.dataIndex];
-            return u > 0 ? `${decimalFmt.format(u)}%` : "";
-          },
-        },
-        emphasis: {
-          itemStyle: {
-            shadowBlur: 10,
-            shadowColor: "rgba(0,0,0,0.2)",
-          },
-        },
-      },
-    ],
+    series: seriesList.map((s) => ({
+      name: s.name,
+      type: "line",
+      stack: "gen",
+      smooth: true,
+      symbol: "none",
+      lineStyle: { width: 0 },
+      areaStyle: { opacity: 0.85 },
+      color: s.color,
+      data: s.data,
+      emphasis: { focus: "series" },
+    })),
   };
 }
 

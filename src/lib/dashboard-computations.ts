@@ -55,6 +55,8 @@ export type PlantSummaryRow = {
   dailyKwh: number;
   maxOutputManKw: number;
   summedUnitMaxOutputManKw?: number;
+  /** 48-slot time-series (if available from plantSummaries) */
+  values?: number[];
 };
 
 export type DashboardHighlights = {
@@ -503,11 +505,21 @@ export type GeneratorStatusItem = {
   color: string;
 };
 
+export type GeneratorTimeSeriesItem = {
+  name: string;
+  color: string;
+  data: number[];
+};
+
 export type GeneratorStatusCard = {
   area: string;
   areaColor: string;
   totalKwh: number;
   generators: GeneratorStatusItem[];
+  /** Time-series for stacked area chart (per-plant or per-source fallback) */
+  timeSeries: GeneratorTimeSeriesItem[];
+  /** Whether time-series is per-plant (true) or per-source fallback (false) */
+  isPlantLevel: boolean;
 };
 
 export type GeneratorTreemapItem = {
@@ -523,8 +535,9 @@ export function buildGeneratorStatusCards(params: {
   areaTotals: Array<{ area: string; totalKwh: number }>;
   selectedArea: string;
   sourceColorByName: Map<string, string>;
+  hourlyBySourceByArea?: Record<string, Array<{ time: string; values: Record<string, number> }>>;
 }): { cards: GeneratorStatusCard[]; treemapItems: GeneratorTreemapItem[] } {
-  const { allPlantSummaries, areaTotals, selectedArea, sourceColorByName } = params;
+  const { allPlantSummaries, areaTotals, selectedArea, sourceColorByName, hourlyBySourceByArea } = params;
 
   const areaTotalMap = new Map(areaTotals.map((item) => [item.area, item.totalKwh]));
   const byArea = new Map<string, PlantSummaryRow[]>();
@@ -549,7 +562,6 @@ export function buildGeneratorStatusCards(params: {
       const color = sourceColorByName.get(plant.sourceType)
         ?? SOURCE_COLOR_MAP[plant.sourceType]
         ?? SOURCE_COLORS[0];
-      // theoretical max kWh = maxOutputManKw * 10,000kW * 24h
       const theoreticalMaxKwh = (plant.maxOutputManKw ?? 0) * 10_000 * 24;
       const utilizationPercent = theoreticalMaxKwh > 0
         ? clamp((plant.dailyKwh / theoreticalMaxKwh) * 100, 0, 100)
@@ -565,7 +577,48 @@ export function buildGeneratorStatusCards(params: {
       };
     });
 
-    cards.push({ area, areaColor, totalKwh: areaKwh, generators });
+    // Build time-series: prefer per-plant values, fall back to per-source
+    let timeSeries: GeneratorTimeSeriesItem[] = [];
+    let isPlantLevel = false;
+
+    const topPlantsWithValues = plants.slice(0, 10).filter((p) => p.values && p.values.length > 0);
+    if (topPlantsWithValues.length > 0) {
+      isPlantLevel = true;
+      // Top N plants with their own time-series
+      const topN = topPlantsWithValues.slice(0, 8);
+      timeSeries = topN.map((plant) => ({
+        name: plant.plantName,
+        color: sourceColorByName.get(plant.sourceType)
+          ?? SOURCE_COLOR_MAP[plant.sourceType]
+          ?? SOURCE_COLORS[0],
+        data: plant.values!,
+      }));
+      // "その他" = remaining plants summed
+      const topKeys = new Set(topN.map((p) => p.plantName));
+      const otherPlants = plants.filter((p) => !topKeys.has(p.plantName) && p.values && p.values.length > 0);
+      if (otherPlants.length > 0) {
+        const slotCount = otherPlants[0].values!.length;
+        const otherData = new Array(slotCount).fill(0);
+        otherPlants.forEach((p) => {
+          p.values!.forEach((v, i) => { otherData[i] += v; });
+        });
+        timeSeries.push({ name: "その他", color: "#cbd5e1", data: otherData });
+      }
+    } else if (hourlyBySourceByArea?.[area]) {
+      // Fallback: per-source time-series
+      const areaSourceSeries = hourlyBySourceByArea[area];
+      const sourceNames = Object.keys(areaSourceSeries[0]?.values ?? {});
+      timeSeries = sourceNames
+        .filter((s) => areaSourceSeries.some((p) => (p.values[s] ?? 0) > 0))
+        .map((source) => ({
+          name: normalizeSourceName(source),
+          color: sourceColorByName.get(source) ?? SOURCE_COLOR_MAP[source] ?? "#6b7280",
+          data: areaSourceSeries.map((p) => p.values[source] ?? 0),
+        }))
+        .sort((a, b) => b.data.reduce((s, v) => s + v, 0) - a.data.reduce((s, v) => s + v, 0));
+    }
+
+    cards.push({ area, areaColor, totalKwh: areaKwh, generators, timeSeries, isPlantLevel });
 
     // treemap items: top 8 per area
     plants.slice(0, 8).forEach((plant) => {

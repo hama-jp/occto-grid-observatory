@@ -211,6 +211,7 @@ export function buildDashboardData(args: {
       sourceType: row.sourceType,
       dailyKwh: roundTo(row.dailyKwh, 0),
       maxOutputManKw: roundTo(row.slotTotals.reduce((max, value) => Math.max(max, value), 0) / 5000, 2),
+      values: row.slotTotals.map((v) => roundTo(v, 0)),
     }))
     .sort((a, b) => b.dailyKwh - a.dailyKwh);
 

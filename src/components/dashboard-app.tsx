@@ -403,8 +403,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       areaTotals: data.generation.areaTotals,
       selectedArea,
       sourceColorByName,
+      hourlyBySourceByArea: data.generation.hourlyBySourceByArea,
     }),
-    [allPlantSummaries, data.generation.areaTotals, selectedArea, sourceColorByName],
+    [allPlantSummaries, data.generation.areaTotals, selectedArea, sourceColorByName, data.generation.hourlyBySourceByArea],
   );
 
   const maxAreaNetIntertieAbsMw = useMemo(
@@ -655,6 +656,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
               treemapItems={generatorStatus.treemapItems}
               selectedArea={selectedArea}
               isMobileViewport={isMobileViewport}
+              slotLabels={data.meta.slotLabels.generation}
             />
           </ChartErrorBoundary>
         ) : null}
