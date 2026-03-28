@@ -21,6 +21,7 @@ import {
 } from "@/lib/formatters";
 import {
   SOURCE_COLORS,
+  SOURCE_COLOR_MAP,
   FLOW_AREA_COLORS,
 } from "@/lib/constants";
 
@@ -485,4 +486,101 @@ export function buildAreaSupplyCards(params: {
     selectedArea === "全エリア" ? rows : rows.filter((item) => item.area === selectedArea);
 
   return filteredRows.sort((a, b) => compareAreaOrder(a.area, b.area));
+}
+
+// ---------------------------------------------------------------------------
+// Generator status cards
+// ---------------------------------------------------------------------------
+
+export type GeneratorStatusItem = {
+  plantName: string;
+  sourceType: string;
+  dailyKwh: number;
+  maxOutputManKw: number;
+  sharePercent: number;
+  /** Capacity utilisation 0–100 (dailyKwh vs theoretical max based on 24h) */
+  utilizationPercent: number;
+  color: string;
+};
+
+export type GeneratorStatusCard = {
+  area: string;
+  areaColor: string;
+  totalKwh: number;
+  generators: GeneratorStatusItem[];
+};
+
+export type GeneratorTreemapItem = {
+  area: string;
+  plantName: string;
+  sourceType: string;
+  dailyKwh: number;
+  color: string;
+};
+
+export function buildGeneratorStatusCards(params: {
+  allPlantSummaries: PlantSummaryRow[];
+  areaTotals: Array<{ area: string; totalKwh: number }>;
+  selectedArea: string;
+  sourceColorByName: Map<string, string>;
+}): { cards: GeneratorStatusCard[]; treemapItems: GeneratorTreemapItem[] } {
+  const { allPlantSummaries, areaTotals, selectedArea, sourceColorByName } = params;
+
+  const areaTotalMap = new Map(areaTotals.map((item) => [item.area, item.totalKwh]));
+  const byArea = new Map<string, PlantSummaryRow[]>();
+  allPlantSummaries.forEach((plant) => {
+    const list = byArea.get(plant.area) ?? [];
+    list.push(plant);
+    byArea.set(plant.area, list);
+  });
+
+  const treemapItems: GeneratorTreemapItem[] = [];
+  const cards: GeneratorStatusCard[] = [];
+
+  const areaNames = Array.from(byArea.keys()).sort(compareAreaOrder);
+  for (const area of areaNames) {
+    if (selectedArea !== "全エリア" && area !== selectedArea) continue;
+
+    const plants = byArea.get(area) ?? [];
+    const areaKwh = areaTotalMap.get(area) ?? plants.reduce((s, p) => s + p.dailyKwh, 0);
+    const areaColor = FLOW_AREA_COLORS[area] ?? FLOW_AREA_COLORS.default;
+
+    const generators: GeneratorStatusItem[] = plants.slice(0, 10).map((plant) => {
+      const color = sourceColorByName.get(plant.sourceType)
+        ?? SOURCE_COLOR_MAP[plant.sourceType]
+        ?? SOURCE_COLORS[0];
+      // theoretical max kWh = maxOutputManKw * 10,000kW * 24h
+      const theoreticalMaxKwh = (plant.maxOutputManKw ?? 0) * 10_000 * 24;
+      const utilizationPercent = theoreticalMaxKwh > 0
+        ? clamp((plant.dailyKwh / theoreticalMaxKwh) * 100, 0, 100)
+        : 0;
+      return {
+        plantName: plant.plantName,
+        sourceType: plant.sourceType,
+        dailyKwh: plant.dailyKwh,
+        maxOutputManKw: plant.maxOutputManKw,
+        sharePercent: areaKwh > 0 ? (plant.dailyKwh / areaKwh) * 100 : 0,
+        utilizationPercent: roundTo(utilizationPercent, 1),
+        color,
+      };
+    });
+
+    cards.push({ area, areaColor, totalKwh: areaKwh, generators });
+
+    // treemap items: top 8 per area
+    plants.slice(0, 8).forEach((plant) => {
+      const color = sourceColorByName.get(plant.sourceType)
+        ?? SOURCE_COLOR_MAP[plant.sourceType]
+        ?? SOURCE_COLORS[0];
+      treemapItems.push({
+        area,
+        plantName: plant.plantName,
+        sourceType: plant.sourceType,
+        dailyKwh: plant.dailyKwh,
+        color,
+      });
+    });
+  }
+
+  return { cards, treemapItems };
 }
