@@ -6,7 +6,7 @@
 
 import { FLOW_AREA_COLORS, INTERTIE_RATED_CAPACITY_MW } from "./constants";
 import { numberFmt, decimalFmt, roundTo } from "./formatters";
-import { responsiveGrid, timeXAxis } from "./chart-options";
+import { responsiveGrid, timeXAxis, heatmapSeries } from "./chart-options";
 
 // ---------------------------------------------------------------------------
 // Congestion data
@@ -234,8 +234,7 @@ export function buildCongestionHeatmapOption(
     },
     series: [
       {
-        type: "heatmap" as const,
-        data: heatmapData,
+        ...heatmapSeries("混雑度", heatmapData),
         label: { show: false },
         emphasis: { itemStyle: { shadowBlur: 6, shadowColor: "rgba(0,0,0,0.3)" } },
       },

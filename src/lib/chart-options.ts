@@ -58,6 +58,37 @@ export function timeXAxis(labels: string[], isMobile: boolean) {
   };
 }
 
+/** Responsive visualMap for heatmap charts (mobile: horizontal bottom / desktop: vertical right). */
+export function heatmapVisualMap(
+  isMobile: boolean,
+  options: {
+    min: number;
+    max: number;
+    colors: string[];
+    text?: [string, string];
+  },
+) {
+  const base = {
+    min: options.min,
+    max: options.max,
+    inRange: { color: options.colors },
+    ...(options.text ? { text: options.text } : {}),
+  };
+  return isMobile
+    ? { ...base, calculable: false, orient: "horizontal" as const, left: "center", bottom: 0, itemWidth: 12, itemHeight: 80 }
+    : { ...base, calculable: true, orient: "vertical" as const, right: 0, top: 0 };
+}
+
+/** Shared heatmap series config. */
+export function heatmapSeries(name: string, data: Array<[number, number, number]>) {
+  return {
+    name,
+    type: "heatmap" as const,
+    data,
+    emphasis: { itemStyle: { shadowBlur: 10, shadowColor: "rgba(0, 0, 0, 0.35)" } },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Reserve trend
 // ---------------------------------------------------------------------------
@@ -569,25 +600,11 @@ export function buildFlowHeatmapOption(
     grid: { top: 20, left: isMobile ? 60 : 160, right: isMobile ? 10 : 80, bottom: isMobile ? 46 : 20 },
     xAxis: { type: "category", data: flowSlotLabels, splitArea: { show: true }, axisLabel: { interval: 3 } },
     yAxis: { type: "category", data: yLabels, splitArea: { show: true } },
-    visualMap: isMobile
-      ? {
-          min: -800, max: 800, calculable: false, orient: "horizontal",
-          left: "center", bottom: 0, itemWidth: 12, itemHeight: 80,
-          inRange: { color: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"] },
-        }
-      : {
-          min: -800, max: 800, calculable: true, orient: "vertical",
-          right: 0, top: 0,
-          inRange: { color: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"] },
-        },
-    series: [
-      {
-        name: "潮流",
-        type: "heatmap",
-        data: heatmapData,
-        emphasis: { itemStyle: { shadowBlur: 10, shadowColor: "rgba(0, 0, 0, 0.35)" } },
-      },
-    ],
+    visualMap: heatmapVisualMap(isMobile, {
+      min: -800, max: 800,
+      colors: ["#0b132b", "#1c2541", "#4f772d", "#f77f00", "#d62828"],
+    }),
+    series: [heatmapSeries("潮流", heatmapData)],
   };
 }
 
@@ -648,26 +665,12 @@ export function buildVolatilityHeatmapOption(
     grid: { top: 20, left: isMobile ? 60 : 220, right: isMobile ? 10 : 80, bottom: isMobile ? 46 : 20 },
     xAxis: { type: "category", data: flowSlotLabels, splitArea: { show: true }, axisLabel: { interval: 3 } },
     yAxis: { type: "category", data: yLabels, splitArea: { show: true }, axisLabel: { fontSize: 11 } },
-    visualMap: isMobile
-      ? {
-          min: -150, max: 150, calculable: false, orient: "horizontal",
-          left: "center", bottom: 0, itemWidth: 12, itemHeight: 80,
-          text: ["+150%", "−150%"],
-          inRange: { color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"] },
-        }
-      : {
-          min: -150, max: 150, calculable: true, orient: "vertical",
-          right: 0, top: 0, text: ["+150%", "−150%"],
-          inRange: { color: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"] },
-        },
-    series: [
-      {
-        name: "変動率",
-        type: "heatmap",
-        data: heatmapData,
-        emphasis: { itemStyle: { shadowBlur: 10, shadowColor: "rgba(0, 0, 0, 0.35)" } },
-      },
-    ],
+    visualMap: heatmapVisualMap(isMobile, {
+      min: -150, max: 150,
+      colors: ["#1d4877", "#4a7fb5", "#98d1d1", "#fcfcfc", "#f4a261", "#e76f51", "#9b2226"],
+      text: ["+150%", "−150%"],
+    }),
+    series: [heatmapSeries("変動率", heatmapData)],
   };
 }
 
