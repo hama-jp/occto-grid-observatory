@@ -245,6 +245,13 @@ async function main(): Promise<void> {
         console.log(`[ingest] skip unpublished date ${targetDate}: ${error.message}`);
         continue;
       }
+      // In backfill mode, log the error and continue to the next date
+      // instead of aborting the entire batch.
+      if (args.mode === "backfill") {
+        const detail = error instanceof Error ? error.message : String(error);
+        console.error(`[ingest] error on ${targetDate}, skipping: ${detail}`);
+        continue;
+      }
       throw error;
     }
     const generationRows = await parseGenerationCsv(downloadResult.generationCsv);

@@ -226,6 +226,8 @@ async function captureDownload(
   timeoutMs = 120_000,
 ): Promise<Download> {
   const downloadPromise = page.waitForEvent("download", { timeout: timeoutMs });
+  // Prevent unhandled rejection if trigger() throws before downloadPromise settles.
+  downloadPromise.catch(() => {});
   await trigger();
   return downloadPromise;
 }
