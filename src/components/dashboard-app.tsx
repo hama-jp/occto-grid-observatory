@@ -403,10 +403,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       topUnits: data.generation.topUnits,
       allPlantSummaries,
       areaTotals: data.generation.areaTotals,
+      hourlyBySourceByArea: data.generation.hourlyBySourceByArea,
       selectedArea,
       sourceColorByName,
     }),
-    [data.generation.unitSeries, data.generation.topUnits, allPlantSummaries, data.generation.areaTotals, selectedArea, sourceColorByName],
+    [data.generation.unitSeries, data.generation.topUnits, allPlantSummaries, data.generation.areaTotals, data.generation.hourlyBySourceByArea, selectedArea, sourceColorByName],
   );
 
   const maxAreaNetIntertieAbsMw = useMemo(

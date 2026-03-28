@@ -569,14 +569,15 @@ export function buildGeneratorStatusCards(params: {
   topUnits: TopUnit[];
   allPlantSummaries: PlantSummaryRow[];
   areaTotals: Array<{ area: string; totalKwh: number }>;
+  hourlyBySourceByArea?: Record<string, Array<{ time: string; values: Record<string, number> }>>;
   selectedArea: string;
   sourceColorByName: Map<string, string>;
 }): { cards: GeneratorStatusCard[]; treemapItems: GeneratorTreemapItem[] } {
-  const { unitSeries, topUnits, allPlantSummaries, areaTotals, selectedArea, sourceColorByName } = params;
+  const { unitSeries, topUnits, allPlantSummaries, areaTotals, hourlyBySourceByArea, selectedArea, sourceColorByName } = params;
 
   // When unitSeries is not available (older data), fall back to topUnits
   // so that labels still show unit-level detail (e.g. "坂出発電所 1号機").
-  const effectiveUnitSeries: UnitSeries[] = unitSeries.length > 0
+  let effectiveUnitSeries: UnitSeries[] = unitSeries.length > 0
     ? unitSeries
     : topUnits.map((u) => ({
         area: u.area,
@@ -586,6 +587,38 @@ export function buildGeneratorStatusCards(params: {
         dailyKwh: u.dailyKwh,
         values: [],
       }));
+
+  // When unitSeries exists but has empty values (pre-ingest data),
+  // estimate per-unit time series by proportionally distributing the
+  // area×sourceType totals from hourlyBySourceByArea based on dailyKwh share.
+  const needsEstimation = effectiveUnitSeries.length > 0
+    && effectiveUnitSeries.every((u) => u.values.length === 0)
+    && hourlyBySourceByArea;
+
+  if (needsEstimation) {
+    // Compute total dailyKwh per (area, sourceType) for share calculation
+    const areaSourceKwh = new Map<string, number>();
+    for (const u of effectiveUnitSeries) {
+      const key = `${u.area}\0${u.sourceType}`;
+      areaSourceKwh.set(key, (areaSourceKwh.get(key) ?? 0) + u.dailyKwh);
+    }
+
+    effectiveUnitSeries = effectiveUnitSeries.map((u) => {
+      const areaSlots = hourlyBySourceByArea[u.area];
+      if (!areaSlots || areaSlots.length === 0) return u;
+
+      const key = `${u.area}\0${u.sourceType}`;
+      const totalKwh = areaSourceKwh.get(key) ?? 0;
+      const share = totalKwh > 0 ? u.dailyKwh / totalKwh : 0;
+
+      const values = areaSlots.map((slot) => {
+        const sourceKwh = slot.values[u.sourceType] ?? 0;
+        return Math.round(sourceKwh * share);
+      });
+
+      return { ...u, values };
+    });
+  }
 
   const areaTotalMap = new Map(areaTotals.map((item) => [item.area, item.totalKwh]));
 
