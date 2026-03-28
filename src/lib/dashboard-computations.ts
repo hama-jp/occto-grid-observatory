@@ -329,7 +329,7 @@ export function buildDashboardHighlights(params: {
     .slice(0, 3);
   const maxUnitKwh = Math.max(...unitLeadersRaw.map((item) => item.dailyKwh), 1);
   const unitLeaderItems: BarListItem[] = unitLeadersRaw.map((item) => ({
-    label: `${item.plantName} ${item.unitName}`,
+    label: buildUnitLabel(item.plantName, item.unitName),
     valueLabel: `${numberFmt.format(item.dailyKwh)} kWh`,
     percent: clamp((item.dailyKwh / maxUnitKwh) * 100, 0, 100),
     color: FLOW_AREA_COLORS[item.area] ?? FLOW_AREA_COLORS.default,
@@ -555,20 +555,43 @@ function unitColor(baseColor: string, unitIndex: number): string {
   return `#${nr.toString(16).padStart(2, "0")}${ng.toString(16).padStart(2, "0")}${nb.toString(16).padStart(2, "0")}`;
 }
 
+/** Build a unit-level label like "坂出発電所 1号機". */
+export function buildUnitLabel(plantName: string, unitName: string): string {
+  if (!unitName) return plantName;
+  // If plantName already contains a unit-like suffix (号機, 号系列, 号),
+  // the unit info is already embedded — use plantName as-is.
+  if (/[０-９0-9][号]/.test(plantName)) return plantName;
+  return `${plantName} ${unitName}`;
+}
+
 export function buildGeneratorStatusCards(params: {
   unitSeries: UnitSeries[];
+  topUnits: TopUnit[];
   allPlantSummaries: PlantSummaryRow[];
   areaTotals: Array<{ area: string; totalKwh: number }>;
   selectedArea: string;
   sourceColorByName: Map<string, string>;
 }): { cards: GeneratorStatusCard[]; treemapItems: GeneratorTreemapItem[] } {
-  const { unitSeries, allPlantSummaries, areaTotals, selectedArea, sourceColorByName } = params;
+  const { unitSeries, topUnits, allPlantSummaries, areaTotals, selectedArea, sourceColorByName } = params;
+
+  // When unitSeries is not available (older data), fall back to topUnits
+  // so that labels still show unit-level detail (e.g. "坂出発電所 1号機").
+  const effectiveUnitSeries: UnitSeries[] = unitSeries.length > 0
+    ? unitSeries
+    : topUnits.map((u) => ({
+        area: u.area,
+        plantName: u.plantName,
+        unitName: u.unitName,
+        sourceType: u.sourceType,
+        dailyKwh: u.dailyKwh,
+        values: [],
+      }));
 
   const areaTotalMap = new Map(areaTotals.map((item) => [item.area, item.totalKwh]));
 
   // Group units by area
   const unitsByArea = new Map<string, UnitSeries[]>();
-  unitSeries.forEach((unit) => {
+  effectiveUnitSeries.forEach((unit) => {
     const list = unitsByArea.get(unit.area) ?? [];
     list.push(unit);
     unitsByArea.set(unit.area, list);
@@ -610,9 +633,7 @@ export function buildGeneratorStatusCards(params: {
       const idx = sourceUnitIndex.get(unit.sourceType) ?? 0;
       sourceUnitIndex.set(unit.sourceType, idx + 1);
       const color = idx === 0 ? baseColor : unitColor(baseColor, idx);
-      const label = unit.unitName
-        ? `${unit.plantName} ${unit.unitName}`
-        : unit.plantName;
+      const label = buildUnitLabel(unit.plantName, unit.unitName);
 
       units.push({ label, sourceType: unit.sourceType, dailyKwh: unit.dailyKwh, color });
 

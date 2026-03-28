@@ -13,7 +13,7 @@ import {
   formatCompactEnergy,
   formatEnergyGwh,
 } from "@/lib/formatters";
-import type { DashboardHighlights } from "@/lib/dashboard-computations";
+import { buildUnitLabel, type DashboardHighlights } from "@/lib/dashboard-computations";
 
 type SummaryCardsTopProps = {
   dashboardHighlights: DashboardHighlights;
@@ -64,7 +64,7 @@ export function SummaryCardsTop({ dashboardHighlights, areaTotalsLength }: Summa
       </SummaryCard>
       <SummaryCard
         title="発電トップ"
-        value={dashboardHighlights.largestUnit ? `${dashboardHighlights.largestUnit.plantName} ${dashboardHighlights.largestUnit.unitName}` : "-"}
+        value={dashboardHighlights.largestUnit ? buildUnitLabel(dashboardHighlights.largestUnit.plantName, dashboardHighlights.largestUnit.unitName) : "-"}
         detail={
           dashboardHighlights.largestUnit
             ? `${dashboardHighlights.largestUnit.area} / ${numberFmt.format(
