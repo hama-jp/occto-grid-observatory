@@ -155,8 +155,8 @@ export function GeneratorStatusSection({
                       />
                     </div>
                     {/* Mini legend for this chart */}
-                    <div className="mt-1 flex flex-wrap gap-x-2.5 gap-y-0.5 px-1">
-                      {card.timeSeries.slice(0, 6).map((s) => (
+                    <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 px-1">
+                      {card.timeSeries.slice(0, 10).map((s) => (
                         <span
                           key={`${card.area}-${s.name}`}
                           className="inline-flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-400"
@@ -168,8 +168,8 @@ export function GeneratorStatusSection({
                           {s.name}
                         </span>
                       ))}
-                      {card.timeSeries.length > 6 && (
-                        <span className="text-[9px] text-slate-400">+{card.timeSeries.length - 6}</span>
+                      {card.timeSeries.length > 10 && (
+                        <span className="text-[9px] text-slate-400">+{card.timeSeries.length - 10}</span>
                       )}
                     </div>
                   </div>

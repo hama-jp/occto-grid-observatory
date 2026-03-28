@@ -201,6 +201,7 @@ export function buildDashboardData(args: {
         sourceType: row.sourceType,
         maxOutputManKw,
         dailyKwh: row.dailyKwh,
+        values: row.values.map((v) => roundTo(v, 0)),
       };
     });
 

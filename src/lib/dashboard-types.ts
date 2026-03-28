@@ -51,6 +51,8 @@ export type TopUnit = {
   sourceType: string;
   maxOutputManKw: number;
   dailyKwh: number;
+  /** 48-slot (30-min interval) output time-series (kWh per slot) */
+  values?: number[];
 };
 
 export type PlantSummary = {
