@@ -400,12 +400,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const generatorStatus = useMemo(
     () => buildGeneratorStatusCards({
       unitSeries: data.generation.unitSeries ?? [],
+      topUnits: data.generation.topUnits,
       allPlantSummaries,
       areaTotals: data.generation.areaTotals,
       selectedArea,
       sourceColorByName,
     }),
-    [data.generation.unitSeries, allPlantSummaries, data.generation.areaTotals, selectedArea, sourceColorByName],
+    [data.generation.unitSeries, data.generation.topUnits, allPlantSummaries, data.generation.areaTotals, selectedArea, sourceColorByName],
   );
 
   const maxAreaNetIntertieAbsMw = useMemo(
