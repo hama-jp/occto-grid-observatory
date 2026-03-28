@@ -511,14 +511,23 @@ export type GeneratorTimeSeriesItem = {
   data: number[];
 };
 
+export type UnitListItem = {
+  label: string;
+  sourceType: string;
+  dailyKwh: number;
+  color: string;
+};
+
 export type GeneratorStatusCard = {
   area: string;
   areaColor: string;
   totalKwh: number;
   generators: GeneratorStatusItem[];
-  /** Time-series for stacked area chart (per-plant or per-source fallback) */
+  /** Per-unit list for display */
+  units: UnitListItem[];
+  /** Time-series for line chart (per-unit or per-source fallback) */
   timeSeries: GeneratorTimeSeriesItem[];
-  /** Whether time-series is per-plant (true) or per-source fallback (false) */
+  /** Whether time-series is per-unit (true) or per-source fallback (false) */
   isPlantLevel: boolean;
 };
 
@@ -643,7 +652,23 @@ export function buildGeneratorStatusCards(params: {
         .sort((a, b) => b.data.reduce((s, v) => s + v, 0) - a.data.reduce((s, v) => s + v, 0));
     }
 
-    cards.push({ area, areaColor, totalKwh: areaKwh, generators, timeSeries, isPlantLevel });
+    // Build unit list (always available, even without values)
+    const unitSourceIndex = new Map<string, number>();
+    const units: UnitListItem[] = areaUnits.map((unit) => {
+      const baseColor = sourceColorByName.get(unit.sourceType)
+        ?? SOURCE_COLOR_MAP[unit.sourceType]
+        ?? SOURCE_COLORS[0];
+      const idx = unitSourceIndex.get(unit.sourceType) ?? 0;
+      unitSourceIndex.set(unit.sourceType, idx + 1);
+      return {
+        label: unit.unitName ? `${unit.plantName} ${unit.unitName}` : unit.plantName,
+        sourceType: unit.sourceType,
+        dailyKwh: unit.dailyKwh,
+        color: idx === 0 ? baseColor : unitColor(baseColor, idx),
+      };
+    });
+
+    cards.push({ area, areaColor, totalKwh: areaKwh, generators, units, timeSeries, isPlantLevel });
 
     // treemap items: top 8 per area
     plants.slice(0, 8).forEach((plant) => {

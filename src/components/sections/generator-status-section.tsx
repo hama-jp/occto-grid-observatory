@@ -179,27 +179,22 @@ export function GeneratorStatusSection({
                   </div>
                 )}
 
-                {/* Top generators compact list */}
+                {/* Top units compact list */}
                 <div className="mt-2 space-y-1">
-                  {card.generators.slice(0, 5).map((gen, idx) => (
+                  {(card.units.length > 0 ? card.units : card.generators.map((g) => ({ label: g.plantName, sourceType: g.sourceType, dailyKwh: g.dailyKwh, color: g.color }))).slice(0, 8).map((unit, idx) => (
                     <div
-                      key={`${card.area}-${gen.plantName}`}
+                      key={`${card.area}-${unit.label}-${idx}`}
                       className="flex items-center gap-2 text-[11px]"
                     >
                       <span className="w-3 shrink-0 text-right tabular-nums text-slate-400">{idx + 1}</span>
                       <span
                         className="inline-block h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: gen.color }}
+                        style={{ backgroundColor: unit.color }}
                       />
-                      <span className="min-w-0 truncate text-slate-700 dark:text-slate-300">{gen.plantName}</span>
+                      <span className="min-w-0 truncate text-slate-700 dark:text-slate-300">{unit.label}</span>
                       <span className="ml-auto shrink-0 tabular-nums font-medium text-slate-800 dark:text-slate-200">
-                        {formatCompactEnergy(gen.dailyKwh)}
+                        {formatCompactEnergy(unit.dailyKwh)}
                       </span>
-                      {gen.utilizationPercent > 0 && (
-                        <span className="shrink-0 w-10 text-right tabular-nums text-slate-400">
-                          {decimalFmt.format(gen.utilizationPercent)}%
-                        </span>
-                      )}
                     </div>
                   ))}
                 </div>

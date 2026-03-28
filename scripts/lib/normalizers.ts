@@ -188,9 +188,32 @@ export function buildDashboardData(args: {
     });
   }
 
-  const topUnits = [...args.generationRows]
-    .sort((a, b) => b.dailyKwh - a.dailyKwh)
-    .slice(0, 60)
+  // Select top units: ensure at least 8 per area, then fill remaining from global top
+  const TOP_PER_AREA = 8;
+  const TOP_TOTAL = 120;
+  const sortedRows = [...args.generationRows].sort((a, b) => b.dailyKwh - a.dailyKwh);
+
+  const selectedKeys = new Set<string>();
+  const rowsByArea = new Map<string, typeof sortedRows>();
+  for (const row of sortedRows) {
+    const list = rowsByArea.get(row.area) ?? [];
+    list.push(row);
+    rowsByArea.set(row.area, list);
+  }
+  // First pass: guarantee top N per area
+  for (const [, areaRows] of rowsByArea) {
+    for (const row of areaRows.slice(0, TOP_PER_AREA)) {
+      selectedKeys.add(`${row.area}::${row.plantName}::${row.unitName}`);
+    }
+  }
+  // Second pass: fill from global ranking
+  for (const row of sortedRows) {
+    if (selectedKeys.size >= TOP_TOTAL) break;
+    selectedKeys.add(`${row.area}::${row.plantName}::${row.unitName}`);
+  }
+
+  const topUnits = sortedRows
+    .filter((row) => selectedKeys.has(`${row.area}::${row.plantName}::${row.unitName}`))
     .map((row) => {
       const maxSlotKwh = row.values.reduce((max, value) => Math.max(max, value), 0);
       const maxOutputManKw = roundTo(maxSlotKwh / 5000, 2);
