@@ -188,32 +188,9 @@ export function buildDashboardData(args: {
     });
   }
 
-  // Select top units: ensure at least 8 per area, then fill remaining from global top
-  const TOP_PER_AREA = 8;
-  const TOP_TOTAL = 120;
-  const sortedRows = [...args.generationRows].sort((a, b) => b.dailyKwh - a.dailyKwh);
-
-  const selectedKeys = new Set<string>();
-  const rowsByArea = new Map<string, typeof sortedRows>();
-  for (const row of sortedRows) {
-    const list = rowsByArea.get(row.area) ?? [];
-    list.push(row);
-    rowsByArea.set(row.area, list);
-  }
-  // First pass: guarantee top N per area
-  for (const [, areaRows] of rowsByArea) {
-    for (const row of areaRows.slice(0, TOP_PER_AREA)) {
-      selectedKeys.add(`${row.area}::${row.plantName}::${row.unitName}`);
-    }
-  }
-  // Second pass: fill from global ranking
-  for (const row of sortedRows) {
-    if (selectedKeys.size >= TOP_TOTAL) break;
-    selectedKeys.add(`${row.area}::${row.plantName}::${row.unitName}`);
-  }
-
-  const topUnits = sortedRows
-    .filter((row) => selectedKeys.has(`${row.area}::${row.plantName}::${row.unitName}`))
+  const topUnits = [...args.generationRows]
+    .sort((a, b) => b.dailyKwh - a.dailyKwh)
+    .slice(0, 60)
     .map((row) => {
       const maxSlotKwh = row.values.reduce((max, value) => Math.max(max, value), 0);
       const maxOutputManKw = roundTo(maxSlotKwh / 5000, 2);
@@ -224,9 +201,20 @@ export function buildDashboardData(args: {
         sourceType: row.sourceType,
         maxOutputManKw,
         dailyKwh: row.dailyKwh,
-        values: row.values.map((v) => roundTo(v, 0)),
       };
     });
+
+  // All units with time-series — used by generator status cards
+  const unitSeries = [...args.generationRows]
+    .sort((a, b) => b.dailyKwh - a.dailyKwh)
+    .map((row) => ({
+      area: row.area,
+      plantName: row.plantName,
+      unitName: row.unitName,
+      sourceType: row.sourceType,
+      dailyKwh: row.dailyKwh,
+      values: row.values.map((v) => roundTo(v, 0)),
+    }));
 
   const plantSummaries = Array.from(plantSummaryMap.values())
     .map((row) => ({
@@ -280,6 +268,7 @@ export function buildDashboardData(args: {
       hourlyTotalByArea,
       topUnits,
       plantSummaries,
+      unitSeries,
     },
     reserves: { areaSeries: args.reserveRows },
     flows: {

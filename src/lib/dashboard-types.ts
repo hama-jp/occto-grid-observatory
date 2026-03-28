@@ -51,8 +51,17 @@ export type TopUnit = {
   sourceType: string;
   maxOutputManKw: number;
   dailyKwh: number;
+};
+
+/** Per-unit time-series entry for generator status charts */
+export type UnitSeries = {
+  area: string;
+  plantName: string;
+  unitName: string;
+  sourceType: string;
+  dailyKwh: number;
   /** 48-slot (30-min interval) output time-series (kWh per slot) */
-  values?: number[];
+  values: number[];
 };
 
 export type PlantSummary = {
@@ -163,6 +172,8 @@ export type DashboardData = {
     hourlyTotalByArea: HourlyAreaPoint[];
     topUnits: TopUnit[];
     plantSummaries?: PlantSummary[];
+    /** All units with 48-slot time-series for generator status charts */
+    unitSeries?: UnitSeries[];
   };
   reserves?: {
     areaSeries: AreaReserveSeries[];
