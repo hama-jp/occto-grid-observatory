@@ -59,6 +59,8 @@ export type PlantSummary = {
   sourceType: string;
   dailyKwh: number;
   maxOutputManKw: number;
+  /** 48-slot (30-min interval) output time-series (kWh per slot) */
+  values?: number[];
 };
 
 export type AreaFlowSummary = {
