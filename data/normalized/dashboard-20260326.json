@@ -9011,6 +9011,488 @@
         "dailyKwh": 0,
         "maxOutputManKw": 0
       }
+    ],
+    "unitSeries": [
+      {
+        "area": "東京",
+        "plantName": "東京柏崎刈羽",
+        "unitName": "柏崎刈羽6号機",
+        "sourceType": "原子力",
+        "dailyKwh": 28174000,
+        "values": []
+      },
+      {
+        "area": "関西",
+        "plantName": "大飯発電所",
+        "unitName": "３号機",
+        "sourceType": "原子力",
+        "dailyKwh": 28151548,
+        "values": []
+      },
+      {
+        "area": "九州",
+        "plantName": "玄海原子力発電所",
+        "unitName": "３号機",
+        "sourceType": "原子力",
+        "dailyKwh": 27890000,
+        "values": []
+      },
+      {
+        "area": "九州",
+        "plantName": "玄海原子力発電所",
+        "unitName": "４号機",
+        "sourceType": "原子力",
+        "dailyKwh": 27688000,
+        "values": []
+      },
+      {
+        "area": "中部",
+        "plantName": "西名古屋火力発電所",
+        "unitName": "７-１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 25664000,
+        "values": []
+      },
+      {
+        "area": "中部",
+        "plantName": "西名古屋火力発電所",
+        "unitName": "７-２号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 25571000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "常陸那珂火力発電所１号機",
+        "unitName": "常陸那珂１号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 22707000,
+        "values": []
+      },
+      {
+        "area": "中部",
+        "plantName": "碧南火力発電所",
+        "unitName": "５号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 22605000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "常陸那珂火力発電所２号機",
+        "unitName": "常陸那珂２号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 22438000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力原町火力発電所２号機",
+        "unitName": "２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 22285661,
+        "values": []
+      },
+      {
+        "area": "九州",
+        "plantName": "川内原子力発電所",
+        "unitName": "１号機",
+        "sourceType": "原子力",
+        "dailyKwh": 22006000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力原町火力発電所１号機",
+        "unitName": "１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 21569239,
+        "values": []
+      },
+      {
+        "area": "関西",
+        "plantName": "高浜発電所",
+        "unitName": "４号機",
+        "sourceType": "原子力",
+        "dailyKwh": 21532244,
+        "values": []
+      },
+      {
+        "area": "関西",
+        "plantName": "高浜発電所",
+        "unitName": "３号機",
+        "sourceType": "原子力",
+        "dailyKwh": 21425076,
+        "values": []
+      },
+      {
+        "area": "四国",
+        "plantName": "四国電力　伊方発電所",
+        "unitName": "３号機",
+        "sourceType": "原子力",
+        "dailyKwh": 21092000,
+        "values": []
+      },
+      {
+        "area": "関西",
+        "plantName": "舞鶴発電所",
+        "unitName": "２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 20568202,
+        "values": []
+      },
+      {
+        "area": "関西",
+        "plantName": "舞鶴発電所",
+        "unitName": "１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 20122604,
+        "values": []
+      },
+      {
+        "area": "関西",
+        "plantName": "高浜発電所",
+        "unitName": "１号機",
+        "sourceType": "原子力",
+        "dailyKwh": 19776853,
+        "values": []
+      },
+      {
+        "area": "関西",
+        "plantName": "美浜発電所",
+        "unitName": "３号機",
+        "sourceType": "原子力",
+        "dailyKwh": 19773256,
+        "values": []
+      },
+      {
+        "area": "中国",
+        "plantName": "三隅発電所第１号機",
+        "unitName": "１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 18761401,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "五井火力発電所2号機",
+        "unitName": "五井2号",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 17410000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "相馬共同火力発電株式会社新地火力発電所",
+        "unitName": "新地1号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 17373893,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "五井火力発電所1号機",
+        "unitName": "五井1号",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 17362000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "五井火力発電所3号機",
+        "unitName": "五井3号",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 17307000,
+        "values": []
+      },
+      {
+        "area": "九州",
+        "plantName": "松浦発電所",
+        "unitName": "２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 16304000,
+        "values": []
+      },
+      {
+        "area": "中部",
+        "plantName": "碧南火力発電所",
+        "unitName": "３号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 15998000,
+        "values": []
+      },
+      {
+        "area": "四国",
+        "plantName": "電源開発橘湾火力発電所",
+        "unitName": "1号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 15744000,
+        "values": []
+      },
+      {
+        "area": "中部",
+        "plantName": "碧南火力発電所",
+        "unitName": "１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 15654000,
+        "values": []
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 敦賀火力発電所",
+        "unitName": "2号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 15563400,
+        "values": []
+      },
+      {
+        "area": "四国",
+        "plantName": "電源開発橘湾火力発電所",
+        "unitName": "2号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 15226000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "常陸那珂共同火力発電所1号機",
+        "unitName": "常陸那珂共同火力１号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 14925000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "鹿島火力発電所",
+        "unitName": "2号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 14570000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "横須賀火力発電所1号機",
+        "unitName": "横須賀1号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 14539000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所２号系列２軸",
+        "unitName": "川崎２ー２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 14484000,
+        "values": []
+      },
+      {
+        "area": "四国",
+        "plantName": "四国電力　橘湾発電所",
+        "unitName": "単独",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 14257000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "電源開発磯子火力発電所新１号機",
+        "unitName": "1号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13859000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "広野火力発電所６号機",
+        "unitName": "広野６号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13666000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "姉崎火力発電所新３号機",
+        "unitName": "姉崎新3号",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 13544000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力能代火力発電所１号機",
+        "unitName": "１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13502967,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "姉崎火力発電所新２号機",
+        "unitName": "姉崎新2号",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 13489000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力東新潟火力発電所４号系列",
+        "unitName": "４-２号系列",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 13449760,
+        "values": []
+      },
+      {
+        "area": "北海道",
+        "plantName": "苫東厚真発電所",
+        "unitName": "４号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 13207590,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "真岡発電所",
+        "unitName": "1号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 12962000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "真岡発電所",
+        "unitName": "2号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 12962000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "広野火力発電所５号機",
+        "unitName": "広野５号",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 12892000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "勿来発電所",
+        "unitName": "勿来8号機（東北系）",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 12627694,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "東北電力能代火力発電所３号機",
+        "unitName": "３号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 12310419,
+        "values": []
+      },
+      {
+        "area": "中国",
+        "plantName": "三隅発電所第２号機",
+        "unitName": "２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 12020763,
+        "values": []
+      },
+      {
+        "area": "中国",
+        "plantName": "電源開発竹原火力発電所新１号機",
+        "unitName": "1号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 11465798,
+        "values": []
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 七尾大田火力発電所",
+        "unitName": "1号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 11246000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "上越火力発電所",
+        "unitName": "１-１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 11195000,
+        "values": []
+      },
+      {
+        "area": "中国",
+        "plantName": "電源開発竹原火力発電所３号機",
+        "unitName": "3号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 11040091,
+        "values": []
+      },
+      {
+        "area": "九州",
+        "plantName": "苓北発電所",
+        "unitName": "２号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 10766000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "上越火力発電所",
+        "unitName": "２-１号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10751000,
+        "values": []
+      },
+      {
+        "area": "北陸",
+        "plantName": "北陸電力 敦賀火力発電所",
+        "unitName": "1号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 10743500,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所１号系列２軸",
+        "unitName": "川崎１ー２軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10553000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "富津火力発電所４号系列１軸",
+        "unitName": "富津４ー１軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10546000,
+        "values": []
+      },
+      {
+        "area": "九州",
+        "plantName": "松浦発電所",
+        "unitName": "１号機",
+        "sourceType": "火力（石炭）",
+        "dailyKwh": 10514000,
+        "values": []
+      },
+      {
+        "area": "東京",
+        "plantName": "川崎火力発電所１号系列３軸",
+        "unitName": "川崎１ー３軸",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10483000,
+        "values": []
+      },
+      {
+        "area": "東北",
+        "plantName": "上越火力発電所",
+        "unitName": "１-２号機",
+        "sourceType": "火力（ガス）",
+        "dailyKwh": 10401000,
+        "values": []
+      }
     ]
   },
   "reserves": {
