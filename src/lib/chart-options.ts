@@ -731,8 +731,10 @@ export function buildGeneratorTreemapOption(
       {
         type: "treemap",
         roam: false,
-        width: "100%",
-        height: "100%",
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
         nodeClick: false,
         breadcrumb: { show: false },
         label: {
@@ -847,11 +849,9 @@ export function buildAreaGenerationTimeSeriesOption(
     series: seriesList.map((s) => ({
       name: s.name,
       type: "line",
-      stack: "gen",
       smooth: true,
       symbol: "none",
-      lineStyle: { width: 0 },
-      areaStyle: { opacity: 0.85 },
+      lineStyle: { width: 1.5 },
       color: s.color,
       data: s.data,
       emphasis: { focus: "series" },
