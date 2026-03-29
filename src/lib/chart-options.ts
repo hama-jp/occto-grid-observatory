@@ -872,6 +872,119 @@ export function buildAreaGenerationTimeSeriesOption(
   };
 }
 
+/**
+ * Expanded (full-window modal) variant of the area generation time-series chart.
+ * Shows all series with larger layout, dataZoom slider, and full legend.
+ */
+export function buildExpandedAreaGenerationTimeSeriesOption(
+  seriesList: AreaGenerationSeries[],
+  slotLabels: string[],
+  areaColor: string,
+): Record<string, unknown> {
+  if (seriesList.length === 0 || slotLabels.length === 0) {
+    return { graphic: emptyGraphic("データなし") };
+  }
+
+  return {
+    animation: true,
+    animationDuration: 500,
+    animationEasing: "cubicOut",
+    backgroundColor: "transparent",
+    grid: {
+      top: 40,
+      left: 64,
+      right: 24,
+      bottom: 80,
+      containLabel: false,
+    },
+    legend: {
+      show: true,
+      bottom: 44,
+      left: "center",
+      type: "scroll",
+      textStyle: { color: "#94a3b8", fontSize: 11 },
+      pageTextStyle: { color: "#94a3b8" },
+      pageIconColor: "#64748b",
+      pageIconInactiveColor: "#334155",
+      itemWidth: 14,
+      itemHeight: 10,
+      itemGap: 12,
+    },
+    dataZoom: [
+      {
+        type: "slider",
+        bottom: 8,
+        height: 24,
+        borderColor: "transparent",
+        backgroundColor: "rgba(100,116,139,0.1)",
+        fillerColor: `${areaColor}22`,
+        handleStyle: { color: areaColor, borderColor: areaColor },
+        textStyle: { color: "#94a3b8", fontSize: 10 },
+        dataBackground: {
+          lineStyle: { color: `${areaColor}44` },
+          areaStyle: { color: `${areaColor}11` },
+        },
+      },
+    ],
+    xAxis: {
+      type: "category",
+      data: slotLabels,
+      show: true,
+      axisLine: { show: true, lineStyle: { color: "#334155" } },
+      axisTick: { show: false },
+      axisLabel: {
+        show: true,
+        fontSize: 11,
+        color: "#94a3b8",
+        interval: (_index: number, value: string) =>
+          value === "00:00" || value === "03:00" || value === "06:00" ||
+          value === "09:00" || value === "12:00" || value === "15:00" ||
+          value === "18:00" || value === "21:00",
+      },
+    },
+    yAxis: {
+      type: "value",
+      show: true,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { show: true, lineStyle: { color: "#e2e8f0", opacity: 0.3 } },
+      axisLabel: {
+        show: true,
+        fontSize: 11,
+        color: "#94a3b8",
+        formatter: (v: number) => {
+          if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+          if (v >= 1_000) return `${Math.round(v / 1_000)}k`;
+          return String(v);
+        },
+      },
+    },
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(30,41,59,0.95)",
+      borderColor: "transparent",
+      textStyle: { color: "#f1f5f9", fontSize: 12 },
+      formatter: (params: Array<{ seriesName: string; value: number; marker: string; dataIndex: number }>) => {
+        const slot = slotLabels[params[0]?.dataIndex ?? 0] ?? "";
+        const lines = params
+          .filter((p) => p.value > 0)
+          .map((p) => `${p.marker} ${p.seriesName}: ${numberFmt.format(p.value)} kWh`);
+        return `<div style="font-size:12px;max-height:400px;overflow-y:auto"><b>${slot}</b><br/>${lines.join("<br/>")}</div>`;
+      },
+    },
+    series: seriesList.map((s) => ({
+      name: s.name,
+      type: "line",
+      smooth: true,
+      symbol: "none",
+      lineStyle: { width: 2 },
+      color: s.color,
+      data: s.data,
+      emphasis: { focus: "series" },
+    })),
+  };
+}
+
 // Re-export congestion builders from dedicated module for backwards compatibility
 export {
   buildCongestionData,
