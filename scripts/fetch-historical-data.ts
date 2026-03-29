@@ -193,6 +193,7 @@ async function main(): Promise<void> {
       `--from=${chunk.from}`,
       `--to=${chunk.to}`,
       "--sample=daily",
+      "--commit-each",
     ];
 
     let chunkOutput = "";

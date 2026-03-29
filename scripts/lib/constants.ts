@@ -26,6 +26,7 @@ export type CliArgs = {
   targetDates: string[];
   force: boolean;
   sample: "daily" | "monthly" | "quarterly";
+  commitEach: boolean;
 };
 
 export type DownloadResult = {
