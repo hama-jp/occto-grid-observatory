@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
-import { type MutableRefObject, type ReactNode, useCallback, useEffect, useState } from "react";
+import { type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { buildExpandedFlowNetworkOption } from "@/lib/network-flow-builder";
 import type {
   NetworkAnimationPath,
   NetworkOverlayViewport,
@@ -194,6 +195,11 @@ export function NetworkSection({
   const [expandedPanel, setExpandedPanel] = useState<"network" | "interarea" | null>(null);
   const handleClose = useCallback(() => setExpandedPanel(null), []);
 
+  const expandedFlowOption = useMemo(
+    () => expandedPanel === "network" ? buildExpandedFlowNetworkOption(flowNetworkOption) : null,
+    [expandedPanel, flowNetworkOption],
+  );
+
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 2xl:grid-cols-4">
       <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2 2xl:col-span-3 cursor-pointer" testId="network-flow-panel">
@@ -338,7 +344,7 @@ export function NetworkSection({
           </div>
           <div className="relative flex-1">
             <ReactECharts
-              option={flowNetworkOption}
+              option={expandedFlowOption!}
               style={{ height: "calc(85vh - 120px)", width: "100%" }}
               opts={{ renderer: "canvas" }}
             />

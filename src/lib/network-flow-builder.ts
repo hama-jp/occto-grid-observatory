@@ -20,6 +20,7 @@ import {
   buildStationLayout,
   compareAreaOrder,
 } from "@/lib/network-flow-data";
+import { buildJapanGuideGraphics } from "@/lib/geo-svg";
 
 export type NetworkFlowBuilderParams = {
   areaSummaries: DashboardData["flows"]["areaSummaries"];
@@ -287,5 +288,29 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
         },
       },
     ],
+  };
+}
+
+/**
+ * Build an expanded modal variant of the flow network option.
+ * Disables roam (modal is already full-window) and embeds the Japan guide
+ * map as ECharts graphic polygons so they stay aligned with graph nodes.
+ */
+export function buildExpandedFlowNetworkOption(
+  baseOption: Record<string, unknown>,
+): Record<string, unknown> {
+  const japanGraphics = buildJapanGuideGraphics();
+  const series = (baseOption.series as Array<Record<string, unknown>>) ?? [];
+  const expandedSeries = series.map((s) => {
+    if ((s as { type?: string }).type === "graph") {
+      return { ...s, roam: false };
+    }
+    return s;
+  });
+
+  return {
+    ...baseOption,
+    series: expandedSeries,
+    graphic: japanGraphics,
   };
 }
