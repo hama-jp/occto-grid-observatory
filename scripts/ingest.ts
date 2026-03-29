@@ -87,6 +87,8 @@ function parseArgs(args: string[]): CliArgs {
     if (targetDates.length === 0) {
       throw new Error("`--from` must be earlier than or equal to `--to`.");
     }
+    // Process newest dates first so recent data is available sooner.
+    targetDates.reverse();
   }
 
   const defaultForce = modeRaw === "backfill" ? false : true;
@@ -245,7 +247,9 @@ async function main(): Promise<void> {
   let updatedCount = 0;
   let skippedCount = 0;
   let noDataCount = 0;
-  const newestRequestedDate = args.targetDates[args.targetDates.length - 1] ?? "";
+  // In backfill mode dates are reversed (newest first), so pick the actual
+  // newest date by comparing all entries.
+  const newestRequestedDate = args.targetDates.reduce((a, b) => (compareNormalizedDate(a, b) >= 0 ? a : b), args.targetDates[0] ?? "");
 
   for (let i = 0; i < args.targetDates.length; i += 1) {
     const targetDate = args.targetDates[i];
@@ -298,8 +302,10 @@ async function main(): Promise<void> {
     const payload = JSON.stringify(dashboard, null, 2);
     await fs.writeFile(datedOutputPath, payload, "utf-8");
 
-    latestPayload = payload;
-    latestDate = targetDate;
+    if (!latestDate || compareNormalizedDate(targetDate, latestDate) > 0) {
+      latestPayload = payload;
+      latestDate = targetDate;
+    }
     updatedCount += 1;
 
     console.log(
