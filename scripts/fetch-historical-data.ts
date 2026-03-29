@@ -142,9 +142,11 @@ async function main(): Promise<void> {
   const existing = await countExistingFiles(normalizedDir);
 
   const chunks = buildChunks(args.from, args.to, args.chunkDays);
+  // Process newest chunks first so recent data is available sooner.
+  chunks.reverse();
   const totalDays = chunks.reduce((sum, c) => sum + c.days, 0);
 
-  console.log(`[backfill] range: ${formatDate(args.from)} → ${formatDate(args.to)}`);
+  console.log(`[backfill] range: ${formatDate(args.from)} → ${formatDate(args.to)} (newest first)`);
   console.log(`[backfill] total days: ${totalDays}, chunks: ${chunks.length} (${args.chunkDays} days each)`);
   console.log(`[backfill] existing files: ${existing.size}`);
   console.log(`[backfill] dry-run: ${args.dryRun}`);
@@ -193,6 +195,7 @@ async function main(): Promise<void> {
       `--from=${chunk.from}`,
       `--to=${chunk.to}`,
       "--sample=daily",
+      "--commit-each",
     ];
 
     let chunkOutput = "";
@@ -237,16 +240,17 @@ async function main(): Promise<void> {
 
       if (consecutiveEmpty >= CONSECUTIVE_EMPTY_THRESHOLD) {
         const skipDays = SKIP_FORWARD_WEEKS * 7;
-        const jumpTarget = new Date(parseDateArg(chunk.to).getTime() + skipDays * 24 * 60 * 60_000);
+        // Chunks are in newest-first order, so jump backward in time.
+        const jumpTarget = new Date(parseDateArg(chunk.from).getTime() - skipDays * 24 * 60 * 60_000);
         console.log(
           `[backfill] ${consecutiveEmpty} consecutive empty chunks — OCCTO likely has no data for this period`,
         );
         console.log(
-          `[backfill] jumping forward ${SKIP_FORWARD_WEEKS} weeks to ${formatDate(jumpTarget)} to probe for data`,
+          `[backfill] jumping back ${SKIP_FORWARD_WEEKS} weeks to ${formatDate(jumpTarget)} to probe for data`,
         );
 
-        // Skip chunks until we reach the jump target
-        while (chunkIndex < chunks.length && parseDateArg(chunks[chunkIndex].from).getTime() < jumpTarget.getTime()) {
+        // Skip chunks until we reach the jump target (going backwards)
+        while (chunkIndex < chunks.length && parseDateArg(chunks[chunkIndex].to).getTime() > jumpTarget.getTime()) {
           totalNoData += chunks[chunkIndex].days;
           chunkIndex++;
         }

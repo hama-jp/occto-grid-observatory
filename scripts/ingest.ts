@@ -8,6 +8,7 @@
  *   - lib/normalizers.ts — DashboardData assembly
  */
 
+import { execFileSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import {
@@ -86,16 +87,20 @@ function parseArgs(args: string[]): CliArgs {
     if (targetDates.length === 0) {
       throw new Error("`--from` must be earlier than or equal to `--to`.");
     }
+    // Process newest dates first so recent data is available sooner.
+    targetDates.reverse();
   }
 
   const defaultForce = modeRaw === "backfill" ? false : true;
   const force = parseBooleanOption(options.get("force"), flags, defaultForce);
+  const commitEach = flags.has("commit-each");
 
   return {
     mode: modeRaw,
     targetDates,
     force,
     sample: sampleRaw as CliArgs["sample"],
+    commitEach,
   };
 }
 
@@ -192,6 +197,27 @@ function enumerateMonthlyDateRange(start: Date, end: Date, monthStep: number): s
   return dates;
 }
 
+function gitCommitAndPush(normalizedDir: string, targetDate: string): boolean {
+  try {
+    const status = execFileSync("git", ["status", "--porcelain", "--", normalizedDir], {
+      encoding: "utf-8",
+    }).trim();
+    if (!status) {
+      console.log(`[ingest] no changes to commit for ${targetDate}`);
+      return false;
+    }
+    execFileSync("git", ["add", normalizedDir], { stdio: "inherit" });
+    execFileSync("git", ["commit", "-m", `chore(data): normalize ${targetDate}`], { stdio: "inherit" });
+    execFileSync("git", ["push"], { stdio: "inherit" });
+    console.log(`[ingest] committed and pushed data for ${targetDate}`);
+    return true;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`[ingest] git commit/push failed for ${targetDate}: ${detail}`);
+    return false;
+  }
+}
+
 async function readExistingLatestDate(normalizedDir: string): Promise<string | null> {
   try {
     const content = await fs.readFile(path.join(normalizedDir, "dashboard-latest.json"), "utf-8");
@@ -221,7 +247,9 @@ async function main(): Promise<void> {
   let updatedCount = 0;
   let skippedCount = 0;
   let noDataCount = 0;
-  const newestRequestedDate = args.targetDates[args.targetDates.length - 1] ?? "";
+  // In backfill mode dates are reversed (newest first), so pick the actual
+  // newest date by comparing all entries.
+  const newestRequestedDate = args.targetDates.reduce((a, b) => (compareNormalizedDate(a, b) >= 0 ? a : b), args.targetDates[0] ?? "");
 
   for (let i = 0; i < args.targetDates.length; i += 1) {
     const targetDate = args.targetDates[i];
@@ -274,14 +302,20 @@ async function main(): Promise<void> {
     const payload = JSON.stringify(dashboard, null, 2);
     await fs.writeFile(datedOutputPath, payload, "utf-8");
 
-    latestPayload = payload;
-    latestDate = targetDate;
+    if (!latestDate || compareNormalizedDate(targetDate, latestDate) > 0) {
+      latestPayload = payload;
+      latestDate = targetDate;
+    }
     updatedCount += 1;
 
     console.log(
       `[ingest] generated ${targetDate}: generation=${generationRows.length}, flow=${flowRows.length}, intertie=${intertieRows.length}, reserve=${reserveRows.length}`,
     );
     console.log(`[ingest] wrote ${datedOutputPath}`);
+
+    if (args.commitEach) {
+      gitCommitAndPush(normalizedDir, targetDate);
+    }
 
     if (i < args.targetDates.length - 1) {
       await sleep(3000);
@@ -307,6 +341,9 @@ async function main(): Promise<void> {
     const latestOutputPath = path.join(normalizedDir, "dashboard-latest.json");
     await fs.writeFile(latestOutputPath, latestWritePayload, "utf-8");
     console.log(`[ingest] wrote ${latestOutputPath} (from ${latestWriteDate})`);
+    if (args.commitEach) {
+      gitCommitAndPush(normalizedDir, `latest (${latestWriteDate})`);
+    }
   } else if (latestWritePayload && args.mode === "backfill") {
     console.log(
       `[ingest] preserved dashboard-latest.json (${existingLatest ?? "unknown"}) because backfill target ${latestWriteDate} is older`,

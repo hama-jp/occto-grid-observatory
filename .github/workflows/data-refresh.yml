@@ -64,6 +64,11 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Run ingestion
         shell: bash
         run: |
@@ -72,11 +77,11 @@ jobs:
               FROM="$(TZ=Asia/Tokyo date -d '4 days ago' '+%Y-%m-%d')"
               TO="$(TZ=Asia/Tokyo date -d '1 day ago' '+%Y-%m-%d')"
               echo "Scheduled fixed-data refresh for recent dates: ${FROM}..${TO}"
-              npm run ingest -- --mode=backfill --from="${FROM}" --to="${TO}" --sample=daily --force=true
+              npm run ingest -- --mode=backfill --from="${FROM}" --to="${TO}" --sample=daily --force=true --commit-each
             else
               echo "Scheduled intraday refresh: today + yesterday"
-              npm run ingest -- --mode=now --force=true || true
-              npm run ingest -- --mode=daily --force=true
+              npm run ingest -- --mode=now --force=true --commit-each || true
+              npm run ingest -- --mode=daily --force=true --commit-each
             fi
           else
             MODE="${{ github.event.inputs.mode }}"
@@ -85,7 +90,7 @@ jobs:
             TO="${{ github.event.inputs.to }}"
             FORCE="${{ github.event.inputs.force }}"
 
-            CMD=("npm" "run" "ingest" "--" "--mode=${MODE}" "--force=${FORCE}")
+            CMD=("npm" "run" "ingest" "--" "--mode=${MODE}" "--force=${FORCE}" "--commit-each")
             if [ -n "${DATE}" ]; then
               CMD+=("--date=${DATE}")
             fi
@@ -100,7 +105,7 @@ jobs:
             "${CMD[@]}"
           fi
 
-      - name: Commit normalized data if changed
+      - name: Commit remaining normalized data if changed
         shell: bash
         run: |
           if [ -z "$(git status --porcelain -- data/normalized)" ]; then
@@ -108,8 +113,6 @@ jobs:
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/normalized
           git commit -m "chore(data): refresh normalized dashboard data"
           git push

@@ -150,9 +150,9 @@ test("donut and bar chart panels keep visible chart signal", async ({ page }) =>
 });
 
 test("date selector reloads dashboard data for another day", async ({ page }) => {
-  const targetDate = "2026/03/09";
-  const targetInputDate = "2026-03-09";
-  const targetStamp = "20260309";
+  const targetDate = "2026/03/25";
+  const targetInputDate = "2026-03-25";
+  const targetStamp = "20260325";
 
   await page.route(`**/data/normalized/dashboard-${targetStamp}.json`, async (route) => {
     await route.fulfill({
@@ -172,7 +172,7 @@ test("date selector reloads dashboard data for another day", async ({ page }) =>
   await expect(headerSummary).toContainText(targetDate);
   await expect(dateInput).toHaveValue(targetInputDate);
   await expect(page.getByText("読み込み中...")).toHaveCount(0);
-  await expect(page.getByText(/対象日: 2026\/03\/09/)).toBeVisible();
+  await expect(page.getByText(/対象日: 2026\/03\/25/)).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "エリア別需給カード" })).toBeVisible();
 });
 
