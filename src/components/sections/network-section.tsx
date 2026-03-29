@@ -342,57 +342,6 @@ export function NetworkSection({
               style={{ height: "calc(85vh - 120px)", width: "100%" }}
               opts={{ renderer: "canvas" }}
             />
-            <svg
-              className="pointer-events-none absolute inset-0 z-10"
-              viewBox={`0 0 ${networkOverlayViewport.width} ${networkOverlayViewport.height}`}
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <g transform={formatSvgMatrixTransform(networkOverlayViewport.roam)}>
-                <g transform={formatSvgMatrixTransform(networkOverlayViewport.raw)}>
-                  {japanGuidePaths.map((island) => (
-                    <path
-                      key={island.name}
-                      d={island.d}
-                      fill="rgba(203,213,225,0.12)"
-                      stroke="rgba(148,163,184,0.22)"
-                      strokeWidth={1}
-                      strokeLinejoin="round"
-                    />
-                  ))}
-                  {majorFlowAnimationPaths.map((path) => {
-                    const glowColor = flowMagnitudeColor(path.magnitude, 0.38);
-                    const dashColor = flowMagnitudeColor(path.magnitude, 0.92);
-                    const shadowColor = flowMagnitudeColor(path.magnitude, 0.95);
-                    return (
-                      <g key={path.id}>
-                        <path
-                          d={path.d}
-                          fill="none"
-                          stroke={glowColor}
-                          strokeWidth={path.strokeWidth + 0.8}
-                          strokeLinecap="round"
-                        />
-                        <path
-                          d={path.d}
-                          fill="none"
-                          stroke={dashColor}
-                          strokeWidth={path.strokeWidth}
-                          strokeLinecap="round"
-                          strokeDasharray="14 13"
-                          style={{
-                            animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
-                            animationDelay: `-${path.delaySeconds}s`,
-                            filter: `drop-shadow(0 0 2px ${shadowColor})`,
-                          }}
-                        />
-                      </g>
-                    );
-                  })}
-                  <IntertieAnimationPaths paths={intertieAnimationPaths} />
-                </g>
-              </g>
-            </svg>
           </div>
         </ExpandModal>,
         document.body,
