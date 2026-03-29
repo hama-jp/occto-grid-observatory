@@ -6,7 +6,7 @@ import { AREA_DISPLAY_ORDER } from "../../src/lib/constants";
 
 export const AREA_ORDER = AREA_DISPLAY_ORDER;
 
-const FIXTURE_FILE = path.join(process.cwd(), "data", "normalized", "dashboard-20260304.json");
+const FIXTURE_FILE = path.join(process.cwd(), "data", "normalized", "dashboard-latest.json");
 
 type DashboardFixture = {
   meta: {
