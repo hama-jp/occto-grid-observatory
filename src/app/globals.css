@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #f8fafb;
@@ -11,17 +12,15 @@
   --panel-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.05);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #e2e8f0;
-    --accent: #2dd4bf;
-    --accent-light: #5eead4;
-    --surface: rgba(30, 41, 59, 0.82);
-    --surface-border: rgba(51, 65, 85, 0.7);
-    --panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
-    --panel-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.2);
-  }
+:root.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --accent: #2dd4bf;
+  --accent-light: #5eead4;
+  --surface: rgba(30, 41, 59, 0.82);
+  --surface-border: rgba(51, 65, 85, 0.7);
+  --panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
+  --panel-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 @theme inline {
@@ -66,13 +65,11 @@ h1, h2, h3 {
   background: rgba(148, 163, 184, 0.55);
 }
 
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb {
-    background: rgba(100, 116, 139, 0.4);
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(100, 116, 139, 0.6);
-  }
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
 }
 
 /* ── Selection ── */
