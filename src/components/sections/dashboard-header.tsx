@@ -10,6 +10,7 @@ import {
   SELECT_CLASS,
   PILL_BUTTON_CLASS,
 } from "@/lib/styles";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 type DashboardHeaderProps = {
   targetDate: string;
@@ -46,10 +47,15 @@ export function DashboardHeader({
     <header className="animate-fade-in-up rounded-3xl border border-white/70 bg-white/85 px-4 py-4 shadow-[var(--panel-shadow)] backdrop-blur-sm md:px-6 md:py-6 dark:border-slate-700/80 dark:bg-slate-800/85">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] text-teal-600 dark:text-teal-400">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-500 animate-[pulse-subtle_2s_ease-in-out_infinite]" />
-            OCCTO GRID OBSERVATORY
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] text-teal-600 dark:text-teal-400">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-500 animate-[pulse-subtle_2s_ease-in-out_infinite]" />
+              OCCTO GRID OBSERVATORY
+            </p>
+            <div className="md:hidden">
+              <ThemeToggle />
+            </div>
+          </div>
           <h1 className="mt-1 text-xl font-bold leading-tight tracking-tight md:text-3xl">
             発電実績 <span className="text-teal-600 dark:text-teal-400">×</span>送電潮流実績 ダッシュボード
           </h1>
@@ -117,6 +123,9 @@ export function DashboardHeader({
             </select>
           </div>
           {dateError ? <p className="text-xs font-medium text-rose-600 dark:text-rose-400">{dateError}</p> : null}
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>

@@ -25,8 +25,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeScript = `(function(){try{var m=localStorage.getItem("theme-mode");var d=m==="dark"||(m!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches);if(d)document.documentElement.classList.add("dark")}catch(e){}})()`;
+
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${displayFont.variable} ${bodyFont.variable} antialiased`}>{children}</body>
     </html>
   );
