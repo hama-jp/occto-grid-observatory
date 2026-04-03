@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import { type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buildExpandedFlowNetworkOption } from "@/lib/network-flow-builder";
 import type {
@@ -8,6 +8,10 @@ import type {
   NetworkFlowChartHostElement,
 } from "@/lib/geo";
 import {
+  DEFAULT_NETWORK_OVERLAY_VIEWPORT,
+  areNetworkOverlayViewportsEqual,
+  attachNetworkFlowChartRoamHook,
+  readNetworkOverlayViewport,
   formatSvgMatrixTransform,
   flowMagnitudeColor,
 } from "@/lib/geo";
@@ -99,11 +103,115 @@ function ExpandModal({
 
 function ExpandIcon() {
   return (
-    <span className="text-slate-300 transition-colors group-hover/panel:text-slate-500 dark:text-slate-600 dark:group-hover/panel:text-slate-400">
+    <span className="text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10 2h4v4M6 14H2v-4M14 2L9.5 6.5M2 14l4.5-4.5" />
       </svg>
     </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Expanded network chart with SVG overlay (for modal)               */
+/* ------------------------------------------------------------------ */
+
+function ExpandedNetworkChart({
+  option,
+  japanGuidePaths,
+  majorFlowAnimationPaths,
+  intertieAnimationPaths,
+}: {
+  option: Record<string, unknown>;
+  japanGuidePaths: Array<{ name: string; d: string }>;
+  majorFlowAnimationPaths: NetworkAnimationPath[];
+  intertieAnimationPaths: NetworkAnimationPath[];
+}) {
+  const hostRef = useRef<NetworkFlowChartHostElement | null>(null);
+  const [viewport, setViewport] = useState<NetworkOverlayViewport>(
+    DEFAULT_NETWORK_OVERLAY_VIEWPORT,
+  );
+
+  const syncViewport = useCallback((chart: unknown) => {
+    const next = readNetworkOverlayViewport(chart);
+    if (next) {
+      setViewport((prev) =>
+        areNetworkOverlayViewportsEqual(prev, next) ? prev : next,
+      );
+    }
+  }, []);
+
+  const registerChart = useCallback(
+    (chart: unknown) => {
+      attachNetworkFlowChartRoamHook(chart, hostRef.current);
+      syncViewport(chart);
+    },
+    [syncViewport],
+  );
+
+  return (
+    <div className="relative flex-1" ref={hostRef}>
+      <ReactECharts
+        option={option}
+        style={{ height: "calc(85vh - 120px)", width: "100%" }}
+        opts={{ renderer: "canvas" }}
+        onChartReady={registerChart}
+        onEvents={{
+          finished: (_event: unknown, chart: unknown) => registerChart(chart),
+          graphRoam: (_event: unknown, chart: unknown) => syncViewport(chart),
+        }}
+      />
+      <svg
+        className="pointer-events-none absolute inset-0 z-10"
+        viewBox={`0 0 ${viewport.width} ${viewport.height}`}
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+      >
+        <g transform={formatSvgMatrixTransform(viewport.roam)}>
+          <g transform={formatSvgMatrixTransform(viewport.raw)}>
+            {japanGuidePaths.map((island) => (
+              <path
+                key={island.name}
+                d={island.d}
+                fill="rgba(203,213,225,0.12)"
+                stroke="rgba(148,163,184,0.22)"
+                strokeWidth={1}
+                strokeLinejoin="round"
+              />
+            ))}
+            {majorFlowAnimationPaths.map((path) => {
+              const glowColor = flowMagnitudeColor(path.magnitude, 0.38);
+              const dashColor = flowMagnitudeColor(path.magnitude, 0.92);
+              const shadowColor = flowMagnitudeColor(path.magnitude, 0.95);
+              return (
+                <g key={path.id}>
+                  <path
+                    d={path.d}
+                    fill="none"
+                    stroke={glowColor}
+                    strokeWidth={path.strokeWidth + 0.8}
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d={path.d}
+                    fill="none"
+                    stroke={dashColor}
+                    strokeWidth={path.strokeWidth}
+                    strokeLinecap="round"
+                    strokeDasharray="14 13"
+                    style={{
+                      animation: `network-flow-dash ${path.durationSeconds}s linear infinite`,
+                      animationDelay: `-${path.delaySeconds}s`,
+                      filter: `drop-shadow(0 0 2px ${shadowColor})`,
+                    }}
+                  />
+                </g>
+              );
+            })}
+            <IntertieAnimationPaths paths={intertieAnimationPaths} />
+          </g>
+        </g>
+      </svg>
+    </div>
   );
 }
 
@@ -202,7 +310,7 @@ export function NetworkSection({
 
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 2xl:grid-cols-4">
-      <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2 2xl:col-span-3 cursor-pointer" testId="network-flow-panel">
+      <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2 2xl:col-span-3" testId="network-flow-panel">
         <div className="mb-3 rounded-xl border border-slate-200/80 bg-gradient-to-r from-slate-50/80 to-white/60 px-4 py-2.5 dark:border-slate-700/60 dark:from-slate-800/60 dark:to-slate-800/40">
           <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
             注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンク（SS・CS・変換所間）として、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
@@ -239,7 +347,6 @@ export function NetworkSection({
           aria-label="ネットワーク潮流グラフ"
           className="relative"
           ref={networkFlowChartHostRef}
-          onClick={() => setExpandedPanel("network")}
         >
           <ReactECharts
             option={flowNetworkOption}
@@ -254,7 +361,7 @@ export function NetworkSection({
             data-testid="network-flow-overlay-svg"
             className="pointer-events-none absolute inset-0 z-10"
             viewBox={`0 0 ${networkOverlayViewport.width} ${networkOverlayViewport.height}`}
-            preserveAspectRatio="none"
+            preserveAspectRatio="xMidYMid meet"
             aria-hidden="true"
           >
             <g
@@ -305,10 +412,16 @@ export function NetworkSection({
               </g>
             </g>
           </svg>
-          {/* Expand hint overlay */}
-          <div className="absolute right-3 top-3 z-20 rounded-full bg-white/80 p-1.5 opacity-0 shadow-sm transition-opacity duration-200 group-hover/panel:opacity-100 dark:bg-slate-800/80">
+          {/* Expand button */}
+          <button
+            type="button"
+            onClick={() => setExpandedPanel("network")}
+            className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-md transition-all duration-200 hover:bg-white hover:shadow-lg active:scale-95 dark:bg-slate-800/90 dark:hover:bg-slate-700"
+            aria-label="拡大表示"
+            title="拡大表示"
+          >
             <ExpandIcon />
-          </div>
+          </button>
         </div>
       </Panel>
       <Panel title="エリア間連系潮流（実績）" testId="inter-area-flow-panel" className="cursor-pointer">
@@ -342,13 +455,12 @@ export function NetworkSection({
               <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-4 rounded-sm bg-red-500" />&ge;85%</span>
             </p>
           </div>
-          <div className="relative flex-1">
-            <ReactECharts
-              option={expandedFlowOption!}
-              style={{ height: "calc(85vh - 120px)", width: "100%" }}
-              opts={{ renderer: "canvas" }}
-            />
-          </div>
+          <ExpandedNetworkChart
+            option={expandedFlowOption!}
+            japanGuidePaths={japanGuidePaths}
+            majorFlowAnimationPaths={majorFlowAnimationPaths}
+            intertieAnimationPaths={intertieAnimationPaths}
+          />
         </ExpandModal>,
         document.body,
       )}
