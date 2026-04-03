@@ -6,7 +6,7 @@
  */
 
 import type { DashboardData } from "@/lib/dashboard-types";
-import { FLOW_AREA_COLORS, MAX_ANIMATED_FLOW_LINES_PER_AREA } from "@/lib/constants";
+import { FLOW_AREA_COLORS, MAX_ANIMATED_FLOW_LINES_PER_AREA, MAP_VIEWBOX } from "@/lib/constants";
 import { numberFmt, decimalFmt, formatVoltageKv } from "@/lib/formatters";
 import {
   extractIntraAreaLinks,
@@ -20,7 +20,7 @@ import {
   buildStationLayout,
   compareAreaOrder,
 } from "@/lib/network-flow-data";
-import { buildJapanGuideGraphics } from "@/lib/geo-svg";
+// Japan guide graphics are now rendered via SVG overlay in the component
 
 export type NetworkFlowBuilderParams = {
   areaSummaries: DashboardData["flows"]["areaSummaries"];
@@ -97,6 +97,34 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
     categoryIndex,
     networkPowerPlants,
     areaScope,
+  );
+
+  // 3b. Add invisible anchor nodes at MAP_VIEWBOX corners to pin the coordinate range.
+  // Without these, ECharts auto-ranges to the data extent and the SVG overlay
+  // (Japan map + animation paths) becomes misaligned.
+  nodes.push(
+    {
+      id: "__anchor_topLeft",
+      name: "",
+      x: 0,
+      y: 0,
+      symbolSize: 0,
+      itemStyle: { opacity: 0 },
+      label: { show: false },
+      emphasis: { disabled: true },
+      silent: true,
+    },
+    {
+      id: "__anchor_bottomRight",
+      name: "",
+      x: MAP_VIEWBOX.width,
+      y: MAP_VIEWBOX.height,
+      symbolSize: 0,
+      itemStyle: { opacity: 0 },
+      label: { show: false },
+      emphasis: { disabled: true },
+      silent: true,
+    },
   );
 
   // 4. Build rendered links
@@ -293,24 +321,13 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
 
 /**
  * Build an expanded modal variant of the flow network option.
- * Disables roam (modal is already full-window) and embeds the Japan guide
- * map as ECharts graphic polygons so they stay aligned with graph nodes.
+ * Keeps roam enabled for pan/zoom in the expanded view, and uses SVG overlay
+ * for the Japan guide map and animation paths (handled by the component).
  */
 export function buildExpandedFlowNetworkOption(
   baseOption: Record<string, unknown>,
 ): Record<string, unknown> {
-  const japanGraphics = buildJapanGuideGraphics();
-  const series = (baseOption.series as Array<Record<string, unknown>>) ?? [];
-  const expandedSeries = series.map((s) => {
-    if ((s as { type?: string }).type === "graph") {
-      return { ...s, roam: false };
-    }
-    return s;
-  });
-
   return {
     ...baseOption,
-    series: expandedSeries,
-    graphic: japanGraphics,
   };
 }
