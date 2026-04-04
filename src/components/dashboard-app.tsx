@@ -542,7 +542,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         ) : null}
 
         {visibleSectionSet.has("generatorStatus") ? (
-          <ChartErrorBoundary sectionName="発電機別ステータス">
+          <ChartErrorBoundary sectionName="発電ユニットごとの発電量">
             <GeneratorStatusSection
               cards={generatorStatus.cards}
               treemapItems={generatorStatus.treemapItems}

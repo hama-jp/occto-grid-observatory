@@ -137,7 +137,7 @@ function ExpandedCardModal({
           {card.timeSeries.length > 0 ? (
             <div className="rounded-2xl border border-slate-200/60 bg-white p-4 dark:border-slate-700/60 dark:bg-slate-800/60">
               <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                発電出力推移（30分値）
+                発電出力推移
               </h3>
               <div role="img" aria-label={`${card.area}の発電出力推移`}>
                 <ReactECharts
@@ -295,7 +295,7 @@ export function GeneratorStatusSection({
         <div>
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
             <span className="inline-block h-5 w-1 rounded-full bg-teal-500" />
-            発電機別ステータス
+            発電ユニットごとの発電量
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {selectedArea === "全エリア"
