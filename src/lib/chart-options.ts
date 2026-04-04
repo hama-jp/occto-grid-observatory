@@ -678,7 +678,7 @@ export function buildVolatilityHeatmapOption(
 // Generator status — treemap
 // ---------------------------------------------------------------------------
 
-import type { GeneratorTreemapItem, GeneratorStatusItem } from "./dashboard-computations";
+import type { GeneratorTreemapItem } from "./dashboard-computations";
 
 export function buildGeneratorTreemapOption(
   items: GeneratorTreemapItem[],

@@ -1,6 +1,5 @@
 import type { GeneratorStatusCard, GeneratorTreemapItem } from "@/lib/dashboard-computations";
-import { SOURCE_COLOR_MAP } from "@/lib/constants";
-import { decimalFmt, formatCompactEnergy, manKwFmt, normalizeSourceName } from "@/lib/formatters";
+import { decimalFmt, formatCompactEnergy, normalizeSourceName } from "@/lib/formatters";
 import {
   buildGeneratorTreemapOption,
   buildAreaGenerationTimeSeriesOption,
@@ -8,8 +7,9 @@ import {
   type AreaGenerationSeries,
 } from "@/lib/chart-options";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { ExpandModal } from "@/components/ui/expand-modal";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -47,23 +47,6 @@ function ExpandedCardModal({
   slotLabels: string[];
   onClose: () => void;
 }) {
-  // Close on Escape key
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  // Prevent body scroll while modal is open
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
-
   const expandedChartOption = useMemo(
     () =>
       buildExpandedAreaGenerationTimeSeriesOption(
@@ -87,159 +70,134 @@ function ExpandedCardModal({
   const topGen = card.generators[0];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex h-[95vh] w-[96vw] max-w-[1600px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 shadow-2xl dark:border-slate-700/80 dark:from-slate-900 dark:to-slate-850"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Color accent bar */}
-        <div
-          className="h-1.5 shrink-0"
-          style={{ background: `linear-gradient(90deg, ${card.areaColor}, ${card.areaColor}88)` }}
-        />
-
-        {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-200/60 px-6 py-4 dark:border-slate-700/60">
-          <div className="flex items-center gap-3">
-            <span
-              className="inline-flex h-4 w-4 rounded-full"
-              style={{ backgroundColor: card.areaColor }}
-            />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              {card.area}
-            </h2>
-            <span className="rounded-lg bg-slate-800 px-3 py-1 text-sm font-bold tabular-nums text-white dark:bg-slate-700">
-              {formatCompactEnergy(card.totalKwh)}
+    <ExpandModal
+      title={card.area}
+      onClose={onClose}
+      accentColor={card.areaColor}
+      headerExtra={
+        <>
+          <span
+            className="inline-flex h-4 w-4 rounded-full"
+            style={{ backgroundColor: card.areaColor }}
+          />
+          <span className="rounded-lg bg-slate-800 px-3 py-1 text-sm font-bold tabular-nums text-white dark:bg-slate-700">
+            {formatCompactEnergy(card.totalKwh)}
+          </span>
+          {topGen && (
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              主力: {topGen.plantName}（{topGen.sourceType}）{decimalFmt.format(topGen.sharePercent)}%
             </span>
-            {topGen && (
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                主力: {topGen.plantName}（{topGen.sourceType}）{decimalFmt.format(topGen.sharePercent)}%
-              </span>
-            )}
+          )}
+        </>
+      }
+    >
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        {/* Chart */}
+        {card.timeSeries.length > 0 ? (
+          <div className="rounded-2xl border border-slate-200/60 bg-white p-4 dark:border-slate-700/60 dark:bg-slate-800/60">
+            <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+              発電出力推移
+            </h3>
+            <div role="img" aria-label={`${card.area}の発電出力推移`}>
+              <ReactECharts
+                option={expandedChartOption}
+                style={{ height: "min(50vh, 500px)", width: "100%" }}
+                opts={{ renderer: "svg" }}
+              />
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-            aria-label="閉じる"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M5 5l10 10M15 5L5 15" />
-            </svg>
-          </button>
+        ) : (
+          <div className="flex h-40 items-center justify-center text-sm text-slate-400">
+            時系列データなし
+          </div>
+        )}
+
+        {/* Unit list */}
+        <div className="rounded-2xl border border-slate-200/60 bg-white p-4 dark:border-slate-700/60 dark:bg-slate-800/60">
+          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            ユニット一覧（{units.length}件）
+          </h3>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
+            {units.map((unit, idx) => (
+              <div
+                key={`${card.area}-exp-${unit.label}-${idx}`}
+                className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40"
+              >
+                <span className="w-5 shrink-0 text-right tabular-nums text-xs text-slate-400">
+                  {idx + 1}
+                </span>
+                <span
+                  className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: unit.color }}
+                />
+                <span className="min-w-0 truncate text-slate-700 dark:text-slate-300">
+                  {unit.label}
+                </span>
+                <span className="ml-auto shrink-0 tabular-nums font-medium text-slate-800 dark:text-slate-200">
+                  {formatCompactEnergy(unit.dailyKwh)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Body — scrollable */}
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6">
-          {/* Chart — takes up most of the space */}
-          {card.timeSeries.length > 0 ? (
-            <div className="rounded-2xl border border-slate-200/60 bg-white p-4 dark:border-slate-700/60 dark:bg-slate-800/60">
-              <h3 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                発電出力推移
-              </h3>
-              <div role="img" aria-label={`${card.area}の発電出力推移`}>
-                <ReactECharts
-                  option={expandedChartOption}
-                  style={{ height: "min(50vh, 500px)", width: "100%" }}
-                  opts={{ renderer: "svg" }}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-40 items-center justify-center text-sm text-slate-400">
-              時系列データなし
-            </div>
-          )}
-
-          {/* Unit list — full list in a table layout */}
+        {/* Top generators stats */}
+        {card.generators.length > 0 && (
           <div className="rounded-2xl border border-slate-200/60 bg-white p-4 dark:border-slate-700/60 dark:bg-slate-800/60">
             <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-              ユニット一覧（{units.length}件）
+              主要発電機
             </h3>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
-              {units.map((unit, idx) => (
-                <div
-                  key={`${card.area}-exp-${unit.label}-${idx}`}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40"
-                >
-                  <span className="w-5 shrink-0 text-right tabular-nums text-xs text-slate-400">
-                    {idx + 1}
-                  </span>
-                  <span
-                    className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: unit.color }}
-                  />
-                  <span className="min-w-0 truncate text-slate-700 dark:text-slate-300">
-                    {unit.label}
-                  </span>
-                  <span className="ml-auto shrink-0 tabular-nums font-medium text-slate-800 dark:text-slate-200">
-                    {formatCompactEnergy(unit.dailyKwh)}
-                  </span>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200/60 text-xs text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+                    <th className="pb-2 pr-4 font-medium">発電所</th>
+                    <th className="pb-2 pr-4 font-medium">電源種別</th>
+                    <th className="pb-2 pr-4 text-right font-medium">発電量</th>
+                    <th className="pb-2 pr-4 text-right font-medium">最大出力(万kW)</th>
+                    <th className="pb-2 pr-4 text-right font-medium">シェア</th>
+                    <th className="pb-2 text-right font-medium">稼働率</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {card.generators.map((gen, idx) => (
+                    <tr
+                      key={`${card.area}-gen-${gen.plantName}-${idx}`}
+                      className="border-b border-slate-100/60 last:border-0 dark:border-slate-700/40"
+                    >
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: gen.color }}
+                          />
+                          <span className="text-slate-700 dark:text-slate-300">{gen.plantName}</span>
+                        </div>
+                      </td>
+                      <td className="py-2 pr-4 text-slate-500 dark:text-slate-400">
+                        {normalizeSourceName(gen.sourceType)}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums font-medium text-slate-800 dark:text-slate-200">
+                        {formatCompactEnergy(gen.dailyKwh)}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                        {decimalFmt.format(gen.maxOutputManKw)}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                        {decimalFmt.format(gen.sharePercent)}%
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                        {decimalFmt.format(gen.utilizationPercent)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-
-          {/* Top generators stats */}
-          {card.generators.length > 0 && (
-            <div className="rounded-2xl border border-slate-200/60 bg-white p-4 dark:border-slate-700/60 dark:bg-slate-800/60">
-              <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                主要発電機
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200/60 text-xs text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
-                      <th className="pb-2 pr-4 font-medium">発電所</th>
-                      <th className="pb-2 pr-4 font-medium">電源種別</th>
-                      <th className="pb-2 pr-4 text-right font-medium">発電量</th>
-                      <th className="pb-2 pr-4 text-right font-medium">最大出力(万kW)</th>
-                      <th className="pb-2 pr-4 text-right font-medium">シェア</th>
-                      <th className="pb-2 text-right font-medium">稼働率</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {card.generators.map((gen, idx) => (
-                      <tr
-                        key={`${card.area}-gen-${gen.plantName}-${idx}`}
-                        className="border-b border-slate-100/60 last:border-0 dark:border-slate-700/40"
-                      >
-                        <td className="py-2 pr-4">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: gen.color }}
-                            />
-                            <span className="text-slate-700 dark:text-slate-300">{gen.plantName}</span>
-                          </div>
-                        </td>
-                        <td className="py-2 pr-4 text-slate-500 dark:text-slate-400">
-                          {normalizeSourceName(gen.sourceType)}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums font-medium text-slate-800 dark:text-slate-200">
-                          {formatCompactEnergy(gen.dailyKwh)}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums text-slate-600 dark:text-slate-400">
-                          {decimalFmt.format(gen.maxOutputManKw)}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums text-slate-600 dark:text-slate-400">
-                          {decimalFmt.format(gen.sharePercent)}%
-                        </td>
-                        <td className="py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">
-                          {decimalFmt.format(gen.utilizationPercent)}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
-    </div>
+    </ExpandModal>
   );
 }
 

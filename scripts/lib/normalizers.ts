@@ -22,6 +22,10 @@ import {
   type IntertieAreaDefinition,
 } from "./constants";
 
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 export function buildDashboardData(args: {
   targetDate: string;
   generationRows: GenerationRow[];
@@ -40,6 +44,59 @@ export function buildDashboardData(args: {
   const generationLabels = buildTimeLabels(30, slotCount, 30);
   const flowLabels = buildTimeLabels(0, slotCount, 30);
 
+  const generation = buildGenerationAggregates(args.generationRows, slotCount, generationLabels);
+  const flows = buildFlowAggregates(args.flowRows, args.intertieRows, slotCount, flowLabels);
+  const areaBalance = buildAreaBalances(generation.areaTotals, flows.areaSummaries);
+
+  return {
+    meta: {
+      targetDate: args.targetDate,
+      fetchedAt: new Date().toISOString(),
+      generationRows: args.generationRows.length,
+      flowRows: args.flowRows.length,
+      slotCount,
+      slotLabels: { generation: generationLabels, flow: flowLabels },
+      sources: {
+        generationCsv: args.generationCsvName,
+        flowCsv: args.flowCsvName,
+        intertieCsv: args.intertieCsvName,
+        reserveJson: args.reserveJsonName,
+      },
+    },
+    generation: {
+      areaTotals: generation.areaTotals,
+      sourceTotals: generation.sourceTotals,
+      hourlyBySource: generation.hourlyBySource,
+      hourlyBySourceByArea: generation.hourlyBySourceByArea,
+      hourlyTotalByArea: generation.hourlyTotalByArea,
+      topUnits: generation.topUnits,
+      plantSummaries: generation.plantSummaries,
+      unitSeries: generation.unitSeries,
+    },
+    reserves: { areaSeries: args.reserveRows },
+    flows: {
+      areaSummaries: flows.areaSummaries,
+      hourlyAbsByArea: flows.hourlyAbsByArea,
+      hourlyAbsStats: flows.hourlyAbsStats,
+      lineSeries: flows.lineSeries,
+      intertieSeries: flows.intertieSeries,
+      interAreaFlows: flows.interAreaFlows,
+    },
+    insights: {
+      areaBalance: areaBalance.sort((a, b) => b.stressIndex - a.stressIndex),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Generation aggregates
+// ---------------------------------------------------------------------------
+
+export function buildGenerationAggregates(
+  generationRows: GenerationRow[],
+  slotCount: number,
+  generationLabels: string[],
+) {
   const areaTotalsMap = new Map<string, number>();
   const sourceTotalsMap = new Map<string, number>();
   const hourlyByAreaMap = new Map<string, number[]>();
@@ -50,7 +107,7 @@ export function buildDashboardData(args: {
     { area: string; plantName: string; sourceType: string; dailyKwh: number; slotTotals: number[] }
   >();
 
-  for (const row of args.generationRows) {
+  for (const row of generationRows) {
     areaTotalsMap.set(row.area, (areaTotalsMap.get(row.area) ?? 0) + row.dailyKwh);
     sourceTotalsMap.set(row.sourceType, (sourceTotalsMap.get(row.sourceType) ?? 0) + row.dailyKwh);
 
@@ -86,7 +143,102 @@ export function buildDashboardData(args: {
     plantSummaryMap.set(plantKey, currentPlant);
   }
 
-  const lineSeries: LineSeries[] = args.flowRows.map((row) => {
+  const areaTotals = Array.from(areaTotalsMap.entries())
+    .map(([area, totalKwh]) => ({ area, totalKwh: roundTo(totalKwh, 0) }))
+    .sort((a, b) => b.totalKwh - a.totalKwh);
+
+  const sourceTotals = Array.from(sourceTotalsMap.entries())
+    .map(([source, totalKwh]) => ({ source, totalKwh: roundTo(totalKwh, 0) }))
+    .sort((a, b) => b.totalKwh - a.totalKwh);
+
+  const hourlyTotalByArea: HourlyAreaPoint[] = generationLabels.map((time, idx) => {
+    const values: Record<string, number> = {};
+    for (const [area, series] of hourlyByAreaMap.entries()) {
+      values[area] = roundTo(series[idx] ?? 0, 0);
+    }
+    return { time, values };
+  });
+
+  const hourlyBySource: HourlySourcePoint[] = generationLabels.map((time, idx) => {
+    const values: Record<string, number> = {};
+    for (const [source, series] of hourlyBySourceMap.entries()) {
+      values[source] = roundTo(series[idx] ?? 0, 0);
+    }
+    return { time, values };
+  });
+
+  const hourlyBySourceByArea: Record<string, HourlySourcePoint[]> = {};
+  for (const [area, sourceSeriesMap] of hourlyByAreaSourceMap.entries()) {
+    hourlyBySourceByArea[area] = generationLabels.map((time, idx) => {
+      const values: Record<string, number> = {};
+      for (const [source, series] of sourceSeriesMap.entries()) {
+        values[source] = roundTo(series[idx] ?? 0, 0);
+      }
+      return { time, values };
+    });
+  }
+
+  const topUnits = [...generationRows]
+    .sort((a, b) => b.dailyKwh - a.dailyKwh)
+    .slice(0, 60)
+    .map((row) => {
+      const maxSlotKwh = row.values.reduce((max, value) => Math.max(max, value), 0);
+      const maxOutputManKw = roundTo(maxSlotKwh / 5000, 2);
+      return {
+        area: row.area,
+        plantName: row.plantName,
+        unitName: row.unitName,
+        sourceType: row.sourceType,
+        maxOutputManKw,
+        dailyKwh: row.dailyKwh,
+      };
+    });
+
+  const unitSeries = [...generationRows]
+    .sort((a, b) => b.dailyKwh - a.dailyKwh)
+    .map((row) => ({
+      area: row.area,
+      plantName: row.plantName,
+      unitName: row.unitName,
+      sourceType: row.sourceType,
+      dailyKwh: row.dailyKwh,
+      values: row.values.map((v) => roundTo(v, 0)),
+    }));
+
+  const plantSummaries = Array.from(plantSummaryMap.values())
+    .map((row) => ({
+      area: row.area,
+      plantName: row.plantName,
+      sourceType: row.sourceType,
+      dailyKwh: roundTo(row.dailyKwh, 0),
+      maxOutputManKw: roundTo(row.slotTotals.reduce((max, value) => Math.max(max, value), 0) / 5000, 2),
+      values: row.slotTotals.map((v) => roundTo(v, 0)),
+    }))
+    .sort((a, b) => b.dailyKwh - a.dailyKwh);
+
+  return {
+    areaTotals,
+    sourceTotals,
+    hourlyBySource,
+    hourlyBySourceByArea,
+    hourlyTotalByArea,
+    topUnits,
+    plantSummaries,
+    unitSeries,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Flow aggregates
+// ---------------------------------------------------------------------------
+
+export function buildFlowAggregates(
+  flowRows: FlowRow[],
+  intertieRows: IntertieFlowRow[],
+  slotCount: number,
+  flowLabels: string[],
+) {
+  const lineSeries: LineSeries[] = flowRows.map((row) => {
     const peakAbs = row.values.reduce((max, value) => Math.max(max, Math.abs(value)), 0);
     const avg = row.values.reduce((sum, value) => sum + value, 0) / Math.max(row.values.length, 1);
     return {
@@ -107,7 +259,7 @@ export function buildDashboardData(args: {
   const hourlyAbsAreaMap = new Map<string, number[]>();
   const hourlyAbsAll: number[][] = Array.from({ length: slotCount }, () => []);
 
-  for (const row of args.flowRows) {
+  for (const row of flowRows) {
     const peakAbs = row.values.reduce((max, value) => Math.max(max, Math.abs(value)), 0);
     const absValues = row.values.map((value) => Math.abs(value));
     const areaAccum = flowAreaAccum.get(row.area) ?? { lineCount: 0, peakAbsMw: 0, sumAbsMw: 0, sampleCount: 0 };
@@ -154,80 +306,28 @@ export function buildDashboardData(args: {
     }))
     .sort((a, b) => b.peakAbsMw - a.peakAbsMw);
 
-  const generationAreaTotals = Array.from(areaTotalsMap.entries())
-    .map(([area, totalKwh]) => ({ area, totalKwh: roundTo(totalKwh, 0) }))
-    .sort((a, b) => b.totalKwh - a.totalKwh);
-  const generationSourceTotals = Array.from(sourceTotalsMap.entries())
-    .map(([source, totalKwh]) => ({ source, totalKwh: roundTo(totalKwh, 0) }))
-    .sort((a, b) => b.totalKwh - a.totalKwh);
+  const intertieSeries = buildIntertieSeries(intertieRows, slotCount);
+  const interAreaFlows = buildInterAreaFlows(intertieSeries);
 
-  const hourlyTotalByArea: HourlyAreaPoint[] = generationLabels.map((time, idx) => {
-    const values: Record<string, number> = {};
-    for (const [area, series] of hourlyByAreaMap.entries()) {
-      values[area] = roundTo(series[idx] ?? 0, 0);
-    }
-    return { time, values };
-  });
+  return {
+    areaSummaries,
+    hourlyAbsByArea,
+    hourlyAbsStats,
+    lineSeries: lineSeries.sort((a, b) => b.peakAbsMw - a.peakAbsMw),
+    intertieSeries,
+    interAreaFlows,
+  };
+}
 
-  const hourlyBySource: HourlySourcePoint[] = generationLabels.map((time, idx) => {
-    const values: Record<string, number> = {};
-    for (const [source, series] of hourlyBySourceMap.entries()) {
-      values[source] = roundTo(series[idx] ?? 0, 0);
-    }
-    return { time, values };
-  });
+// ---------------------------------------------------------------------------
+// Area balance
+// ---------------------------------------------------------------------------
 
-  const hourlyBySourceByArea: Record<string, HourlySourcePoint[]> = {};
-  for (const [area, sourceSeriesMap] of hourlyByAreaSourceMap.entries()) {
-    hourlyBySourceByArea[area] = generationLabels.map((time, idx) => {
-      const values: Record<string, number> = {};
-      for (const [source, series] of sourceSeriesMap.entries()) {
-        values[source] = roundTo(series[idx] ?? 0, 0);
-      }
-      return { time, values };
-    });
-  }
-
-  const topUnits = [...args.generationRows]
-    .sort((a, b) => b.dailyKwh - a.dailyKwh)
-    .slice(0, 60)
-    .map((row) => {
-      const maxSlotKwh = row.values.reduce((max, value) => Math.max(max, value), 0);
-      const maxOutputManKw = roundTo(maxSlotKwh / 5000, 2);
-      return {
-        area: row.area,
-        plantName: row.plantName,
-        unitName: row.unitName,
-        sourceType: row.sourceType,
-        maxOutputManKw,
-        dailyKwh: row.dailyKwh,
-      };
-    });
-
-  // All units with time-series — used by generator status cards
-  const unitSeries = [...args.generationRows]
-    .sort((a, b) => b.dailyKwh - a.dailyKwh)
-    .map((row) => ({
-      area: row.area,
-      plantName: row.plantName,
-      unitName: row.unitName,
-      sourceType: row.sourceType,
-      dailyKwh: row.dailyKwh,
-      values: row.values.map((v) => roundTo(v, 0)),
-    }));
-
-  const plantSummaries = Array.from(plantSummaryMap.values())
-    .map((row) => ({
-      area: row.area,
-      plantName: row.plantName,
-      sourceType: row.sourceType,
-      dailyKwh: roundTo(row.dailyKwh, 0),
-      maxOutputManKw: roundTo(row.slotTotals.reduce((max, value) => Math.max(max, value), 0) / 5000, 2),
-      values: row.slotTotals.map((v) => roundTo(v, 0)),
-    }))
-    .sort((a, b) => b.dailyKwh - a.dailyKwh);
-
-  const areaBalance: AreaBalance[] = generationAreaTotals.map((generation) => {
+export function buildAreaBalances(
+  areaTotals: Array<{ area: string; totalKwh: number }>,
+  areaSummaries: AreaFlowSummary[],
+): AreaBalance[] {
+  return areaTotals.map((generation) => {
     const flow = areaSummaries.find((item) => item.area === generation.area);
     const peakAbsMw = flow?.peakAbsMw ?? 0;
     const lineCount = flow?.lineCount ?? 0;
@@ -241,48 +341,6 @@ export function buildDashboardData(args: {
       stressIndex: roundTo(stress, 2),
     };
   });
-
-  const intertieSeries = buildIntertieSeries(args.intertieRows, slotCount);
-  const interAreaFlows = buildInterAreaFlows(intertieSeries);
-
-  return {
-    meta: {
-      targetDate: args.targetDate,
-      fetchedAt: new Date().toISOString(),
-      generationRows: args.generationRows.length,
-      flowRows: args.flowRows.length,
-      slotCount,
-      slotLabels: { generation: generationLabels, flow: flowLabels },
-      sources: {
-        generationCsv: args.generationCsvName,
-        flowCsv: args.flowCsvName,
-        intertieCsv: args.intertieCsvName,
-        reserveJson: args.reserveJsonName,
-      },
-    },
-    generation: {
-      areaTotals: generationAreaTotals,
-      sourceTotals: generationSourceTotals,
-      hourlyBySource,
-      hourlyBySourceByArea,
-      hourlyTotalByArea,
-      topUnits,
-      plantSummaries,
-      unitSeries,
-    },
-    reserves: { areaSeries: args.reserveRows },
-    flows: {
-      areaSummaries,
-      hourlyAbsByArea,
-      hourlyAbsStats,
-      lineSeries: lineSeries.sort((a, b) => b.peakAbsMw - a.peakAbsMw),
-      intertieSeries,
-      interAreaFlows,
-    },
-    insights: {
-      areaBalance: areaBalance.sort((a, b) => b.stressIndex - a.stressIndex),
-    },
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -371,7 +429,7 @@ function buildInterAreaFlows(intertieSeries: IntertieSeries[]): InterAreaFlow[] 
     .sort((a, b) => b.avgAbsMw - a.avgAbsMw);
 }
 
-function aggregateTo30Minute(values5m: number[], slotCount: number): number[] {
+export function aggregateTo30Minute(values5m: number[], slotCount: number): number[] {
   const pointsPerSlot = 6;
   const slots = new Array(slotCount).fill(0);
   for (let slotIdx = 0; slotIdx < slotCount; slotIdx += 1) {
@@ -390,7 +448,7 @@ function aggregateTo30Minute(values5m: number[], slotCount: number): number[] {
   return slots;
 }
 
-function timeToFiveMinuteIndex(value: string): number | null {
+export function timeToFiveMinuteIndex(value: string): number | null {
   const matched = value.match(/^(\d{2}):(\d{2})$/);
   if (!matched) {
     return null;
@@ -408,7 +466,7 @@ function timeToFiveMinuteIndex(value: string): number | null {
   return idx >= 0 && idx < 288 ? idx : null;
 }
 
-function resolveIntertieAreas(intertieName: string): IntertieAreaDefinition {
+export function resolveIntertieAreas(intertieName: string): IntertieAreaDefinition {
   const exact = INTERTIE_AREA_MAP[intertieName];
   if (exact) {
     return exact;
@@ -423,7 +481,7 @@ function resolveIntertieAreas(intertieName: string): IntertieAreaDefinition {
   return { sourceArea: "不明", targetArea: "不明" };
 }
 
-function buildTimeLabels(startMinute: number, points: number, stepMinute: number): string[] {
+export function buildTimeLabels(startMinute: number, points: number, stepMinute: number): string[] {
   const labels: string[] = [];
   let totalMinutes = startMinute;
   for (let i = 0; i < points; i += 1) {
@@ -435,7 +493,7 @@ function buildTimeLabels(startMinute: number, points: number, stepMinute: number
   return labels;
 }
 
-function quantile(values: number[], q: number): number {
+export function quantile(values: number[], q: number): number {
   if (values.length === 0) {
     return 0;
   }

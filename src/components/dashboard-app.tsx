@@ -1,13 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { DashboardData } from "@/lib/dashboard-types";
-import {
-  SOURCE_COLORS,
-  SOURCE_COLOR_MAP,
-  MAX_ANIMATED_FLOW_LINES_PER_AREA,
-} from "@/lib/constants";
+import { SOURCE_COLORS } from "@/lib/constants";
 import {
   normalizeSourceName,
   roundTo,
@@ -15,13 +11,6 @@ import {
 } from "@/lib/formatters";
 import {
   type NetworkAnimationPath,
-  type NetworkOverlayViewport,
-  type NetworkFlowChartHostElement,
-  DEFAULT_NETWORK_OVERLAY_VIEWPORT,
-  attachNetworkFlowChartRoamHook,
-  readNetworkOverlayViewport,
-  areNetworkOverlayViewportsEqual,
-  isNetworkPowerPlantSource,
   buildJapanGuideSvgPaths,
 } from "@/lib/geo";
 import {
@@ -48,7 +37,6 @@ import {
 import { buildFlowNetworkOption } from "@/lib/network-flow-builder";
 import { FOOTER_LINK_CLASS } from "@/lib/styles";
 import {
-  buildAllPlantSummaries,
   buildInterAreaFlowTextRows,
   buildDashboardHighlights,
   buildAreaSupplyCards,
@@ -67,6 +55,8 @@ import { useViewport } from "@/hooks/use-viewport";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useTimeSlider } from "@/hooks/use-time-slider";
 import { useSectionVisibility } from "@/hooks/use-section-visibility";
+import { useNetworkFlowChart } from "@/hooks/use-network-flow-chart";
+import { useGenerationData } from "@/hooks/use-generation-data";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -121,32 +111,24 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const [sourceDonutArea, setSourceDonutArea] = useState<string>("全エリア");
 
   // --- Network flow chart ---
-  const networkFlowChartHostRef = useRef<NetworkFlowChartHostElement | null>(null);
-  const [maxAnimatedFlowLinesPerArea, setMaxAnimatedFlowLinesPerArea] = useState<number>(MAX_ANIMATED_FLOW_LINES_PER_AREA);
-  const [networkOverlayViewport, setNetworkOverlayViewport] = useState<NetworkOverlayViewport>(
-    DEFAULT_NETWORK_OVERLAY_VIEWPORT,
-  );
-  const syncNetworkOverlayViewport = (chart: unknown): void => {
-    const nextViewport = readNetworkOverlayViewport(chart);
-    if (!nextViewport) {
-      return;
-    }
-    setNetworkOverlayViewport((currentViewport) =>
-      areNetworkOverlayViewportsEqual(currentViewport, nextViewport) ? currentViewport : nextViewport,
-    );
-  };
-  const registerNetworkFlowChart = (chart: unknown): void => {
-    attachNetworkFlowChartRoamHook(chart, networkFlowChartHostRef.current);
-    syncNetworkOverlayViewport(chart);
-  };
-  useEffect(() => {
-    const chartHost = networkFlowChartHostRef.current;
-    return () => {
-      if (chartHost) {
-        delete chartHost.__occtoDispatchGraphRoam;
-      }
-    };
-  }, []);
+  const {
+    networkFlowChartHostRef,
+    maxAnimatedFlowLinesPerArea,
+    setMaxAnimatedFlowLinesPerArea,
+    networkOverlayViewport,
+    registerNetworkFlowChart,
+  } = useNetworkFlowChart();
+
+  // --- Generation data ---
+  const {
+    sourceTotalsByArea,
+    sourceColorByName,
+    allPlantSummaries,
+    filteredTopUnits,
+    filteredTopPlants,
+    networkPowerPlants,
+    filteredLines,
+  } = useGenerationData(data, selectedArea);
 
   // --- Reserve data ---
   const reserveAreaSeries = useMemo(() => data.reserves?.areaSeries ?? [], [data.reserves?.areaSeries]);
@@ -187,84 +169,6 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       : reserveCurrentRows.filter((item) => item.area === selectedArea);
     return buildReserveCurrentOption(rows, isMobileViewport, selectedFlowDateTimeLabel);
   }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
-
-  // --- Generation data ---
-  const sourceTotalsByArea = useMemo(() => {
-    const byArea: Record<string, Array<{ source: string; totalKwh: number }>> = {};
-    const areaSeries = data.generation.hourlyBySourceByArea ?? {};
-
-    for (const [area, points] of Object.entries(areaSeries)) {
-      const totals = new Map<string, number>();
-      points.forEach((point) => {
-        Object.entries(point.values).forEach(([source, value]) => {
-          totals.set(source, (totals.get(source) ?? 0) + value);
-        });
-      });
-      byArea[area] = Array.from(totals.entries())
-        .map(([source, totalKwh]) => ({ source, totalKwh }))
-        .sort((a, b) => b.totalKwh - a.totalKwh);
-    }
-
-    return byArea;
-  }, [data.generation.hourlyBySourceByArea]);
-  const sourceColorByName = useMemo(
-    () =>
-      new Map(
-        data.generation.sourceTotals.map((item, idx) => [
-          item.source,
-          SOURCE_COLOR_MAP[item.source] ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
-        ]),
-      ),
-    [data.generation.sourceTotals],
-  );
-
-  const filteredTopUnits = useMemo(
-    () =>
-      [...data.generation.topUnits]
-        .filter((unit) => (selectedArea === "全エリア" ? true : unit.area === selectedArea))
-        .sort((a, b) => b.dailyKwh - a.dailyKwh),
-    [data.generation.topUnits, selectedArea],
-  );
-
-  const allPlantSummaries = useMemo(
-    () => buildAllPlantSummaries({
-      plantSummaries: data.generation.plantSummaries,
-      topUnits: data.generation.topUnits,
-    }),
-    [data.generation.plantSummaries, data.generation.topUnits],
-  );
-
-  const filteredTopPlants = useMemo(
-    () =>
-      allPlantSummaries.filter((plant) =>
-        selectedArea === "全エリア" ? true : plant.area === selectedArea,
-      ),
-    [allPlantSummaries, selectedArea],
-  );
-
-  const networkPowerPlants = useMemo(() => {
-    if (allPlantSummaries.length > 0) {
-      return allPlantSummaries
-        .filter((plant) => isNetworkPowerPlantSource(plant.sourceType))
-        .map((plant) => ({
-          area: plant.area,
-          plantName: plant.plantName,
-          sourceType: plant.sourceType,
-          dailyKwh: plant.dailyKwh,
-          avgOutputMw: plant.dailyKwh / 24 / 1000,
-          maxOutputManKw: plant.maxOutputManKw,
-        }));
-    }
-    return [];
-  }, [allPlantSummaries]);
-
-  const filteredLines = useMemo(
-    () =>
-      data.flows.lineSeries.filter((line) =>
-        selectedArea === "全エリア" ? true : line.area === selectedArea,
-      ),
-    [data.flows.lineSeries, selectedArea],
-  );
 
   const generationLineOption = useMemo(() => {
     const scopedSeries =
