@@ -840,9 +840,10 @@ export function buildAreaGenerationTimeSeriesOption(
         fontSize: isMobile ? 8 : 9,
         color: "#94a3b8",
         formatter: (v: number) => {
-          if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-          if (v >= 1_000) return `${Math.round(v / 1_000)}k`;
-          return String(v);
+          const mw = v * 2 / 1_000;
+          if (mw >= 1_000) return `${(mw / 1_000).toFixed(1)}GW`;
+          if (mw >= 1) return `${Math.round(mw)}MW`;
+          return `${(mw * 1_000).toFixed(0)}kW`;
         },
       },
     },
@@ -855,7 +856,10 @@ export function buildAreaGenerationTimeSeriesOption(
         const slot = slotLabels[params[0]?.dataIndex ?? 0] ?? "";
         const lines = params
           .filter((p) => p.value > 0)
-          .map((p) => `${p.marker} ${p.seriesName}: ${numberFmt.format(p.value)} kWh`);
+          .map((p) => {
+            const mw = p.value * 2 / 1_000;
+            return `${p.marker} ${p.seriesName}: ${numberFmt.format(mw)} MW`;
+          });
         return `<div style="font-size:11px;max-height:260px;overflow-y:auto"><b>${slot}</b><br/>${lines.join("<br/>")}</div>`;
       },
     },
@@ -953,9 +957,10 @@ export function buildExpandedAreaGenerationTimeSeriesOption(
         fontSize: 11,
         color: "#94a3b8",
         formatter: (v: number) => {
-          if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-          if (v >= 1_000) return `${Math.round(v / 1_000)}k`;
-          return String(v);
+          const mw = v * 2 / 1_000;
+          if (mw >= 1_000) return `${(mw / 1_000).toFixed(1)}GW`;
+          if (mw >= 1) return `${Math.round(mw)}MW`;
+          return `${(mw * 1_000).toFixed(0)}kW`;
         },
       },
     },
@@ -968,7 +973,10 @@ export function buildExpandedAreaGenerationTimeSeriesOption(
         const slot = slotLabels[params[0]?.dataIndex ?? 0] ?? "";
         const lines = params
           .filter((p) => p.value > 0)
-          .map((p) => `${p.marker} ${p.seriesName}: ${numberFmt.format(p.value)} kWh`);
+          .map((p) => {
+            const mw = p.value * 2 / 1_000;
+            return `${p.marker} ${p.seriesName}: ${numberFmt.format(mw)} MW`;
+          });
         return `<div style="font-size:12px;max-height:400px;overflow-y:auto"><b>${slot}</b><br/>${lines.join("<br/>")}</div>`;
       },
     },
