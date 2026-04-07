@@ -135,9 +135,12 @@ export function DashboardHeader({
 type SectionToggleProps = {
   visibleSectionSet: Set<DashboardSectionId>;
   onSetVisibleSectionIds: (ids: DashboardSectionId[] | ((current: DashboardSectionId[]) => DashboardSectionId[])) => void;
+  isReorderMode: boolean;
+  onToggleReorderMode: () => void;
+  onResetOrder: () => void;
 };
 
-export function SectionToggle({ visibleSectionSet, onSetVisibleSectionIds }: SectionToggleProps) {
+export function SectionToggle({ visibleSectionSet, onSetVisibleSectionIds, isReorderMode, onToggleReorderMode, onResetOrder }: SectionToggleProps) {
   return (
     <section className="animate-fade-in-up rounded-3xl border border-white/70 bg-white/85 p-3 shadow-[var(--panel-shadow)] backdrop-blur-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800/85" style={{ animationDelay: '80ms' }}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -160,6 +163,27 @@ export function SectionToggle({ visibleSectionSet, onSetVisibleSectionIds }: Sec
           >
             俯瞰モード
           </button>
+          <span className="mx-1 hidden h-4 w-px bg-slate-200 dark:bg-slate-600 lg:inline-block" />
+          <button
+            type="button"
+            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200 active:scale-[0.97] ${
+              isReorderMode
+                ? "border-amber-500 bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-sm shadow-amber-500/20"
+                : PILL_BUTTON_CLASS
+            }`}
+            onClick={onToggleReorderMode}
+          >
+            {isReorderMode ? "並べ替え完了" : "並べ替え"}
+          </button>
+          {isReorderMode ? (
+            <button
+              type="button"
+              className={PILL_BUTTON_CLASS}
+              onClick={onResetOrder}
+            >
+              順序リセット
+            </button>
+          ) : null}
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">

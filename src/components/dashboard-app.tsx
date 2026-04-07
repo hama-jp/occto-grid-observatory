@@ -7,6 +7,9 @@ import {
   SOURCE_COLORS,
   SOURCE_COLOR_MAP,
   MAX_ANIMATED_FLOW_LINES_PER_AREA,
+  ZONE_A_BLOCKS,
+  ZONE_B_BLOCKS,
+  type DashboardBlockId,
 } from "@/lib/constants";
 import {
   normalizeSourceName,
@@ -67,6 +70,8 @@ import { useViewport } from "@/hooks/use-viewport";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useTimeSlider } from "@/hooks/use-time-slider";
 import { useSectionVisibility } from "@/hooks/use-section-visibility";
+import { useSectionOrder } from "@/hooks/use-section-order";
+import { SwapyContainer } from "@/components/ui/swapy-container";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -106,6 +111,23 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     showGenerationTrend,
     showSourceComposition,
   } = useSectionVisibility();
+
+  const {
+    zoneAOrder,
+    zoneBOrder,
+    setZoneAOrder,
+    setZoneBOrder,
+    resetOrder,
+    isReorderMode,
+    setIsReorderMode,
+  } = useSectionOrder();
+
+  const isBlockVisible = (blockId: DashboardBlockId): boolean => {
+    const def = [...ZONE_A_BLOCKS, ...ZONE_B_BLOCKS].find((b) => b.blockId === blockId);
+    if (!def) return false;
+    const keys = Array.isArray(def.visibilityKey) ? def.visibilityKey : [def.visibilityKey];
+    return keys.some((k) => visibleSectionSet.has(k));
+  };
 
   const selectedFlowDateTimeLabel = `${data.meta.targetDate} ${selectedFlowSlotLabel}`;
 
@@ -487,134 +509,148 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         <SectionToggle
           visibleSectionSet={visibleSectionSet}
           onSetVisibleSectionIds={setVisibleSectionIds}
+          isReorderMode={isReorderMode}
+          onToggleReorderMode={() => setIsReorderMode((v) => !v)}
+          onResetOrder={resetOrder}
         />
 
-        {visibleSectionSet.has("summary") ? (
-          <SummaryCardsTop
-            dashboardHighlights={dashboardHighlights}
-            areaTotalsLength={data.generation.areaTotals.length}
-          />
-        ) : null}
-
-        {visibleSectionSet.has("jepx") && data.jepx?.spot ? (
-          <section className="stagger-children grid grid-cols-1 gap-4 md:grid-cols-2">
-            <JepxMarketCard
-              spot={data.jepx.spot}
-              slotLabels={data.meta.slotLabels.generation}
-              selectedArea={selectedArea}
-              clampedSlotIndex={clampedNetworkFlowSlotIndex}
-            />
-            <JepxAreaBreakdown
-              spot={data.jepx.spot}
-              slotLabels={data.meta.slotLabels.generation}
-            />
-          </section>
-        ) : null}
-
-        {/* ── 発電グループ ── */}
-
-        {showGenerationTrend || showSourceComposition ? (
-          <GenerationSection
-            showGenerationTrend={showGenerationTrend}
-            showSourceComposition={showSourceComposition}
-            generationTrendArea={generationTrendArea}
-            setGenerationTrendArea={setGenerationTrendArea}
-            sourceDonutArea={sourceDonutArea}
-            setSourceDonutArea={setSourceDonutArea}
-            areas={areas}
-            generationLineOption={generationLineOption}
-            sourceDonutOption={sourceDonutOption}
-            sourceCompositionItems={sourceCompositionItems}
-            useInlineDonutLegend={useInlineDonutLegend}
-          />
-        ) : null}
-
-        {visibleSectionSet.has("totals") ? (
-          <ChartErrorBoundary sectionName="エリア別日量発電">
-          <section className="grid grid-cols-1 gap-4">
-            <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
-              <div data-testid="area-total-generation-chart" role="img" aria-label="エリア別日量発電チャート">
-                <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("generatorStatus") ? (
-          <ChartErrorBoundary sectionName="発電ユニットごとの発電量">
-            <GeneratorStatusSection
-              cards={generatorStatus.cards}
-              treemapItems={generatorStatus.treemapItems}
-              selectedArea={selectedArea}
-              isMobileViewport={isMobileViewport}
-              slotLabels={data.meta.slotLabels.generation}
-            />
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("rankings") ? (
-          <ChartErrorBoundary sectionName="ランキング">
-            <RankingsSection
-              filteredTopUnits={filteredTopUnits}
-              filteredTopPlants={filteredTopPlants}
-            />
-          </ChartErrorBoundary>
-        ) : null}
-
-        {/* ── 需給・潮流グループ ── */}
-
-        {visibleSectionSet.has("reserve") ? (
-          <ChartErrorBoundary sectionName="予備率推移">
-          <section className="grid grid-cols-1 gap-4">
-            <Panel title="エリア予備率（30分推移）" testId="reserve-trend-panel">
-              <div className="mb-2 text-xs text-slate-600">
-                公式値ベース。{selectedArea === "全エリア" ? "全エリア" : `${selectedArea}`} / {data.meta.targetDate}
-              </div>
-              <div data-testid="reserve-trend-chart" role="img" aria-label="エリア予備率推移チャート">
-                <ReactECharts option={reserveTrendOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("totals") ? (
-          <ChartErrorBoundary sectionName="連系線潮流トレンド">
-          <section className="grid grid-cols-1 gap-4">
-            <Panel title="連系線潮流トレンド（時系列）" testId="intertie-trend-panel">
-              <div data-testid="intertie-trend-chart" role="img" aria-label="連系線潮流トレンドチャート">
-                <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("congestion") && congestionData ? (
-          <ChartErrorBoundary sectionName="連系線混雑度">
-            <CongestionSection
-              congestionData={congestionData}
-              congestionTrendOption={congestionTrendOption}
-              congestionHeatmapOption={congestionHeatmapOption}
-            />
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("diagnostics") ? (
-          <ChartErrorBoundary sectionName="潮流ヒートマップ">
-          <section className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
-            <Panel title="主要線路の潮流ヒートマップ">
-              <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
-              <ReactECharts option={flowHeatmapOption} style={{ height: isMobileViewport ? 340 : 420 }} />
-            </Panel>
-            <Panel title="潮流変動率が大きい送電線">
-              <p className="mb-2 text-xs text-slate-500">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
-              <ReactECharts option={volatilityHeatmapOption} style={{ height: isMobileViewport ? 360 : 480 }} />
-            </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
+        {/* ── Zone A: 日次集計系セクション ── */}
+        <SwapyContainer
+          blockOrder={zoneAOrder}
+          onReorder={setZoneAOrder}
+          enabled={isReorderMode}
+        >
+          {(blockId) => {
+            if (!isBlockVisible(blockId)) return null;
+            switch (blockId) {
+              case "summary-top":
+                return (
+                  <SummaryCardsTop
+                    dashboardHighlights={dashboardHighlights}
+                    areaTotalsLength={data.generation.areaTotals.length}
+                  />
+                );
+              case "jepx":
+                return data.jepx?.spot ? (
+                  <section className="stagger-children grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <JepxMarketCard
+                      spot={data.jepx.spot}
+                      slotLabels={data.meta.slotLabels.generation}
+                      selectedArea={selectedArea}
+                      clampedSlotIndex={clampedNetworkFlowSlotIndex}
+                    />
+                    <JepxAreaBreakdown
+                      spot={data.jepx.spot}
+                      slotLabels={data.meta.slotLabels.generation}
+                    />
+                  </section>
+                ) : null;
+              case "generation":
+                return showGenerationTrend || showSourceComposition ? (
+                  <GenerationSection
+                    showGenerationTrend={showGenerationTrend}
+                    showSourceComposition={showSourceComposition}
+                    generationTrendArea={generationTrendArea}
+                    setGenerationTrendArea={setGenerationTrendArea}
+                    sourceDonutArea={sourceDonutArea}
+                    setSourceDonutArea={setSourceDonutArea}
+                    areas={areas}
+                    generationLineOption={generationLineOption}
+                    sourceDonutOption={sourceDonutOption}
+                    sourceCompositionItems={sourceCompositionItems}
+                    useInlineDonutLegend={useInlineDonutLegend}
+                  />
+                ) : null;
+              case "totals-generation":
+                return (
+                  <ChartErrorBoundary sectionName="エリア別日量発電">
+                    <section className="grid grid-cols-1 gap-4">
+                      <Panel title="エリア別 日量発電" testId="area-total-generation-panel">
+                        <div data-testid="area-total-generation-chart" role="img" aria-label="エリア別日量発電チャート">
+                          <ReactECharts option={areaTotalsOption} style={{ height: 320 }} />
+                        </div>
+                      </Panel>
+                    </section>
+                  </ChartErrorBoundary>
+                );
+              case "generatorStatus":
+                return (
+                  <ChartErrorBoundary sectionName="発電ユニットごとの発電量">
+                    <GeneratorStatusSection
+                      cards={generatorStatus.cards}
+                      treemapItems={generatorStatus.treemapItems}
+                      selectedArea={selectedArea}
+                      isMobileViewport={isMobileViewport}
+                      slotLabels={data.meta.slotLabels.generation}
+                    />
+                  </ChartErrorBoundary>
+                );
+              case "rankings":
+                return (
+                  <ChartErrorBoundary sectionName="ランキング">
+                    <RankingsSection
+                      filteredTopUnits={filteredTopUnits}
+                      filteredTopPlants={filteredTopPlants}
+                    />
+                  </ChartErrorBoundary>
+                );
+              case "reserve-trend":
+                return (
+                  <ChartErrorBoundary sectionName="予備率推移">
+                    <section className="grid grid-cols-1 gap-4">
+                      <Panel title="エリア予備率（30分推移）" testId="reserve-trend-panel">
+                        <div className="mb-2 text-xs text-slate-600">
+                          公式値ベース。{selectedArea === "全エリア" ? "全エリア" : `${selectedArea}`} / {data.meta.targetDate}
+                        </div>
+                        <div data-testid="reserve-trend-chart" role="img" aria-label="エリア予備率推移チャート">
+                          <ReactECharts option={reserveTrendOption} style={{ height: 320 }} />
+                        </div>
+                      </Panel>
+                    </section>
+                  </ChartErrorBoundary>
+                );
+              case "totals-intertie":
+                return (
+                  <ChartErrorBoundary sectionName="連系線潮流トレンド">
+                    <section className="grid grid-cols-1 gap-4">
+                      <Panel title="連系線潮流トレンド（時系列）" testId="intertie-trend-panel">
+                        <div data-testid="intertie-trend-chart" role="img" aria-label="連系線潮流トレンドチャート">
+                          <ReactECharts option={intertieTrendOption} style={{ height: 320 }} />
+                        </div>
+                      </Panel>
+                    </section>
+                  </ChartErrorBoundary>
+                );
+              case "congestion":
+                return congestionData ? (
+                  <ChartErrorBoundary sectionName="連系線混雑度">
+                    <CongestionSection
+                      congestionData={congestionData}
+                      congestionTrendOption={congestionTrendOption}
+                      congestionHeatmapOption={congestionHeatmapOption}
+                    />
+                  </ChartErrorBoundary>
+                ) : null;
+              case "diagnostics":
+                return (
+                  <ChartErrorBoundary sectionName="潮流ヒートマップ">
+                    <section className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
+                      <Panel title="主要線路の潮流ヒートマップ">
+                        <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
+                        <ReactECharts option={flowHeatmapOption} style={{ height: isMobileViewport ? 340 : 420 }} />
+                      </Panel>
+                      <Panel title="潮流変動率が大きい送電線">
+                        <p className="mb-2 text-xs text-slate-500">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
+                        <ReactECharts option={volatilityHeatmapOption} style={{ height: isMobileViewport ? 360 : 480 }} />
+                      </Panel>
+                    </section>
+                  </ChartErrorBoundary>
+                );
+              default:
+                return null;
+            }
+          }}
+        </SwapyContainer>
 
         {/* ── 表示時刻スナップショット ── */}
         <section className="sticky top-0 z-30 overflow-hidden rounded-3xl border border-teal-200/50 bg-gradient-to-r from-teal-50/97 via-white/97 to-teal-50/97 px-4 py-3 shadow-lg shadow-teal-500/5 backdrop-blur-md md:px-6 md:py-4 dark:border-teal-800/50 dark:from-teal-950/97 dark:via-slate-800/97 dark:to-teal-950/97">
@@ -654,64 +690,79 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           </div>
         </section>
 
-        {visibleSectionSet.has("summary") ? (
-          <SummaryCardsBottom
-            dashboardHighlights={dashboardHighlights}
-            selectedFlowDateTimeLabel={selectedFlowDateTimeLabel}
-          />
-        ) : null}
-
-        {visibleSectionSet.has("areaCards") ? (
-          <AreaCardsSection
-            areaSupplyCards={areaSupplyCards}
-            selectedArea={selectedArea}
-            selectedFlowSlotLabel={selectedFlowSlotLabel}
-            selectedFlowDateTimeLabel={selectedFlowDateTimeLabel}
-            maxAreaNetIntertieAbsMw={maxAreaNetIntertieAbsMw}
-            maxAreaPeakAbsMw={maxAreaPeakAbsMw}
-            flowSlotLabels={flowSlotLabels}
-            currentSlotIndex={clampedNetworkFlowSlotIndex}
-          />
-        ) : null}
-
-        {visibleSectionSet.has("reserve") ? (
-          <ChartErrorBoundary sectionName="需要・予備力スナップショット">
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Panel title="エリア需要（表示時刻）" testId="demand-current-panel">
-              <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-              <div data-testid="demand-current-chart" role="img" aria-label="エリア需要チャート">
-                <ReactECharts option={demandCurrentOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
-            <Panel title="エリア予備力（表示時刻）" testId="reserve-current-panel">
-              <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
-              <div data-testid="reserve-current-chart" role="img" aria-label="エリア予備力チャート">
-                <ReactECharts option={reserveCurrentOption} style={{ height: 320 }} />
-              </div>
-            </Panel>
-          </section>
-          </ChartErrorBoundary>
-        ) : null}
-
-        {visibleSectionSet.has("network") ? (
-          <ChartErrorBoundary sectionName="ネットワーク">
-            <NetworkSection
-              flowNetworkOption={flowNetworkOption}
-              interAreaFlowOption={interAreaFlowOption}
-              isMobileViewport={isMobileViewport}
-              isWideViewport={isWideViewport}
-              selectedFlowDateTimeLabel={selectedFlowDateTimeLabel}
-              networkFlowChartHostRef={networkFlowChartHostRef}
-              registerNetworkFlowChart={registerNetworkFlowChart}
-              networkOverlayViewport={networkOverlayViewport}
-              japanGuidePaths={japanGuidePaths}
-              majorFlowAnimationPaths={majorFlowAnimationPaths}
-              intertieAnimationPaths={intertieAnimationPaths}
-              maxAnimatedFlowLinesPerArea={maxAnimatedFlowLinesPerArea}
-              onMaxAnimatedFlowLinesPerAreaChange={setMaxAnimatedFlowLinesPerArea}
-            />
-          </ChartErrorBoundary>
-        ) : null}
+        {/* ── Zone B: スナップショット連動セクション ── */}
+        <SwapyContainer
+          blockOrder={zoneBOrder}
+          onReorder={setZoneBOrder}
+          enabled={isReorderMode}
+        >
+          {(blockId) => {
+            if (!isBlockVisible(blockId)) return null;
+            switch (blockId) {
+              case "summary-bottom":
+                return (
+                  <SummaryCardsBottom
+                    dashboardHighlights={dashboardHighlights}
+                    selectedFlowDateTimeLabel={selectedFlowDateTimeLabel}
+                  />
+                );
+              case "areaCards":
+                return (
+                  <AreaCardsSection
+                    areaSupplyCards={areaSupplyCards}
+                    selectedArea={selectedArea}
+                    selectedFlowSlotLabel={selectedFlowSlotLabel}
+                    selectedFlowDateTimeLabel={selectedFlowDateTimeLabel}
+                    maxAreaNetIntertieAbsMw={maxAreaNetIntertieAbsMw}
+                    maxAreaPeakAbsMw={maxAreaPeakAbsMw}
+                    flowSlotLabels={flowSlotLabels}
+                    currentSlotIndex={clampedNetworkFlowSlotIndex}
+                  />
+                );
+              case "reserve-snapshot":
+                return (
+                  <ChartErrorBoundary sectionName="需要・予備力スナップショット">
+                    <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      <Panel title="エリア需要（表示時刻）" testId="demand-current-panel">
+                        <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
+                        <div data-testid="demand-current-chart" role="img" aria-label="エリア需要チャート">
+                          <ReactECharts option={demandCurrentOption} style={{ height: 320 }} />
+                        </div>
+                      </Panel>
+                      <Panel title="エリア予備力（表示時刻）" testId="reserve-current-panel">
+                        <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
+                        <div data-testid="reserve-current-chart" role="img" aria-label="エリア予備力チャート">
+                          <ReactECharts option={reserveCurrentOption} style={{ height: 320 }} />
+                        </div>
+                      </Panel>
+                    </section>
+                  </ChartErrorBoundary>
+                );
+              case "network":
+                return (
+                  <ChartErrorBoundary sectionName="ネットワーク">
+                    <NetworkSection
+                      flowNetworkOption={flowNetworkOption}
+                      interAreaFlowOption={interAreaFlowOption}
+                      isMobileViewport={isMobileViewport}
+                      isWideViewport={isWideViewport}
+                      selectedFlowDateTimeLabel={selectedFlowDateTimeLabel}
+                      networkFlowChartHostRef={networkFlowChartHostRef}
+                      registerNetworkFlowChart={registerNetworkFlowChart}
+                      networkOverlayViewport={networkOverlayViewport}
+                      japanGuidePaths={japanGuidePaths}
+                      majorFlowAnimationPaths={majorFlowAnimationPaths}
+                      intertieAnimationPaths={intertieAnimationPaths}
+                      maxAnimatedFlowLinesPerArea={maxAnimatedFlowLinesPerArea}
+                      onMaxAnimatedFlowLinesPerAreaChange={setMaxAnimatedFlowLinesPerArea}
+                    />
+                  </ChartErrorBoundary>
+                );
+              default:
+                return null;
+            }
+          }}
+        </SwapyContainer>
 
         {/* Footer */}
         <footer className="mt-10 rounded-3xl border border-slate-200/40 bg-white/60 px-6 py-6 text-center backdrop-blur-sm dark:border-slate-700/40 dark:bg-slate-800/60">

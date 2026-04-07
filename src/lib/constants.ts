@@ -137,6 +137,53 @@ export const DASHBOARD_SECTION_OPTIONS: Array<{ id: DashboardSectionId; label: s
   { id: "network", label: "ネットワーク" },
 ];
 
+/** Swappable block IDs — more granular than DashboardSectionId because
+ *  some section IDs map to multiple visual blocks (e.g. summary → top/bottom). */
+export type DashboardBlockId =
+  | "summary-top"
+  | "jepx"
+  | "generation"
+  | "totals-generation"
+  | "generatorStatus"
+  | "rankings"
+  | "reserve-trend"
+  | "totals-intertie"
+  | "congestion"
+  | "diagnostics"
+  | "summary-bottom"
+  | "areaCards"
+  | "reserve-snapshot"
+  | "network";
+
+export type DashboardBlockDef = {
+  blockId: DashboardBlockId;
+  label: string;
+  /** Which DashboardSectionId(s) control visibility for this block */
+  visibilityKey: DashboardSectionId | DashboardSectionId[];
+};
+
+/** Zone A: above the sticky time-snapshot bar (daily aggregate data) */
+export const ZONE_A_BLOCKS: DashboardBlockDef[] = [
+  { blockId: "summary-top", label: "全国サマリー（上）", visibilityKey: "summary" },
+  { blockId: "jepx", label: "JEPXスポット", visibilityKey: "jepx" },
+  { blockId: "generation", label: "発電トレンド/構成", visibilityKey: ["generation", "composition"] },
+  { blockId: "totals-generation", label: "エリア別日量発電", visibilityKey: "totals" },
+  { blockId: "generatorStatus", label: "発電機別状況", visibilityKey: "generatorStatus" },
+  { blockId: "rankings", label: "ランキング", visibilityKey: "rankings" },
+  { blockId: "reserve-trend", label: "予備率推移", visibilityKey: "reserve" },
+  { blockId: "totals-intertie", label: "連系線潮流トレンド", visibilityKey: "totals" },
+  { blockId: "congestion", label: "連系線混雑度", visibilityKey: "congestion" },
+  { blockId: "diagnostics", label: "潮流詳細", visibilityKey: "diagnostics" },
+];
+
+/** Zone B: below the sticky time-snapshot bar (slot-synced snapshots) */
+export const ZONE_B_BLOCKS: DashboardBlockDef[] = [
+  { blockId: "summary-bottom", label: "全国サマリー（下）", visibilityKey: "summary" },
+  { blockId: "areaCards", label: "エリア需給カード", visibilityKey: "areaCards" },
+  { blockId: "reserve-snapshot", label: "需要・予備力スナップショット", visibilityKey: "reserve" },
+  { blockId: "network", label: "ネットワーク", visibilityKey: "network" },
+];
+
 /**
  * 地域間連系線の運用容量（MW）
  *
