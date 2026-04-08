@@ -319,7 +319,7 @@ export function GeneratorStatusSection({
 
       {/* Treemap overview */}
       {treemapItems.length > 0 && (
-        <div className="mb-5 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-slate-900 to-slate-800 shadow-inner dark:border-slate-700/80">
+        <div className="mb-5 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-850 shadow-inner dark:border-slate-700/80">
           <div role="img" aria-label="発電機別ツリーマップ">
             <ReactECharts
               option={treemapOption}

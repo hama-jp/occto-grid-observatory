@@ -188,10 +188,10 @@ export function AreaCardsSection({
                         className="inline-flex h-3 w-3 rounded-full"
                         style={{ backgroundColor: areaColor }}
                       />
-                      <h3 className="text-xl font-semibold text-slate-900">{card.area}</h3>
+                      <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{card.area}</h3>
                       <ReserveRateBadge reserveRate={card.reserveRate} />
                     </div>
-                    <p className="mt-1 text-sm text-slate-600">全国発電シェア {card.sharePercent.toFixed(1)}%</p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">全国発電シェア {card.sharePercent.toFixed(1)}%</p>
                     <div className="mt-2 max-w-sm">
                       <ValueProgressBar value={card.sharePercent} max={100} color={areaColor} />
                     </div>
@@ -203,10 +203,10 @@ export function AreaCardsSection({
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/60 dark:bg-slate-800/60">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs tracking-[0.16em] text-slate-500">需給バランス</p>
-                      <p className="text-xs text-slate-500">{selectedFlowSlotLabel} 時点</p>
+                      <p className="text-xs tracking-[0.16em] text-slate-500 dark:text-slate-400">需給バランス</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{selectedFlowSlotLabel} 時点</p>
                     </div>
                     <div className="mt-3">
                       <SupplyDemandMeter
@@ -241,10 +241,10 @@ export function AreaCardsSection({
                       </div>
                     )}
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/60 dark:bg-slate-800/60">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs tracking-[0.16em] text-slate-500">電源構成</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs tracking-[0.16em] text-slate-500 dark:text-slate-400">電源構成</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         主力 {normalizeSourceName(card.topSource)} {card.topSourceShare.toFixed(1)}%
                       </p>
                     </div>
@@ -256,9 +256,9 @@ export function AreaCardsSection({
                         <div key={`${card.area}-${segment.label}`} className="flex items-center justify-between gap-3 text-sm">
                           <div className="flex min-w-0 items-center gap-2">
                             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: segment.color }} />
-                            <span className="truncate text-slate-700">{segment.label}</span>
+                            <span className="truncate text-slate-700 dark:text-slate-300">{segment.label}</span>
                           </div>
-                          <span className="shrink-0 text-slate-500">
+                          <span className="shrink-0 text-slate-500 dark:text-slate-400">
                             {decimalFmt.format(segment.percent)}% / {formatCompactEnergy(segment.value)}
                           </span>
                         </div>
@@ -268,8 +268,8 @@ export function AreaCardsSection({
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
-                    <p className="text-xs tracking-[0.16em] text-slate-500">連系収支</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/60 dark:bg-slate-800/60">
+                    <p className="text-xs tracking-[0.16em] text-slate-500 dark:text-slate-400">連系収支</p>
                     <div className="mt-3">
                       <NetFlowMeter
                         valueMw={card.netIntertieMw}
@@ -277,8 +277,8 @@ export function AreaCardsSection({
                         color={areaColor}
                       />
                     </div>
-                    <p className="mt-3 text-base font-semibold text-slate-900">{netDirection}</p>
-                    <p className="mt-1 text-sm text-slate-600">
+                    <p className="mt-3 text-base font-semibold text-slate-900 dark:text-slate-100">{netDirection}</p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                       {decimalFmt.format(Math.abs(card.netIntertieMw))} MW
                     </p>
                   </div>
@@ -292,24 +292,24 @@ export function AreaCardsSection({
                     }
                     className="h-full"
                   />
-                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
-                    <p className="text-xs tracking-[0.16em] text-slate-500">地域内ピーク</p>
+                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/60 dark:bg-slate-800/60">
+                    <p className="text-xs tracking-[0.16em] text-slate-500 dark:text-slate-400">地域内ピーク</p>
                     <div className="mt-3">
                       <ValueProgressBar value={card.peakAbsMw} max={maxAreaPeakAbsMw} color={areaColor} />
                     </div>
-                    <p className="mt-3 text-base font-semibold text-slate-900">
+                    <p className="mt-3 text-base font-semibold text-slate-900 dark:text-slate-100">
                       {decimalFmt.format(card.peakAbsMw)} MW
                     </p>
-                    <p className="mt-1 text-sm text-slate-600">地内送電線の最大|潮流|</p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">地内送電線の最大|潮流|</p>
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
-                  <p className="text-xs tracking-[0.16em] text-slate-500">エリア内主要発電所</p>
-                  <p className="mt-1 text-base font-semibold text-slate-900">
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-700/60 dark:bg-slate-800/60">
+                  <p className="text-xs tracking-[0.16em] text-slate-500 dark:text-slate-400">エリア内主要発電所</p>
+                  <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
                     {card.primaryPlant?.plantName ?? "-"}
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     {card.primaryPlant
                       ? `${card.primaryPlant.sourceType || "不明"} / ${formatCompactEnergy(card.primaryPlant.dailyKwh)}`
                       : "発電所データなし"}
