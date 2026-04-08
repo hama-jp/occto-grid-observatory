@@ -177,9 +177,9 @@ export function AreaCardsSection({
           return (
             <article
               key={card.area}
-              className="group/card overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white/98 to-slate-50/96 shadow-[var(--panel-shadow)] transition-all duration-300 hover:shadow-[var(--panel-shadow-hover)] dark:border-slate-700/80 dark:from-slate-800/98 dark:to-slate-850/96"
+              className="group/card overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[var(--panel-shadow)] transition-all duration-300 hover:shadow-[var(--panel-shadow-hover)] dark:border-slate-700/80 dark:bg-slate-800"
             >
-              <div className="h-1 transition-all duration-300 group-hover/card:h-1.5" style={{ background: `linear-gradient(90deg, ${areaColor}, ${areaColor}88)` }} />
+              <div className="h-1 transition-all duration-300 group-hover/card:h-1.5" style={{ backgroundColor: areaColor }} />
               <div className="p-4 md:p-5">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0 flex-1">
@@ -196,7 +196,7 @@ export function AreaCardsSection({
                       <ValueProgressBar value={card.sharePercent} max={100} color={areaColor} />
                     </div>
                   </div>
-                  <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 px-4 py-3 text-white shadow-md md:px-5 md:py-3.5 dark:from-slate-700 dark:to-slate-800">
+                  <div className="rounded-2xl bg-slate-800 px-4 py-3 text-white shadow-md md:px-5 md:py-3.5 dark:bg-slate-700">
                     <p className="text-[11px] font-medium tracking-[0.16em] text-slate-400">日量発電</p>
                     <p className="mt-1 text-xl font-bold tabular-nums md:text-2xl">{formatCompactEnergy(card.totalKwh)}</p>
                   </div>

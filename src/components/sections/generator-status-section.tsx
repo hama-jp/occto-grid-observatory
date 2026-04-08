@@ -96,13 +96,13 @@ function ExpandedCardModal({
       onClick={onClose}
     >
       <div
-        className="relative flex h-[95vh] w-[96vw] max-w-[1600px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 shadow-2xl dark:border-slate-700/80 dark:from-slate-900 dark:to-slate-850"
+        className="relative flex h-[95vh] w-[96vw] max-w-[1600px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-700/80 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Color accent bar */}
         <div
           className="h-1.5 shrink-0"
-          style={{ background: `linear-gradient(90deg, ${card.areaColor}, ${card.areaColor}88)` }}
+          style={{ backgroundColor: card.areaColor }}
         />
 
         {/* Header */}
@@ -295,7 +295,7 @@ export function GeneratorStatusSection({
   const handleClose = useCallback(() => setExpandedArea(null), []);
 
   return (
-    <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-[var(--panel-shadow)] backdrop-blur-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800/90">
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-3 shadow-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800">
       {/* Header */}
       <div className="mb-4 flex flex-col gap-2 md:mb-5 md:flex-row md:items-end md:justify-between">
         <div>
@@ -345,7 +345,7 @@ export function GeneratorStatusSection({
           return (
             <article
               key={card.area}
-              className="group/card cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white/98 to-slate-50/96 shadow-sm transition-all duration-300 hover:shadow-[var(--panel-shadow)] dark:border-slate-700/80 dark:from-slate-800/98 dark:to-slate-850/96"
+              className="group/card cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-[var(--panel-shadow)] dark:border-slate-700/80 dark:bg-slate-800"
               onClick={() => setExpandedArea(card.area)}
               role="button"
               tabIndex={0}
@@ -355,7 +355,7 @@ export function GeneratorStatusSection({
               {/* Color accent bar */}
               <div
                 className="h-1 transition-all duration-300 group-hover/card:h-1.5"
-                style={{ background: `linear-gradient(90deg, ${areaColor}, ${areaColor}88)` }}
+                style={{ backgroundColor: areaColor }}
               />
               <div className="p-3 md:p-4">
                 {/* Header row */}

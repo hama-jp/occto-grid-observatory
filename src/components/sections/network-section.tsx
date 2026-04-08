@@ -70,7 +70,7 @@ function ExpandModal({
       onClick={onClose}
     >
       <div
-        className="relative flex h-[95vh] w-[96vw] max-w-[1800px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 shadow-2xl dark:border-slate-700/80 dark:from-slate-900 dark:to-slate-850"
+        className="relative flex h-[95vh] w-[96vw] max-w-[1800px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-700/80 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -311,7 +311,7 @@ export function NetworkSection({
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 2xl:grid-cols-4">
       <Panel title="エリアネットワーク潮流（地域内送電線）" className="lg:col-span-2 2xl:col-span-3" testId="network-flow-panel">
-        <div className="mb-3 rounded-xl border border-slate-200/80 bg-gradient-to-r from-slate-50/80 to-white/60 px-4 py-2.5 dark:border-slate-700/60 dark:from-slate-800/60 dark:to-slate-800/40">
+        <div className="mb-3 rounded-xl border border-slate-200/80 bg-slate-50 px-4 py-2.5 dark:border-slate-700/60 dark:bg-slate-800/60">
           <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
             注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンク（SS・CS・変換所間）として、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
           </p>
@@ -444,7 +444,7 @@ export function NetworkSection({
       {/* Expanded modals — portal to body to escape backdrop-blur */}
       {expandedPanel === "network" && createPortal(
         <ExpandModal title="エリアネットワーク潮流（地域内送電線）" onClose={handleClose}>
-          <div className="mb-3 rounded-xl border border-slate-200/80 bg-gradient-to-r from-slate-50/80 to-white/60 px-4 py-2.5 dark:border-slate-700/60 dark:from-slate-800/60 dark:to-slate-800/40">
+          <div className="mb-3 rounded-xl border border-slate-200/80 bg-slate-50 px-4 py-2.5 dark:border-slate-700/60 dark:bg-slate-800/60">
             <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
               注: 地域内送電線は、公開CSVから端点を特定できるもののみ表示しています。エリア間連係線は、端点を特定できるものは設備間リンク（SS・CS・変換所間）として、それ以外はエリア間の簡略線として表示しています。発電所と変電所の接続は公開データだけでは確定できないため、省略しています。
             </p>

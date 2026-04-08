@@ -44,7 +44,7 @@ export function DashboardHeader({
   onAreaChange,
 }: DashboardHeaderProps) {
   return (
-    <header className="animate-fade-in-up rounded-3xl border border-white/70 bg-white/85 px-4 py-4 shadow-[var(--panel-shadow)] backdrop-blur-sm md:px-6 md:py-6 dark:border-slate-700/80 dark:bg-slate-800/85">
+    <header className="animate-fade-in-up rounded-3xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm md:px-6 md:py-6 dark:border-slate-700/80 dark:bg-slate-800">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="flex items-center justify-between">
@@ -142,7 +142,7 @@ type SectionToggleProps = {
 
 export function SectionToggle({ visibleSectionSet, onSetVisibleSectionIds, isReorderMode, onToggleReorderMode, onResetOrder }: SectionToggleProps) {
   return (
-    <section className="animate-fade-in-up rounded-3xl border border-white/70 bg-white/85 p-3 shadow-[var(--panel-shadow)] backdrop-blur-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800/85" style={{ animationDelay: '80ms' }}>
+    <section className="animate-fade-in-up rounded-3xl border border-slate-200/80 bg-white p-3 shadow-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800" style={{ animationDelay: '80ms' }}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
           <span className="inline-block h-4 w-1 rounded-full bg-slate-400 dark:bg-slate-500" />
@@ -168,7 +168,7 @@ export function SectionToggle({ visibleSectionSet, onSetVisibleSectionIds, isReo
             type="button"
             className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200 active:scale-[0.97] ${
               isReorderMode
-                ? "border-amber-500 bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-sm shadow-amber-500/20"
+                ? "border-amber-500 bg-amber-500 text-white shadow-sm"
                 : PILL_BUTTON_CLASS
             }`}
             onClick={onToggleReorderMode}
@@ -197,7 +197,7 @@ export function SectionToggle({ visibleSectionSet, onSetVisibleSectionIds, isReo
               aria-checked={active}
               className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200 active:scale-[0.96] ${
                 active
-                  ? "border-teal-500 bg-gradient-to-b from-teal-500 to-teal-600 text-white shadow-sm shadow-teal-500/20"
+                  ? "border-teal-500 bg-teal-500 text-white shadow-sm"
                   : "border-slate-200 bg-white text-slate-600 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-teal-300 hover:text-teal-700 hover:shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-teal-400"
               }`}
               onClick={() =>
