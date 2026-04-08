@@ -83,6 +83,16 @@ type DashboardAppProps = {
 export function DashboardApp({ initialData, availableDates }: DashboardAppProps) {
   const { isMobileViewport, isWideViewport, useInlineDonutLegend } = useViewport();
 
+  // Track actual dark mode state (handles both explicit "dark" and "system" with dark preference)
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
   const {
     data,
     filteredIntertieSeries,
@@ -195,20 +205,20 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       selectedArea === "全エリア"
         ? reserveAreaSeries
         : reserveAreaSeries.filter((item) => item.area === selectedArea);
-    return buildReserveTrendOption(scopedSeries, data.meta.slotLabels.generation, isMobileViewport, selectedArea);
-  }, [data.meta.slotLabels.generation, isMobileViewport, reserveAreaSeries, selectedArea]);
+    return buildReserveTrendOption(scopedSeries, data.meta.slotLabels.generation, isMobileViewport, selectedArea, isDark);
+  }, [data.meta.slotLabels.generation, isMobileViewport, reserveAreaSeries, selectedArea, isDark]);
   const demandCurrentOption = useMemo(() => {
     const rows = selectedArea === "全エリア"
       ? reserveCurrentRows
       : reserveCurrentRows.filter((item) => item.area === selectedArea);
-    return buildDemandCurrentOption(rows, isMobileViewport, selectedFlowDateTimeLabel);
-  }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
+    return buildDemandCurrentOption(rows, isMobileViewport, selectedFlowDateTimeLabel, isDark);
+  }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel, isDark]);
   const reserveCurrentOption = useMemo(() => {
     const rows = selectedArea === "全エリア"
       ? reserveCurrentRows
       : reserveCurrentRows.filter((item) => item.area === selectedArea);
-    return buildReserveCurrentOption(rows, isMobileViewport, selectedFlowDateTimeLabel);
-  }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel]);
+    return buildReserveCurrentOption(rows, isMobileViewport, selectedFlowDateTimeLabel, isDark);
+  }, [isMobileViewport, reserveCurrentRows, selectedArea, selectedFlowDateTimeLabel, isDark]);
 
   // --- Generation data ---
   const sourceTotalsByArea = useMemo(() => {
@@ -297,8 +307,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     const sourceKeys = Object.keys(scopedSeries[0]?.values ?? {}).length
       ? Object.keys(scopedSeries[0]?.values ?? {})
       : fallbackKeys;
-    return buildGenerationLineOption(scopedSeries, data.meta.slotLabels.generation, sourceKeys, sourceColorByName, isMobileViewport);
-  }, [data.generation.hourlyBySource, data.generation.hourlyBySourceByArea, data.meta.slotLabels.generation, generationTrendArea, isMobileViewport, sourceColorByName]);
+    return buildGenerationLineOption(scopedSeries, data.meta.slotLabels.generation, sourceKeys, sourceColorByName, isMobileViewport, isDark);
+  }, [data.generation.hourlyBySource, data.generation.hourlyBySourceByArea, data.meta.slotLabels.generation, generationTrendArea, isMobileViewport, sourceColorByName, isDark]);
 
   const sourceCompositionItems = useMemo(() => {
     const rows =
@@ -315,23 +325,23 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   }, [data.generation.sourceTotals, sourceColorByName, sourceDonutArea, sourceTotalsByArea]);
 
   const sourceDonutOption = useMemo(
-    () => buildSourceDonutOption(sourceCompositionItems, useInlineDonutLegend),
-    [sourceCompositionItems, useInlineDonutLegend],
+    () => buildSourceDonutOption(sourceCompositionItems, useInlineDonutLegend, isDark),
+    [sourceCompositionItems, useInlineDonutLegend, isDark],
   );
 
   const areaTotalsOption = useMemo(
-    () => buildAreaTotalsOption(data.generation.areaTotals, isMobileViewport),
-    [data.generation.areaTotals, isMobileViewport],
+    () => buildAreaTotalsOption(data.generation.areaTotals, isMobileViewport, isDark),
+    [data.generation.areaTotals, isMobileViewport, isDark],
   );
 
   const flowHeatmapOption = useMemo(
-    () => buildFlowHeatmapOption(filteredLines, data.meta.slotLabels.flow, isMobileViewport),
-    [data.meta.slotLabels.flow, filteredLines, isMobileViewport],
+    () => buildFlowHeatmapOption(filteredLines, data.meta.slotLabels.flow, isMobileViewport, isDark),
+    [data.meta.slotLabels.flow, filteredLines, isMobileViewport, isDark],
   );
 
   const volatilityHeatmapOption = useMemo(
-    () => buildVolatilityHeatmapOption(filteredLines, data.meta.slotLabels.flow, isMobileViewport),
-    [data.meta.slotLabels.flow, filteredLines, isMobileViewport],
+    () => buildVolatilityHeatmapOption(filteredLines, data.meta.slotLabels.flow, isMobileViewport, isDark),
+    [data.meta.slotLabels.flow, filteredLines, isMobileViewport, isDark],
   );
 
   const flowNetworkOption = useMemo(
@@ -442,8 +452,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   );
 
   const interAreaFlowOption = useMemo(
-    () => buildInterAreaFlowOption(interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel),
-    [interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel],
+    () => buildInterAreaFlowOption(interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel, isDark),
+    [interAreaFlowTextRows, isMobileViewport, selectedFlowDateTimeLabel, isDark],
   );
 
   const intertieTrendOption = useMemo(() => {
@@ -462,8 +472,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
             }
             return roundTo(sum, 1);
           });
-    return buildIntertieTrendOption(scopedSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea, netImportSeries);
-  }, [filteredIntertieSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea]);
+    return buildIntertieTrendOption(scopedSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea, netImportSeries, isDark);
+  }, [filteredIntertieSeries, data.meta.slotLabels.flow, isMobileViewport, selectedArea, isDark]);
 
   // --- Congestion ---
   const congestionData = useMemo<CongestionSummary | null>(
@@ -472,13 +482,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   );
 
   const congestionTrendOption = useMemo(
-    () => congestionData ? buildCongestionTrendOption(congestionData, data.meta.slotLabels.flow, isMobileViewport) : null,
-    [congestionData, data.meta.slotLabels.flow, isMobileViewport],
+    () => congestionData ? buildCongestionTrendOption(congestionData, data.meta.slotLabels.flow, isMobileViewport, isDark) : null,
+    [congestionData, data.meta.slotLabels.flow, isMobileViewport, isDark],
   );
 
   const congestionHeatmapOption = useMemo(
-    () => congestionData ? buildCongestionHeatmapOption(congestionData, data.meta.slotLabels.flow, isMobileViewport) : null,
-    [congestionData, data.meta.slotLabels.flow, isMobileViewport],
+    () => congestionData ? buildCongestionHeatmapOption(congestionData, data.meta.slotLabels.flow, isMobileViewport, isDark) : null,
+    [congestionData, data.meta.slotLabels.flow, isMobileViewport, isDark],
   );
 
   return (
@@ -582,6 +592,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                       selectedArea={selectedArea}
                       isMobileViewport={isMobileViewport}
                       slotLabels={data.meta.slotLabels.generation}
+                      isDark={isDark}
                     />
                   </ChartErrorBoundary>
                 );

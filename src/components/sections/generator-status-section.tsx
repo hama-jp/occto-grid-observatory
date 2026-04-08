@@ -19,6 +19,7 @@ type GeneratorStatusSectionProps = {
   selectedArea: string;
   isMobileViewport: boolean;
   slotLabels: string[];
+  isDark?: boolean;
 };
 
 /** Unique source-type legend items from treemap data. */
@@ -42,10 +43,12 @@ function ExpandedCardModal({
   card,
   slotLabels,
   onClose,
+  isDark = false,
 }: {
   card: GeneratorStatusCard;
   slotLabels: string[];
   onClose: () => void;
+  isDark?: boolean;
 }) {
   // Close on Escape key
   useEffect(() => {
@@ -70,8 +73,9 @@ function ExpandedCardModal({
         card.timeSeries as AreaGenerationSeries[],
         slotLabels,
         card.areaColor,
+        isDark,
       ),
-    [card, slotLabels],
+    [card, slotLabels, isDark],
   );
 
   const units =
@@ -253,12 +257,13 @@ export function GeneratorStatusSection({
   selectedArea,
   isMobileViewport,
   slotLabels,
+  isDark = false,
 }: GeneratorStatusSectionProps) {
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
 
   const treemapOption = useMemo(
-    () => buildGeneratorTreemapOption(treemapItems, isMobileViewport),
-    [treemapItems, isMobileViewport],
+    () => buildGeneratorTreemapOption(treemapItems, isMobileViewport, isDark),
+    [treemapItems, isMobileViewport, isDark],
   );
 
   const areaChartOptions = useMemo(
@@ -270,9 +275,10 @@ export function GeneratorStatusSection({
           slotLabels,
           card.areaColor,
           isMobileViewport,
+          isDark,
         ),
       })),
-    [cards, slotLabels, isMobileViewport],
+    [cards, slotLabels, isMobileViewport, isDark],
   );
   const areaChartMap = useMemo(
     () => new Map(areaChartOptions.map((item) => [item.area, item.option])),
@@ -447,6 +453,7 @@ export function GeneratorStatusSection({
           card={expandedCard}
           slotLabels={slotLabels}
           onClose={handleClose}
+          isDark={isDark}
         />,
         document.body,
       )}
