@@ -314,7 +314,7 @@ export function GeneratorStatusSection({
           {sourceLegend.map(({ source, color }) => (
             <span
               key={source}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 px-2 py-0.5 text-[10px] text-slate-600 dark:border-slate-600/80 dark:bg-slate-800/90 dark:text-slate-400"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 px-2 py-0.5 text-[10px] text-slate-600 dark:border-slate-600/80 dark:bg-slate-800/90 dark:text-slate-300"
             >
               <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
               {normalizeSourceName(source)}
@@ -382,7 +382,7 @@ export function GeneratorStatusSection({
 
                 {/* Sub info */}
                 {topGen && (
-                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-300">
                     主力: {topGen.plantName}（{topGen.sourceType}）{decimalFmt.format(topGen.sharePercent)}%
                   </p>
                 )}
@@ -402,7 +402,7 @@ export function GeneratorStatusSection({
                       {card.timeSeries.slice(0, 10).map((s) => (
                         <span
                           key={`${card.area}-${s.name}`}
-                          className="inline-flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-300"
+                          className="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-200"
                         >
                           <span
                             className="inline-block h-1.5 w-1.5 rounded-full"
@@ -412,7 +412,7 @@ export function GeneratorStatusSection({
                         </span>
                       ))}
                       {card.timeSeries.length > 10 && (
-                        <span className="text-[9px] text-slate-400 dark:text-slate-500">+{card.timeSeries.length - 10}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-400">+{card.timeSeries.length - 10}</span>
                       )}
                     </div>
                   </div>
@@ -429,13 +429,13 @@ export function GeneratorStatusSection({
                       key={`${card.area}-${unit.label}-${idx}`}
                       className="flex items-center gap-2 text-[11px]"
                     >
-                      <span className="w-3 shrink-0 text-right tabular-nums text-slate-400 dark:text-slate-500">{idx + 1}</span>
+                      <span className="w-3 shrink-0 text-right tabular-nums text-slate-400 dark:text-slate-400">{idx + 1}</span>
                       <span
                         className="inline-block h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: unit.color }}
                       />
-                      <span className="min-w-0 truncate text-slate-700 dark:text-slate-300">{unit.label}</span>
-                      <span className="ml-auto shrink-0 tabular-nums font-medium text-slate-800 dark:text-slate-200">
+                      <span className="min-w-0 truncate text-slate-700 dark:text-slate-200">{unit.label}</span>
+                      <span className="ml-auto shrink-0 tabular-nums font-semibold text-slate-800 dark:text-slate-100">
                         {formatCompactEnergy(unit.dailyKwh)}
                       </span>
                     </div>

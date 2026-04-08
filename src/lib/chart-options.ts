@@ -21,12 +21,12 @@ import {
 /** Theme-aware text colors for ECharts elements. */
 export function chartColors(isDark: boolean) {
   return {
-    label: isDark ? "#cbd5e1" : "#334155",
-    axis: isDark ? "#94a3b8" : "#4a5568",
-    axisName: isDark ? "#94a3b8" : "#64748b",
-    muted: isDark ? "#64748b" : "#475569",
+    label: isDark ? "#e2e8f0" : "#334155",
+    axis: isDark ? "#cbd5e1" : "#4a5568",
+    axisName: isDark ? "#cbd5e1" : "#64748b",
+    muted: isDark ? "#94a3b8" : "#475569",
     splitLine: isDark ? "#334155" : "#e2e8f0",
-    line: isDark ? "#e2e8f0" : "#111827",
+    line: isDark ? "#f1f5f9" : "#111827",
   };
 }
 
