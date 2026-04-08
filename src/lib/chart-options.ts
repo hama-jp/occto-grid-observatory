@@ -875,26 +875,23 @@ export function buildAreaGenerationTimeSeriesOption(
       },
     },
     tooltip: {
-      trigger: "axis",
+      trigger: "item",
       backgroundColor: "rgba(30,41,59,0.95)",
       borderColor: "transparent",
       textStyle: { color: "#f1f5f9", fontSize: 11 },
-      formatter: (params: Array<{ seriesName: string; value: number; marker: string; dataIndex: number }>) => {
-        const slot = slotLabels[params[0]?.dataIndex ?? 0] ?? "";
-        const lines = params
-          .filter((p) => p.value > 0)
-          .map((p) => {
-            const mw = p.value * 2 / 1_000;
-            return `${p.marker} ${p.seriesName}: ${numberFmt.format(mw)} MW`;
-          });
-        return `<div style="font-size:11px;max-height:260px;overflow-y:auto"><b>${slot}</b><br/>${lines.join("<br/>")}</div>`;
+      formatter: (params: { seriesName: string; value: number; marker: string; dataIndex: number }) => {
+        const slot = slotLabels[params.dataIndex ?? 0] ?? "";
+        const mw = params.value * 2 / 1_000;
+        return `<div style="font-size:11px"><b>${slot}</b><br/>${params.marker} ${params.seriesName}: ${numberFmt.format(mw)} MW</div>`;
       },
     },
     series: seriesList.map((s) => ({
       name: s.name,
       type: "line",
       smooth: true,
-      symbol: "none",
+      symbol: "circle",
+      symbolSize: 8,
+      showSymbol: false,
       lineStyle: { width: 1.5 },
       color: s.color,
       data: s.data,
@@ -993,26 +990,23 @@ export function buildExpandedAreaGenerationTimeSeriesOption(
       },
     },
     tooltip: {
-      trigger: "axis",
+      trigger: "item",
       backgroundColor: "rgba(30,41,59,0.95)",
       borderColor: "transparent",
       textStyle: { color: "#f1f5f9", fontSize: 12 },
-      formatter: (params: Array<{ seriesName: string; value: number; marker: string; dataIndex: number }>) => {
-        const slot = slotLabels[params[0]?.dataIndex ?? 0] ?? "";
-        const lines = params
-          .filter((p) => p.value > 0)
-          .map((p) => {
-            const mw = p.value * 2 / 1_000;
-            return `${p.marker} ${p.seriesName}: ${numberFmt.format(mw)} MW`;
-          });
-        return `<div style="font-size:12px;max-height:400px;overflow-y:auto"><b>${slot}</b><br/>${lines.join("<br/>")}</div>`;
+      formatter: (params: { seriesName: string; value: number; marker: string; dataIndex: number }) => {
+        const slot = slotLabels[params.dataIndex ?? 0] ?? "";
+        const mw = params.value * 2 / 1_000;
+        return `<div style="font-size:12px"><b>${slot}</b><br/>${params.marker} ${params.seriesName}: ${numberFmt.format(mw)} MW</div>`;
       },
     },
     series: seriesList.map((s) => ({
       name: s.name,
       type: "line",
       smooth: true,
-      symbol: "none",
+      symbol: "circle",
+      symbolSize: 10,
+      showSymbol: false,
       lineStyle: { width: 2 },
       color: s.color,
       data: s.data,
