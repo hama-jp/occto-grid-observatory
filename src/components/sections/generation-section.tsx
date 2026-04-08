@@ -42,7 +42,7 @@ export function GenerationSection({
           testId="generation-trend-panel"
         >
           <div className="mb-2 flex justify-end">
-            <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600">
+            <label htmlFor="generation-area" className="mr-2 text-sm text-slate-600 dark:text-slate-300">
               表示エリア
             </label>
             <select
@@ -70,7 +70,7 @@ export function GenerationSection({
           testId="source-composition-panel"
         >
           <div className="mb-2 flex justify-end">
-            <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600">
+            <label htmlFor="source-donut-area" className="mr-2 text-sm text-slate-600 dark:text-slate-300">
               表示エリア
             </label>
             <select
