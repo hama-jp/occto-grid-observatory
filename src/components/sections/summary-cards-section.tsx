@@ -76,11 +76,11 @@ export function SummaryCardsTop({ dashboardHighlights, areaTotalsLength }: Summa
       >
         <div className="space-y-3">
           <div>
-            <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500">最大ユニット</p>
+            <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500 dark:text-slate-400">最大ユニット</p>
             <MiniBarList items={dashboardHighlights.unitLeaderItems} compact />
           </div>
           <div>
-            <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500">最大発電所</p>
+            <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500 dark:text-slate-400">最大発電所</p>
             <MiniBarList items={dashboardHighlights.plantLeaderItems} compact />
           </div>
         </div>

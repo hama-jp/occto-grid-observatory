@@ -44,7 +44,7 @@ export function CongestionSection({
 
       {/* Utilization bar snapshot */}
       <Panel title="連系線 利用率スナップショット" testId="congestion-bars-panel">
-        <p className="mb-3 text-xs text-slate-500">
+        <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
           運用容量に対する潮流実績の比率（日中ピーク基準）。70%以上は混雑注意、85%以上は高混雑です。
         </p>
         <div className="flex flex-col gap-2.5">
@@ -67,7 +67,7 @@ export function CongestionSection({
                   </span>
                   <span className={`shrink-0 text-xs font-semibold tabular-nums ${textColor}`}>
                     {pct}%
-                    <span className="ml-1 font-normal text-slate-400">
+                    <span className="ml-1 font-normal text-slate-400 dark:text-slate-500">
                       ({decimalFmt.format(line.peakAbsMw)}/{numberFmt.format(line.capacityMw)} MW)
                     </span>
                   </span>
@@ -92,7 +92,7 @@ export function CongestionSection({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {congestionTrendOption ? (
           <Panel title="利用率トレンド（時系列）" testId="congestion-trend-panel">
-            <p className="mb-1 text-xs text-slate-500">主要連系線の利用率（%）の時間推移。70%ラインは混雑注意の目安です。</p>
+            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">主要連系線の利用率（%）の時間推移。70%ラインは混雑注意の目安です。</p>
             <div data-testid="congestion-trend-chart" role="img" aria-label="連系線利用率トレンドチャート">
               <ReactECharts option={congestionTrendOption} style={{ height: 340 }} />
             </div>
@@ -100,7 +100,7 @@ export function CongestionSection({
         ) : null}
         {congestionHeatmapOption ? (
           <Panel title="混雑度ヒートマップ" testId="congestion-heatmap-panel">
-            <p className="mb-1 text-xs text-slate-500">全連系線 × 時間帯の利用率。赤いほど混雑しています。</p>
+            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">全連系線 × 時間帯の利用率。赤いほど混雑しています。</p>
             <div data-testid="congestion-heatmap-chart" role="img" aria-label="連系線混雑度ヒートマップ">
               <ReactECharts option={congestionHeatmapOption} style={{ height: 340 }} />
             </div>

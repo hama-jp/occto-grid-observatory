@@ -152,7 +152,7 @@ function ExpandedCardModal({
               </div>
             </div>
           ) : (
-            <div className="flex h-40 items-center justify-center text-sm text-slate-400">
+            <div className="flex h-40 items-center justify-center text-sm text-slate-400 dark:text-slate-500">
               時系列データなし
             </div>
           )}
@@ -402,7 +402,7 @@ export function GeneratorStatusSection({
                       {card.timeSeries.slice(0, 10).map((s) => (
                         <span
                           key={`${card.area}-${s.name}`}
-                          className="inline-flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-400"
+                          className="inline-flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-300"
                         >
                           <span
                             className="inline-block h-1.5 w-1.5 rounded-full"
@@ -412,12 +412,12 @@ export function GeneratorStatusSection({
                         </span>
                       ))}
                       {card.timeSeries.length > 10 && (
-                        <span className="text-[9px] text-slate-400">+{card.timeSeries.length - 10}</span>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500">+{card.timeSeries.length - 10}</span>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-3 flex h-24 items-center justify-center text-xs text-slate-400">
+                  <div className="mt-3 flex h-24 items-center justify-center text-xs text-slate-400 dark:text-slate-500">
                     時系列データなし
                   </div>
                 )}
@@ -429,7 +429,7 @@ export function GeneratorStatusSection({
                       key={`${card.area}-${unit.label}-${idx}`}
                       className="flex items-center gap-2 text-[11px]"
                     >
-                      <span className="w-3 shrink-0 text-right tabular-nums text-slate-400">{idx + 1}</span>
+                      <span className="w-3 shrink-0 text-right tabular-nums text-slate-400 dark:text-slate-500">{idx + 1}</span>
                       <span
                         className="inline-block h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: unit.color }}

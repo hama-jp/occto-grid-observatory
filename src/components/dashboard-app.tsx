@@ -610,7 +610,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   <ChartErrorBoundary sectionName="予備率推移">
                     <section className="grid grid-cols-1 gap-4">
                       <Panel title="エリア予備率（30分推移）" testId="reserve-trend-panel">
-                        <div className="mb-2 text-xs text-slate-600">
+                        <div className="mb-2 text-xs text-slate-600 dark:text-slate-400">
                           公式値ベース。{selectedArea === "全エリア" ? "全エリア" : `${selectedArea}`} / {data.meta.targetDate}
                         </div>
                         <div data-testid="reserve-trend-chart" role="img" aria-label="エリア予備率推移チャート">
@@ -647,11 +647,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   <ChartErrorBoundary sectionName="潮流ヒートマップ">
                     <section className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
                       <Panel title="主要線路の潮流ヒートマップ">
-                        <p className="mb-2 text-xs text-slate-500">主要線路の時間帯別の潮流強度を俯瞰します。</p>
+                        <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">主要線路の時間帯別の潮流強度を俯瞰します。</p>
                         <ReactECharts option={flowHeatmapOption} style={{ height: isMobileViewport ? 340 : 420 }} />
                       </Panel>
                       <Panel title="潮流変動率が大きい送電線">
-                        <p className="mb-2 text-xs text-slate-500">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
+                        <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">変動係数（CV）上位18線路の平均比偏差を時間帯別に可視化。暖色＝平均より大きく、寒色＝平均より小さい時間帯。</p>
                         <ReactECharts option={volatilityHeatmapOption} style={{ height: isMobileViewport ? 360 : 480 }} />
                       </Panel>
                     </section>
@@ -735,13 +735,13 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                   <ChartErrorBoundary sectionName="需要・予備力スナップショット">
                     <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                       <Panel title="エリア需要（表示時刻）" testId="demand-current-panel">
-                        <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
+                        <div className="mb-2 text-xs text-slate-600 dark:text-slate-400">表示日時: {selectedFlowDateTimeLabel}</div>
                         <div data-testid="demand-current-chart" role="img" aria-label="エリア需要チャート">
                           <ReactECharts option={demandCurrentOption} style={{ height: 320 }} />
                         </div>
                       </Panel>
                       <Panel title="エリア予備力（表示時刻）" testId="reserve-current-panel">
-                        <div className="mb-2 text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</div>
+                        <div className="mb-2 text-xs text-slate-600 dark:text-slate-400">表示日時: {selectedFlowDateTimeLabel}</div>
                         <div data-testid="reserve-current-chart" role="img" aria-label="エリア予備力チャート">
                           <ReactECharts option={reserveCurrentOption} style={{ height: 320 }} />
                         </div>

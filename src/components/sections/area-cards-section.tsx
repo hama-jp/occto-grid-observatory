@@ -224,7 +224,7 @@ export function AreaCardsSection({
                           style={{ height: 100 }}
                           opts={{ renderer: "svg" }}
                         />
-                        <div className="mt-1 flex items-center gap-3 text-[10px] text-slate-400">
+                        <div className="mt-1 flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
                           <span className="flex items-center gap-1">
                             <span className="inline-block h-0.5 w-3 rounded" style={{ backgroundColor: areaColor }} />
                             需要
