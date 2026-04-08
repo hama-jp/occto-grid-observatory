@@ -19,6 +19,7 @@ type GeneratorStatusSectionProps = {
   selectedArea: string;
   isMobileViewport: boolean;
   slotLabels: string[];
+  isDark?: boolean;
 };
 
 /** Unique source-type legend items from treemap data. */
@@ -253,12 +254,13 @@ export function GeneratorStatusSection({
   selectedArea,
   isMobileViewport,
   slotLabels,
+  isDark = false,
 }: GeneratorStatusSectionProps) {
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
 
   const treemapOption = useMemo(
-    () => buildGeneratorTreemapOption(treemapItems, isMobileViewport),
-    [treemapItems, isMobileViewport],
+    () => buildGeneratorTreemapOption(treemapItems, isMobileViewport, isDark),
+    [treemapItems, isMobileViewport, isDark],
   );
 
   const areaChartOptions = useMemo(
@@ -270,9 +272,10 @@ export function GeneratorStatusSection({
           slotLabels,
           card.areaColor,
           isMobileViewport,
+          isDark,
         ),
       })),
-    [cards, slotLabels, isMobileViewport],
+    [cards, slotLabels, isMobileViewport, isDark],
   );
   const areaChartMap = useMemo(
     () => new Map(areaChartOptions.map((item) => [item.area, item.option])),

@@ -18,14 +18,28 @@ import {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
+/** Dark/light chart color palette for ECharts text, axes, grid lines. */
+export function chartTheme(isDark: boolean) {
+  return {
+    text: isDark ? "#e2e8f0" : "#334155",          // primary text (slate-200 / slate-700)
+    textSecondary: isDark ? "#94a3b8" : "#64748b",  // secondary text (slate-400 / slate-500)
+    axisLabel: isDark ? "#94a3b8" : "#4a5568",      // axis labels (slate-400 / slate-600)
+    axisLine: isDark ? "#475569" : "#334155",        // axis lines (slate-600 / slate-700)
+    splitLine: isDark ? "rgba(148,163,184,0.15)" : "rgba(226,232,240,0.4)",
+    watermark: isDark ? "#94a3b8" : "#475569",      // "no data" watermark
+    emphasisLabel: isDark ? "#f1f5f9" : "#1b3a4b",  // donut emphasis
+    strongLine: isDark ? "#e2e8f0" : "#111827",     // bold reference lines
+  };
+}
+
 /** Standard "no data" watermark graphic element for ECharts. */
-export function emptyGraphic(text: string) {
+export function emptyGraphic(text: string, isDark = false) {
   return [
     {
       type: "text",
       left: "center",
       top: "middle",
-      style: { text, fill: "#475569", font: "14px sans-serif" },
+      style: { text, fill: chartTheme(isDark).watermark, font: "14px sans-serif" },
       silent: true,
     },
   ];
@@ -103,14 +117,16 @@ export function buildReserveTrendOption(
   slotLabels: string[],
   isMobile: boolean,
   selectedArea: string,
+  isDark = false,
 ) {
+  const t = chartTheme(isDark);
   const hasData = scopedSeries.length > 0;
   return {
     tooltip: {
       trigger: "axis",
       valueFormatter: (value: number) => `${decimalFmt.format(value)} %`,
     },
-    legend: { top: 8, type: "scroll", textStyle: { color: "#334155" } },
+    legend: { top: 8, type: "scroll", textStyle: { color: t.text } },
     grid: responsiveGrid(isMobile),
     xAxis: timeXAxis(slotLabels, isMobile),
     yAxis: {
@@ -118,7 +134,7 @@ export function buildReserveTrendOption(
       name: "予備率(%)",
       nameLocation: "middle",
       nameGap: isMobile ? 34 : 42,
-      nameTextStyle: { color: "#64748b", fontSize: isMobile ? 10 : 11 },
+      nameTextStyle: { color: t.textSecondary, fontSize: isMobile ? 10 : 11 },
       axisLabel: { formatter: (value: number) => decimalFmt.format(value) },
     },
     graphic: hasData ? undefined : emptyGraphic("予備率データが未取得です"),
@@ -151,7 +167,9 @@ export function buildDemandCurrentOption(
   rows: DemandRow[],
   isMobile: boolean,
   dateTimeLabel: string,
+  isDark = false,
 ) {
+  const t = chartTheme(isDark);
   const sorted = [...rows].sort((a, b) => b.demandMw - a.demandMw);
   const hasData = sorted.length > 0;
 
@@ -168,7 +186,7 @@ export function buildDemandCurrentOption(
     grid: { top: 18, left: isMobile ? 56 : 74, right: 18, bottom: 30 },
     xAxis: { type: "value", name: "MW" },
     yAxis: { type: "category", inverse: true, data: sorted.map((r) => r.area) },
-    graphic: hasData ? undefined : emptyGraphic("需要データが未取得です"),
+    graphic: hasData ? undefined : emptyGraphic("需要データが未取得です", isDark),
     series: [
       {
         type: "bar",
@@ -187,7 +205,7 @@ export function buildDemandCurrentOption(
           formatter: (params: { data: { row: DemandRow } }) =>
             `${decimalFmt.format(params.data.row.demandMw)} MW`,
           fontSize: 10,
-          color: "#334155",
+          color: t.text,
         },
       },
     ],
@@ -207,7 +225,9 @@ export function buildReserveCurrentOption(
   rows: ReserveRow[],
   isMobile: boolean,
   dateTimeLabel: string,
+  isDark = false,
 ) {
+  const t = chartTheme(isDark);
   const sorted = [...rows].sort((a, b) => a.reserveRate - b.reserveRate);
   const hasData = sorted.length > 0;
 
@@ -224,7 +244,7 @@ export function buildReserveCurrentOption(
     grid: { top: 18, left: isMobile ? 56 : 74, right: 18, bottom: 30 },
     xAxis: { type: "value", name: "%" },
     yAxis: { type: "category", inverse: true, data: sorted.map((r) => r.area) },
-    graphic: hasData ? undefined : emptyGraphic("予備率データが未取得です"),
+    graphic: hasData ? undefined : emptyGraphic("予備率データが未取得です", isDark),
     series: [
       {
         type: "bar",
@@ -243,7 +263,7 @@ export function buildReserveCurrentOption(
           formatter: (params: { data: { row: ReserveRow } }) =>
             `${decimalFmt.format(params.data.row.reserveMw)} MW (${decimalFmt.format(params.data.row.reserveRate)}%)`,
           fontSize: 10,
-          color: "#334155",
+          color: t.text,
         },
       },
     ],
@@ -260,14 +280,16 @@ export function buildGenerationLineOption(
   sourceKeys: string[],
   sourceColorByName: Map<string, string>,
   isMobile: boolean,
+  isDark = false,
 ) {
+  const t = chartTheme(isDark);
   return {
     backgroundColor: "transparent",
     tooltip: { trigger: "axis", valueFormatter: (value: number) => `${numberFmt.format(value)} MW` },
     legend: {
       type: "scroll",
       top: 8,
-      textStyle: { color: "#264653" },
+      textStyle: { color: t.text },
       formatter: (name: string) => normalizeSourceName(name),
     },
     grid: responsiveGrid(isMobile, { top: isMobile ? 40 : 48, bottom: isMobile ? 48 : 36 }),
@@ -275,7 +297,7 @@ export function buildGenerationLineOption(
       type: "category",
       data: slotLabels,
       axisLabel: {
-        color: "#4a5568",
+        color: t.axisLabel,
         interval: isMobile ? 5 : 3,
         fontSize: isMobile ? 10 : 12,
         rotate: isMobile ? 30 : 0,
@@ -287,8 +309,8 @@ export function buildGenerationLineOption(
       name: "発電量(MW)",
       nameLocation: "middle",
       nameGap: isMobile ? 36 : 44,
-      nameTextStyle: { color: "#64748b", fontSize: isMobile ? 10 : 11 },
-      axisLabel: { color: "#4a5568", formatter: (v: number) => numberFmt.format(v) },
+      nameTextStyle: { color: t.textSecondary, fontSize: isMobile ? 10 : 11 },
+      axisLabel: { color: t.axisLabel, formatter: (v: number) => numberFmt.format(v) },
     },
     graphic:
       sourceKeys.length > 0
@@ -319,7 +341,8 @@ export type SourceCompositionItem = {
   color: string;
 };
 
-export function buildSourceDonutOption(items: SourceCompositionItem[], useInlineLegend: boolean) {
+export function buildSourceDonutOption(items: SourceCompositionItem[], useInlineLegend: boolean, isDark = false) {
+  const t = chartTheme(isDark);
   return {
     tooltip: { trigger: "item", valueFormatter: (value: number) => formatCompactEnergy(value) },
     series: [
@@ -329,7 +352,7 @@ export function buildSourceDonutOption(items: SourceCompositionItem[], useInline
         radius: useInlineLegend ? ["44%", "74%"] : ["38%", "60%"],
         center: useInlineLegend ? ["50%", "50%"] : ["50%", "42%"],
         avoidLabelOverlap: true,
-        label: { show: false, color: "#1b3a4b", fontSize: useInlineLegend ? 12 : 11 },
+        label: { show: false, color: t.emphasisLabel, fontSize: useInlineLegend ? 12 : 11 },
         labelLine: { show: false },
         emphasis: {
           scale: true,
@@ -358,7 +381,9 @@ export function buildSourceDonutOption(items: SourceCompositionItem[], useInline
 export function buildAreaTotalsOption(
   areaTotals: Array<{ area: string; totalKwh: number }>,
   isMobile: boolean,
+  isDark = false,
 ) {
+  const t = chartTheme(isDark);
   const sorted = [...areaTotals].sort((a, b) => b.totalKwh - a.totalKwh);
   return {
     tooltip: {
@@ -376,7 +401,7 @@ export function buildAreaTotalsOption(
       type: "category",
       inverse: true,
       data: sorted.map((item) => item.area),
-      axisLabel: { color: "#4a5568" },
+      axisLabel: { color: t.axisLabel },
     },
     series: [
       {
@@ -410,7 +435,9 @@ export function buildInterAreaFlowOption(
   textRows: InterAreaFlowTextRow[],
   isMobile: boolean,
   dateTimeLabel: string,
+  isDark = false,
 ) {
+  const t = chartTheme(isDark);
   const rows = textRows.map((row) => {
     const signedMw = roundTo(row.upMw - row.downMw, 1);
     return { ...row, signedMw, absMw: Math.abs(signedMw) };
@@ -444,7 +471,7 @@ export function buildInterAreaFlowOption(
       name: "MW",
       nameLocation: "middle",
       nameGap: isMobile ? 34 : 28,
-      nameTextStyle: { color: "#64748b", fontSize: isMobile ? 10 : 11 },
+      nameTextStyle: { color: t.textSecondary, fontSize: isMobile ? 10 : 11 },
       axisLabel: {
         formatter: (value: number) => `${Math.round(value)}`,
         rotate: isMobile ? 28 : 18,
@@ -456,9 +483,9 @@ export function buildInterAreaFlowOption(
       type: "category",
       inverse: true,
       data: rows.map((r) => `${r.sourceArea} ⇄ ${r.targetArea}`),
-      axisLabel: { color: "#334155", fontSize: isMobile ? 10 : 11 },
+      axisLabel: { color: t.text, fontSize: isMobile ? 10 : 11 },
     },
-    graphic: hasData ? undefined : emptyGraphic("連系線潮流実績データが未取得です"),
+    graphic: hasData ? undefined : emptyGraphic("連系線潮流実績データが未取得です", isDark),
     series: [
       {
         type: "bar",
@@ -479,13 +506,13 @@ export function buildInterAreaFlowOption(
           position: (params: { value: number }) => (params.value >= 0 ? "right" : "left"),
           formatter: (params: { data: { row: (typeof rows)[number] } }) =>
             `${decimalFmt.format(params.data.row.upMw)}MW ↑  ${decimalFmt.format(params.data.row.downMw)}MW ↓`,
-          color: "#334155",
+          color: t.text,
           fontSize: 10,
         },
         markLine: {
           silent: true,
           symbol: ["none", "none"],
-          lineStyle: { color: "#64748b", type: "dashed", width: 1 },
+          lineStyle: { color: t.textSecondary, type: "dashed", width: 1 },
           data: [{ xAxis: 0 }],
         },
       },
@@ -510,7 +537,9 @@ export function buildIntertieTrendOption(
   isMobile: boolean,
   selectedArea: string,
   netImportSeries: number[] | null,
+  isDark = false,
 ) {
+  const t = chartTheme(isDark);
   const topSeries = [...scopedSeries]
     .sort((a, b) => b.avgAbsMw - a.avgAbsMw)
     .slice(0, selectedArea === "全エリア" ? 6 : 8);
@@ -521,7 +550,7 @@ export function buildIntertieTrendOption(
       trigger: "axis",
       valueFormatter: (value: number) => `${decimalFmt.format(value)} MW`,
     },
-    legend: { top: 10, type: "scroll", textStyle: { color: "#334155" } },
+    legend: { top: 10, type: "scroll", textStyle: { color: t.text } },
     grid: responsiveGrid(isMobile, { top: isMobile ? 48 : 58 }),
     xAxis: timeXAxis(slotLabels, isMobile),
     yAxis: {
@@ -529,9 +558,9 @@ export function buildIntertieTrendOption(
       name: "潮流実績(MW)",
       nameLocation: "middle",
       nameGap: isMobile ? 34 : 42,
-      nameTextStyle: { color: "#64748b", fontSize: isMobile ? 10 : 11 },
+      nameTextStyle: { color: t.textSecondary, fontSize: isMobile ? 10 : 11 },
     },
-    graphic: hasData ? undefined : emptyGraphic("連系線潮流実績データが未取得です"),
+    graphic: hasData ? undefined : emptyGraphic("連系線潮流実績データが未取得です", isDark),
     series: [
       ...(netImportSeries
         ? [
@@ -541,8 +570,8 @@ export function buildIntertieTrendOption(
               data: netImportSeries,
               smooth: true,
               symbol: "none",
-              color: "#111827",
-              lineStyle: { width: 3, color: "#111827", type: "dashed" },
+              color: t.strongLine,
+              lineStyle: { width: 3, color: t.strongLine, type: "dashed" },
             },
           ]
         : []),
@@ -576,6 +605,7 @@ export function buildFlowHeatmapOption(
   filteredLines: LineSeriesLike[],
   flowSlotLabels: string[],
   isMobile: boolean,
+  isDark = false,
 ) {
   const topLines = filteredLines.slice(0, 18);
   const yLabels = topLines.map((line) =>
@@ -616,6 +646,7 @@ export function buildVolatilityHeatmapOption(
   filteredLines: LineSeriesLike[],
   flowSlotLabels: string[],
   isMobile: boolean,
+  isDark = false,
 ) {
   const scored = filteredLines
     .map((line) => {
@@ -683,9 +714,10 @@ import type { GeneratorTreemapItem, GeneratorStatusItem } from "./dashboard-comp
 export function buildGeneratorTreemapOption(
   items: GeneratorTreemapItem[],
   isMobile: boolean,
+  isDark = false,
 ): Record<string, unknown> {
   if (items.length === 0) {
-    return { graphic: emptyGraphic("発電機データなし") };
+    return { graphic: emptyGraphic("発電機データなし", isDark) };
   }
 
   // Group by area
@@ -798,9 +830,10 @@ export function buildAreaGenerationTimeSeriesOption(
   slotLabels: string[],
   areaColor: string,
   isMobile: boolean,
+  isDark = false,
 ): Record<string, unknown> {
   if (seriesList.length === 0 || slotLabels.length === 0) {
-    return { graphic: emptyGraphic("データなし") };
+    return { graphic: emptyGraphic("データなし", isDark) };
   }
 
   return {
@@ -934,7 +967,7 @@ export function buildExpandedAreaGenerationTimeSeriesOption(
       type: "category",
       data: slotLabels,
       show: true,
-      axisLine: { show: true, lineStyle: { color: "#334155" } },
+      axisLine: { show: true, lineStyle: { color: "#64748b" } },
       axisTick: { show: false },
       axisLabel: {
         show: true,

@@ -6,7 +6,7 @@
 
 import { FLOW_AREA_COLORS, INTERTIE_RATED_CAPACITY_MW } from "./constants";
 import { numberFmt, decimalFmt, roundTo } from "./formatters";
-import { responsiveGrid, timeXAxis, heatmapSeries } from "./chart-options";
+import { responsiveGrid, timeXAxis, heatmapSeries, chartTheme } from "./chart-options";
 
 // ---------------------------------------------------------------------------
 // Congestion data
@@ -95,7 +95,9 @@ export function buildCongestionTrendOption(
   congestion: CongestionSummary,
   slotLabels: string[],
   isMobile: boolean,
+  isDark = false,
 ) {
+  const t = chartTheme(isDark);
   const topLines = congestion.lines.slice(0, isMobile ? 5 : 8);
 
   return {
@@ -117,7 +119,7 @@ export function buildCongestionTrendOption(
         return `<b>${time}</b><br/>${rows.join("<br/>")}`;
       },
     },
-    legend: { top: 10, type: "scroll" as const, textStyle: { color: "#334155" } },
+    legend: { top: 10, type: "scroll" as const, textStyle: { color: t.text } },
     grid: responsiveGrid(isMobile, { top: isMobile ? 48 : 58 }),
     xAxis: timeXAxis(slotLabels, isMobile),
     yAxis: {
@@ -125,7 +127,7 @@ export function buildCongestionTrendOption(
       name: "利用率(%)",
       nameLocation: "middle" as const,
       nameGap: isMobile ? 30 : 38,
-      nameTextStyle: { color: "#64748b", fontSize: isMobile ? 10 : 11 },
+      nameTextStyle: { color: t.textSecondary, fontSize: isMobile ? 10 : 11 },
       max: 100,
       axisLabel: { formatter: (v: number) => `${v}%` },
     },
@@ -187,6 +189,7 @@ export function buildCongestionHeatmapOption(
   congestion: CongestionSummary,
   slotLabels: string[],
   isMobile: boolean,
+  isDark = false,
 ) {
   const { lines } = congestion;
   const heatmapData: Array<[number, number, number]> = [];
