@@ -96,13 +96,13 @@ function ExpandedCardModal({
       onClick={onClose}
     >
       <div
-        className="relative flex h-[95vh] w-[96vw] max-w-[1600px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 shadow-2xl dark:border-slate-700/80 dark:from-slate-900 dark:to-slate-850"
+        className="relative flex h-[95vh] w-[96vw] max-w-[1600px] flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-700/80 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Color accent bar */}
         <div
           className="h-1.5 shrink-0"
-          style={{ background: `linear-gradient(90deg, ${card.areaColor}, ${card.areaColor}88)` }}
+          style={{ backgroundColor: card.areaColor }}
         />
 
         {/* Header */}
@@ -295,7 +295,7 @@ export function GeneratorStatusSection({
   const handleClose = useCallback(() => setExpandedArea(null), []);
 
   return (
-    <section className="rounded-3xl border border-white/70 bg-white/90 p-3 shadow-[var(--panel-shadow)] backdrop-blur-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800/90">
+    <section className="rounded-3xl border border-slate-200/80 bg-white p-3 shadow-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800">
       {/* Header */}
       <div className="mb-4 flex flex-col gap-2 md:mb-5 md:flex-row md:items-end md:justify-between">
         <div>
@@ -314,7 +314,7 @@ export function GeneratorStatusSection({
           {sourceLegend.map(({ source, color }) => (
             <span
               key={source}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 px-2 py-0.5 text-[10px] text-slate-600 dark:border-slate-600/80 dark:bg-slate-800/90 dark:text-slate-400"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 px-2 py-0.5 text-[10px] text-slate-600 dark:border-slate-600/80 dark:bg-slate-800/90 dark:text-slate-300"
             >
               <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
               {normalizeSourceName(source)}
@@ -345,7 +345,7 @@ export function GeneratorStatusSection({
           return (
             <article
               key={card.area}
-              className="group/card cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white/98 to-slate-50/96 shadow-sm transition-all duration-300 hover:shadow-[var(--panel-shadow)] dark:border-slate-700/80 dark:from-slate-800/98 dark:to-slate-850/96"
+              className="group/card cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-[var(--panel-shadow)] dark:border-slate-700/80 dark:bg-slate-800"
               onClick={() => setExpandedArea(card.area)}
               role="button"
               tabIndex={0}
@@ -355,7 +355,7 @@ export function GeneratorStatusSection({
               {/* Color accent bar */}
               <div
                 className="h-1 transition-all duration-300 group-hover/card:h-1.5"
-                style={{ background: `linear-gradient(90deg, ${areaColor}, ${areaColor}88)` }}
+                style={{ backgroundColor: areaColor }}
               />
               <div className="p-3 md:p-4">
                 {/* Header row */}
@@ -382,7 +382,7 @@ export function GeneratorStatusSection({
 
                 {/* Sub info */}
                 {topGen && (
-                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-300">
                     主力: {topGen.plantName}（{topGen.sourceType}）{decimalFmt.format(topGen.sharePercent)}%
                   </p>
                 )}
@@ -402,7 +402,7 @@ export function GeneratorStatusSection({
                       {card.timeSeries.slice(0, 10).map((s) => (
                         <span
                           key={`${card.area}-${s.name}`}
-                          className="inline-flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-300"
+                          className="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-200"
                         >
                           <span
                             className="inline-block h-1.5 w-1.5 rounded-full"
@@ -412,7 +412,7 @@ export function GeneratorStatusSection({
                         </span>
                       ))}
                       {card.timeSeries.length > 10 && (
-                        <span className="text-[9px] text-slate-400 dark:text-slate-500">+{card.timeSeries.length - 10}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-400">+{card.timeSeries.length - 10}</span>
                       )}
                     </div>
                   </div>
@@ -429,13 +429,13 @@ export function GeneratorStatusSection({
                       key={`${card.area}-${unit.label}-${idx}`}
                       className="flex items-center gap-2 text-[11px]"
                     >
-                      <span className="w-3 shrink-0 text-right tabular-nums text-slate-400 dark:text-slate-500">{idx + 1}</span>
+                      <span className="w-3 shrink-0 text-right tabular-nums text-slate-400 dark:text-slate-400">{idx + 1}</span>
                       <span
                         className="inline-block h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: unit.color }}
                       />
-                      <span className="min-w-0 truncate text-slate-700 dark:text-slate-300">{unit.label}</span>
-                      <span className="ml-auto shrink-0 tabular-nums font-medium text-slate-800 dark:text-slate-200">
+                      <span className="min-w-0 truncate text-slate-700 dark:text-slate-200">{unit.label}</span>
+                      <span className="ml-auto shrink-0 tabular-nums font-semibold text-slate-800 dark:text-slate-100">
                         {formatCompactEnergy(unit.dailyKwh)}
                       </span>
                     </div>

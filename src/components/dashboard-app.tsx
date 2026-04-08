@@ -492,7 +492,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   );
 
   return (
-    <div className="relative min-h-screen bg-[radial-gradient(ellipse_at_top_left,_#eef7f5_0%,_#f6f8fb_32%,_#f0f4f8_100%)] text-slate-800 dark:bg-[radial-gradient(ellipse_at_top_left,_#0c1929_0%,_#111827_32%,_#0f172a_100%)] dark:text-slate-200">
+    <div className="relative min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200">
       <a
         href="#dashboard-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-white focus:shadow-lg"
@@ -664,7 +664,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         </SwapyContainer>
 
         {/* ── 表示時刻スナップショット ── */}
-        <section className="sticky top-0 z-30 overflow-hidden rounded-3xl border border-teal-200/50 bg-gradient-to-r from-teal-50/97 via-white/97 to-teal-50/97 px-4 py-3 shadow-lg shadow-teal-500/5 backdrop-blur-md md:px-6 md:py-4 dark:border-teal-800/50 dark:from-teal-950/97 dark:via-slate-800/97 dark:to-teal-950/97">
+        <section className="sticky top-0 z-30 overflow-hidden rounded-3xl border border-slate-200/60 bg-white/97 px-4 py-3 shadow-sm backdrop-blur-md md:px-6 md:py-4 dark:border-slate-700/60 dark:bg-slate-800/97">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="flex items-center gap-2 text-base font-semibold text-teal-800 dark:text-teal-300">
@@ -776,7 +776,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
         </SwapyContainer>
 
         {/* Footer */}
-        <footer className="mt-10 rounded-3xl border border-slate-200/40 bg-white/60 px-6 py-6 text-center backdrop-blur-sm dark:border-slate-700/40 dark:bg-slate-800/60">
+        <footer className="mt-10 rounded-3xl border border-slate-200/80 bg-white px-6 py-6 text-center dark:border-slate-700/80 dark:bg-slate-800">
           <p className="text-xs font-medium tracking-wide text-teal-600 dark:text-teal-400">
             OCCTO GRID OBSERVATORY
           </p>
