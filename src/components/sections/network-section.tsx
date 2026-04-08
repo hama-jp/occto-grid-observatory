@@ -426,7 +426,7 @@ export function NetworkSection({
       </Panel>
       <Panel title="エリア間連系潮流（実績）" testId="inter-area-flow-panel" className="cursor-pointer">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs text-slate-600">表示日時: {selectedFlowDateTimeLabel}</span>
+          <span className="text-xs text-slate-600 dark:text-slate-400">表示日時: {selectedFlowDateTimeLabel}</span>
           <span className="opacity-0 transition-opacity duration-200 group-hover/panel:opacity-100">
             <ExpandIcon />
           </span>
