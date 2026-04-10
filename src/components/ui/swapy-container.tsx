@@ -27,6 +27,7 @@ export function SwapyContainer({
 
     const swapy = createSwapy(containerRef.current, {
       manualSwap: true,
+      swapMode: "drop",
       animation: "dynamic",
       dragAxis: "y",
       dragOnHold: true,
