@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   SummaryCard,
   CompactStatCard,
@@ -120,7 +121,7 @@ type JepxMarketCardProps = {
   clampedSlotIndex: number;
 };
 
-export function JepxMarketCard({
+function JepxMarketCardImpl({
   spot,
   slotLabels,
   selectedArea,
@@ -243,7 +244,7 @@ type JepxAreaBreakdownProps = {
   slotLabels: string[];
 };
 
-export function JepxAreaBreakdown({ spot }: JepxAreaBreakdownProps) {
+function JepxAreaBreakdownImpl({ spot }: JepxAreaBreakdownProps) {
   const highlights = buildJepxHighlights(spot);
 
   if (highlights.areaPriceItems.length === 0) return null;
@@ -263,3 +264,6 @@ export function JepxAreaBreakdown({ spot }: JepxAreaBreakdownProps) {
     </SummaryCard>
   );
 }
+
+export const JepxMarketCard = memo(JepxMarketCardImpl);
+export const JepxAreaBreakdown = memo(JepxAreaBreakdownImpl);

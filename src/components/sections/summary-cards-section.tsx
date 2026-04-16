@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   SummaryCard,
   CompactStatCard,
@@ -20,7 +21,7 @@ type SummaryCardsTopProps = {
   areaTotalsLength: number;
 };
 
-export function SummaryCardsTop({ dashboardHighlights, areaTotalsLength }: SummaryCardsTopProps) {
+function SummaryCardsTopImpl({ dashboardHighlights, areaTotalsLength }: SummaryCardsTopProps) {
   return (
     <section className="stagger-children grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <SummaryCard
@@ -94,7 +95,7 @@ type SummaryCardsBottomProps = {
   selectedFlowDateTimeLabel: string;
 };
 
-export function SummaryCardsBottom({ dashboardHighlights, selectedFlowDateTimeLabel }: SummaryCardsBottomProps) {
+function SummaryCardsBottomImpl({ dashboardHighlights, selectedFlowDateTimeLabel }: SummaryCardsBottomProps) {
   return (
     <section className="stagger-children grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <SummaryCard
@@ -158,3 +159,6 @@ export function SummaryCardsBottom({ dashboardHighlights, selectedFlowDateTimeLa
     </section>
   );
 }
+
+export const SummaryCardsTop = memo(SummaryCardsTopImpl);
+export const SummaryCardsBottom = memo(SummaryCardsBottomImpl);

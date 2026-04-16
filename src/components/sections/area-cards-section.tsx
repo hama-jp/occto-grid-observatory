@@ -14,7 +14,7 @@ import {
   NetFlowMeter,
 } from "@/components/ui/dashboard-ui";
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -124,7 +124,7 @@ function buildSupplyDemandSparkline(
   };
 }
 
-export function AreaCardsSection({
+function AreaCardsSectionImpl({
   areaSupplyCards,
   selectedArea,
   selectedFlowSlotLabel,
@@ -323,3 +323,5 @@ export function AreaCardsSection({
     </section>
   );
 }
+
+export const AreaCardsSection = memo(AreaCardsSectionImpl);

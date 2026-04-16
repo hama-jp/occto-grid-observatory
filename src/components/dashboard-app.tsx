@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardData } from "@/lib/dashboard-types";
 import {
   SOURCE_COLORS,
@@ -17,7 +17,6 @@ import {
   compareAreaOrder,
 } from "@/lib/formatters";
 import {
-  type NetworkAnimationPath,
   type NetworkOverlayViewport,
   type NetworkFlowChartHostElement,
   DEFAULT_NETWORK_OVERLAY_VIEWPORT,
@@ -48,7 +47,10 @@ import {
   buildCongestionHeatmapOption,
   type CongestionSummary,
 } from "@/lib/chart-options";
-import { buildFlowNetworkOption } from "@/lib/network-flow-builder";
+import {
+  buildFlowNetworkOption,
+  buildFlowNetworkTopology,
+} from "@/lib/network-flow-builder";
 import { FOOTER_LINK_CLASS } from "@/lib/styles";
 import {
   buildAllPlantSummaries,
@@ -132,6 +134,8 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     setIsReorderMode,
   } = useSectionOrder();
 
+  const toggleReorderMode = useCallback(() => setIsReorderMode((v) => !v), [setIsReorderMode]);
+
   const isBlockVisible = (blockId: DashboardBlockId): boolean => {
     const def = [...ZONE_A_BLOCKS, ...ZONE_B_BLOCKS].find((b) => b.blockId === blockId);
     if (!def) return false;
@@ -158,7 +162,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const [networkOverlayViewport, setNetworkOverlayViewport] = useState<NetworkOverlayViewport>(
     DEFAULT_NETWORK_OVERLAY_VIEWPORT,
   );
-  const syncNetworkOverlayViewport = (chart: unknown): void => {
+  const syncNetworkOverlayViewport = useCallback((chart: unknown): void => {
     const nextViewport = readNetworkOverlayViewport(chart);
     if (!nextViewport) {
       return;
@@ -166,11 +170,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     setNetworkOverlayViewport((currentViewport) =>
       areNetworkOverlayViewportsEqual(currentViewport, nextViewport) ? currentViewport : nextViewport,
     );
-  };
-  const registerNetworkFlowChart = (chart: unknown): void => {
+  }, []);
+  const registerNetworkFlowChart = useCallback((chart: unknown): void => {
     attachNetworkFlowChartRoamHook(chart, networkFlowChartHostRef.current);
     syncNetworkOverlayViewport(chart);
-  };
+  }, [syncNetworkOverlayViewport]);
   useEffect(() => {
     const chartHost = networkFlowChartHostRef.current;
     return () => {
@@ -344,37 +348,30 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     [data.meta.slotLabels.flow, filteredLines, isMobileViewport, isDark],
   );
 
-  const flowNetworkOption = useMemo(
-    () => buildFlowNetworkOption({
-      areaSummaries: data.flows.areaSummaries,
-      filteredIntertieSeries,
-      lineSeries: data.flows.lineSeries,
-      clampedNetworkFlowSlotIndex,
-      networkPowerPlants,
-      selectedFlowDateTimeLabel,
-      maxAnimatedFlowLinesPerArea,
-    }),
-    [data.flows.areaSummaries, filteredIntertieSeries, data.flows.lineSeries, clampedNetworkFlowSlotIndex, networkPowerPlants, selectedFlowDateTimeLabel, maxAnimatedFlowLinesPerArea],
-  );
-  const majorFlowAnimationPaths = useMemo(
+  const flowNetworkTopology = useMemo(
     () =>
-      (
-        flowNetworkOption as {
-          __majorFlowAnimationPaths?: NetworkAnimationPath[];
-        }
-      ).__majorFlowAnimationPaths ?? [],
-    [flowNetworkOption],
+      buildFlowNetworkTopology({
+        areaSummaries: data.flows.areaSummaries,
+        filteredIntertieSeries,
+        lineSeries: data.flows.lineSeries,
+        networkPowerPlants,
+      }),
+    [data.flows.areaSummaries, filteredIntertieSeries, data.flows.lineSeries, networkPowerPlants],
   );
-
-  const intertieAnimationPaths = useMemo(
+  const flowNetworkResult = useMemo(
     () =>
-      (
-        flowNetworkOption as {
-          __intertieAnimationPaths?: NetworkAnimationPath[];
-        }
-      ).__intertieAnimationPaths ?? [],
-    [flowNetworkOption],
+      buildFlowNetworkOption(flowNetworkTopology, {
+        lineSeries: data.flows.lineSeries,
+        filteredIntertieSeries,
+        clampedNetworkFlowSlotIndex,
+        selectedFlowDateTimeLabel,
+        maxAnimatedFlowLinesPerArea,
+      }),
+    [flowNetworkTopology, data.flows.lineSeries, filteredIntertieSeries, clampedNetworkFlowSlotIndex, selectedFlowDateTimeLabel, maxAnimatedFlowLinesPerArea],
   );
+  const flowNetworkOption = flowNetworkResult.option;
+  const majorFlowAnimationPaths = flowNetworkResult.majorFlowAnimationPaths;
+  const intertieAnimationPaths = flowNetworkResult.intertieAnimationPaths;
 
   const japanGuidePaths = useMemo(() => buildJapanGuideSvgPaths(), []);
 
@@ -520,7 +517,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
           visibleSectionSet={visibleSectionSet}
           onSetVisibleSectionIds={setVisibleSectionIds}
           isReorderMode={isReorderMode}
-          onToggleReorderMode={() => setIsReorderMode((v) => !v)}
+          onToggleReorderMode={toggleReorderMode}
           onResetOrder={resetOrder}
         />
 

@@ -8,7 +8,7 @@ import {
   type AreaGenerationSeries,
 } from "@/lib/chart-options";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
@@ -251,7 +251,7 @@ function ExpandedCardModal({
 /*  Main Section                                                      */
 /* ------------------------------------------------------------------ */
 
-export function GeneratorStatusSection({
+function GeneratorStatusSectionImpl({
   cards,
   treemapItems,
   selectedArea,
@@ -460,3 +460,5 @@ export function GeneratorStatusSection({
     </section>
   );
 }
+
+export const GeneratorStatusSection = memo(GeneratorStatusSectionImpl);
