@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import { memo } from "react";
 import type { CongestionSummary } from "@/lib/chart-options";
 import { CompactStatCard, Panel } from "@/components/ui/dashboard-ui";
 import { numberFmt, decimalFmt } from "@/lib/formatters";
@@ -11,7 +12,7 @@ type CongestionSectionProps = {
   congestionHeatmapOption: Record<string, unknown> | null;
 };
 
-export function CongestionSection({
+function CongestionSectionImpl({
   congestionData,
   congestionTrendOption,
   congestionHeatmapOption,
@@ -110,3 +111,5 @@ export function CongestionSection({
     </section>
   );
 }
+
+export const CongestionSection = memo(CongestionSectionImpl);

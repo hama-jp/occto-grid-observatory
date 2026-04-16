@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   DASHBOARD_SECTION_OPTIONS,
   type DashboardSectionId,
@@ -28,7 +29,7 @@ type DashboardHeaderProps = {
   onAreaChange: (area: string) => void;
 };
 
-export function DashboardHeader({
+function DashboardHeaderImpl({
   targetDate,
   fetchedAtLabel,
   selectedDate,
@@ -140,7 +141,7 @@ type SectionToggleProps = {
   onResetOrder: () => void;
 };
 
-export function SectionToggle({ visibleSectionSet, onSetVisibleSectionIds, isReorderMode, onToggleReorderMode, onResetOrder }: SectionToggleProps) {
+function SectionToggleImpl({ visibleSectionSet, onSetVisibleSectionIds, isReorderMode, onToggleReorderMode, onResetOrder }: SectionToggleProps) {
   return (
     <section className="animate-fade-in-up rounded-3xl border border-slate-200/80 bg-white p-3 shadow-sm md:p-5 dark:border-slate-700/80 dark:bg-slate-800" style={{ animationDelay: '80ms' }}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -217,3 +218,6 @@ export function SectionToggle({ visibleSectionSet, onSetVisibleSectionIds, isReo
     </section>
   );
 }
+
+export const DashboardHeader = memo(DashboardHeaderImpl);
+export const SectionToggle = memo(SectionToggleImpl);

@@ -3,11 +3,17 @@
  *
  * Data extraction logic is in network-flow-data.ts; this module focuses on
  * assembling the final chart configuration.
+ *
+ * Topology (slot-independent node layout, degrees, station positions) is
+ * computed once per dataset via `buildFlowNetworkTopology` and reused across
+ * time-slider slot changes. Per-slot work (link values, intertie aggregates,
+ * animation paths) is done in `buildFlowNetworkOption`.
  */
 
 import type { DashboardData } from "@/lib/dashboard-types";
 import { FLOW_AREA_COLORS, MAX_ANIMATED_FLOW_LINES_PER_AREA, MAP_VIEWBOX } from "@/lib/constants";
 import { numberFmt, decimalFmt, formatVoltageKv } from "@/lib/formatters";
+import type { NetworkAnimationPath } from "@/lib/geo-viewport";
 import {
   extractIntraAreaLinks,
   extractIntertieData,
@@ -22,7 +28,7 @@ import {
 } from "@/lib/network-flow-data";
 // Japan guide graphics are now rendered via SVG overlay in the component
 
-export type NetworkFlowBuilderParams = {
+export type NetworkFlowTopologyParams = {
   areaSummaries: DashboardData["flows"]["areaSummaries"];
   filteredIntertieSeries: Array<{
     intertieName: string;
@@ -33,7 +39,6 @@ export type NetworkFlowBuilderParams = {
     values: number[];
   }>;
   lineSeries: DashboardData["flows"]["lineSeries"];
-  clampedNetworkFlowSlotIndex: number;
   networkPowerPlants: Array<{
     area: string;
     plantName: string;
@@ -42,45 +47,62 @@ export type NetworkFlowBuilderParams = {
     avgOutputMw: number;
     maxOutputManKw: number;
   }>;
+};
+
+export type NetworkFlowSlotParams = {
+  lineSeries: DashboardData["flows"]["lineSeries"];
+  filteredIntertieSeries: NetworkFlowTopologyParams["filteredIntertieSeries"];
+  clampedNetworkFlowSlotIndex: number;
   selectedFlowDateTimeLabel: string;
   maxAnimatedFlowLinesPerArea?: number;
 };
 
+export type NetworkFlowBuilderParams = NetworkFlowTopologyParams & NetworkFlowSlotParams;
+
+export type FlowNetworkTopology = {
+  nodes: Array<Record<string, unknown>>;
+  nodePointById: Map<string, { x: number; y: number }>;
+  areaCategories: string[];
+  categoryIndex: Map<string, number>;
+  stationPositions: Map<string, { x: number; y: number }>;
+  areaScope: Set<string>;
+};
+
+export type FlowNetworkResult = {
+  option: Record<string, unknown>;
+  majorFlowAnimationPaths: NetworkAnimationPath[];
+  intertieAnimationPaths: NetworkAnimationPath[];
+};
+
 export type { NetworkLink } from "@/lib/network-flow-data";
 
-export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
-  const {
-    areaSummaries,
-    filteredIntertieSeries,
-    lineSeries,
-    clampedNetworkFlowSlotIndex,
-    networkPowerPlants,
-    selectedFlowDateTimeLabel,
-    maxAnimatedFlowLinesPerArea = MAX_ANIMATED_FLOW_LINES_PER_AREA,
-  } = params;
+/**
+ * Build the slot-independent topology (node layout, positions, categories).
+ * Memoize this by dataset inputs — recomputing is expensive and unnecessary
+ * when only the time-slider slot index changes.
+ */
+export function buildFlowNetworkTopology(params: NetworkFlowTopologyParams): FlowNetworkTopology {
+  const { areaSummaries, filteredIntertieSeries, lineSeries, networkPowerPlants } = params;
 
-  // 1. Extract intra-area links
-  const { links, visibleAreas, stationsByArea, nodeDegree } = extractIntraAreaLinks(
-    lineSeries,
-    clampedNetworkFlowSlotIndex,
-  );
+  // Run extract functions with slot 0 to populate stationsByArea / nodeDegree /
+  // visibleAreas. These outputs are direction-agnostic (both endpoints are
+  // always added regardless of flow sign), so they are slot-independent.
+  const { visibleAreas, stationsByArea, nodeDegree } = extractIntraAreaLinks(lineSeries, 0);
 
-  // 2. Extract intertie data
   const areaScope = new Set<string>();
   lineSeries.forEach((line) => areaScope.add(line.area));
   if (areaScope.size === 0) {
     areaSummaries.forEach((row) => areaScope.add(row.area));
   }
 
-  const { intertieFacilityMap, intertieBridgeMap } = extractIntertieData(
+  extractIntertieData(
     filteredIntertieSeries,
-    clampedNetworkFlowSlotIndex,
+    0,
     visibleAreas,
     stationsByArea,
     nodeDegree,
   );
 
-  // 3. Build station positions and nodes
   const stationPositions = buildStationLayout(stationsByArea);
 
   if (visibleAreas.size === 0) {
@@ -99,9 +121,8 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
     areaScope,
   );
 
-  // 3b. Add invisible anchor nodes at MAP_VIEWBOX corners to pin the coordinate range.
-  // Without these, ECharts auto-ranges to the data extent and the SVG overlay
-  // (Japan map + animation paths) becomes misaligned.
+  // Invisible anchor nodes at MAP_VIEWBOX corners pin the coordinate range so
+  // ECharts auto-ranging keeps the SVG overlay aligned.
   nodes.push(
     {
       id: "__anchor_topLeft",
@@ -127,10 +148,6 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
     },
   );
 
-  // 4. Build rendered links
-  const renderedLinks = buildRenderedLinks(links, stationPositions);
-
-  // 5. Build intertie lines
   const nodePointById = new Map<string, { x: number; y: number }>();
   nodes.forEach((node) => {
     const id = String(node.id ?? "");
@@ -141,18 +158,58 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
     }
   });
 
+  return {
+    nodes,
+    nodePointById,
+    areaCategories,
+    categoryIndex,
+    stationPositions,
+    areaScope,
+  };
+}
+
+/**
+ * Build the per-slot chart option and animation paths from a prebuilt topology.
+ * Cheap enough to recompute on every time-slider change.
+ */
+export function buildFlowNetworkOption(
+  topology: FlowNetworkTopology,
+  params: NetworkFlowSlotParams,
+): FlowNetworkResult {
+  const {
+    lineSeries,
+    filteredIntertieSeries,
+    clampedNetworkFlowSlotIndex,
+    selectedFlowDateTimeLabel,
+    maxAnimatedFlowLinesPerArea = MAX_ANIMATED_FLOW_LINES_PER_AREA,
+  } = params;
+  const { nodes, nodePointById, areaCategories, stationPositions } = topology;
+
+  // 1. Per-slot link values (reuses parsed directions but re-evaluates slot values)
+  const { links } = extractIntraAreaLinks(lineSeries, clampedNetworkFlowSlotIndex);
+
+  // 2. Per-slot intertie aggregation. We pass fresh Maps/Sets here — the
+  // topology's station/degree maps are already finalized and must not be mutated.
+  const { intertieFacilityMap, intertieBridgeMap } = extractIntertieData(
+    filteredIntertieSeries,
+    clampedNetworkFlowSlotIndex,
+    new Set<string>(),
+    new Map<string, Set<string>>(),
+    new Map<string, number>(),
+  );
+
+  // 3. Build rendered links and intertie line data for this slot
+  const renderedLinks = buildRenderedLinks(links, stationPositions);
   const intertieBridgeLineData = buildIntertieBridgeLines(intertieBridgeMap);
   const intertieFacilityLineData = buildIntertieFacilityLines(intertieFacilityMap, nodePointById);
 
-  // 6. Build animation paths
+  // 4. Build animation paths
   const majorFlowAnimationPaths = buildFlowAnimationPaths(renderedLinks, nodePointById, maxAnimatedFlowLinesPerArea);
   const intertieAnimationPaths = buildIntertieAnimationPaths(intertieFacilityLineData, intertieBridgeLineData);
 
-  // 7. Assemble chart option
-  return {
+  // 5. Assemble chart option
+  const option = {
     animationDurationUpdate: 360,
-    __majorFlowAnimationPaths: majorFlowAnimationPaths,
-    __intertieAnimationPaths: intertieAnimationPaths,
     tooltip: {
       trigger: "item",
       confine: true,
@@ -317,6 +374,8 @@ export function buildFlowNetworkOption(params: NetworkFlowBuilderParams) {
       },
     ],
   };
+
+  return { option, majorFlowAnimationPaths, intertieAnimationPaths };
 }
 
 /**

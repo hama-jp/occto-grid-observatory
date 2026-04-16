@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { TopUnit } from "@/lib/dashboard-types";
 import type { PlantSummaryRow } from "@/lib/dashboard-computations";
 import { FLOW_AREA_COLORS } from "@/lib/constants";
@@ -9,7 +10,7 @@ type RankingsSectionProps = {
   filteredTopPlants: PlantSummaryRow[];
 };
 
-export function RankingsSection({
+function RankingsSectionImpl({
   filteredTopUnits,
   filteredTopPlants,
 }: RankingsSectionProps) {
@@ -97,3 +98,5 @@ export function RankingsSection({
     </section>
   );
 }
+
+export const RankingsSection = memo(RankingsSectionImpl);

@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import { memo } from "react";
 import { Panel, CompositionLegendList } from "@/components/ui/dashboard-ui";
 import { ChartErrorBoundary } from "@/components/ui/error-boundary";
 import { SELECT_COMPACT_CLASS } from "@/lib/styles";
@@ -19,7 +20,7 @@ type GenerationSectionProps = {
   useInlineDonutLegend: boolean;
 };
 
-export function GenerationSection({
+function GenerationSectionImpl({
   showGenerationTrend,
   showSourceComposition,
   generationTrendArea,
@@ -105,3 +106,5 @@ export function GenerationSection({
     </ChartErrorBoundary>
   );
 }
+
+export const GenerationSection = memo(GenerationSectionImpl);

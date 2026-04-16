@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import { type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buildExpandedFlowNetworkOption } from "@/lib/network-flow-builder";
 import type {
@@ -285,7 +285,7 @@ function IntertieAnimationPaths({ paths }: { paths: NetworkAnimationPath[] }) {
 /*  Main Section                                                      */
 /* ------------------------------------------------------------------ */
 
-export function NetworkSection({
+function NetworkSectionImpl({
   flowNetworkOption,
   interAreaFlowOption,
   isMobileViewport,
@@ -482,3 +482,5 @@ export function NetworkSection({
     </section>
   );
 }
+
+export const NetworkSection = memo(NetworkSectionImpl);
