@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardData } from "@/lib/dashboard-types";
 import {
   SOURCE_COLORS,
@@ -35,18 +35,24 @@ import {
   buildReserveTrendOption,
   buildDemandCurrentOption,
   buildReserveCurrentOption,
+} from "@/lib/chart-options/reserves";
+import {
   buildGenerationLineOption,
   buildSourceDonutOption,
   buildAreaTotalsOption,
+} from "@/lib/chart-options/generation";
+import {
   buildInterAreaFlowOption,
   buildIntertieTrendOption,
   buildFlowHeatmapOption,
   buildVolatilityHeatmapOption,
+} from "@/lib/chart-options/flows";
+import {
   buildCongestionData,
   buildCongestionTrendOption,
   buildCongestionHeatmapOption,
   type CongestionSummary,
-} from "@/lib/chart-options";
+} from "@/lib/chart-options/congestion";
 import {
   buildFlowNetworkOption,
   buildFlowNetworkTopology,
@@ -59,15 +65,30 @@ import {
   buildAreaSupplyCards,
   buildGeneratorStatusCards,
 } from "@/lib/dashboard-computations";
-import { CongestionSection } from "@/components/sections/congestion-section";
 import { RankingsSection } from "@/components/sections/rankings-section";
 import { AreaCardsSection } from "@/components/sections/area-cards-section";
 import { NetworkSection } from "@/components/sections/network-section";
 import { SummaryCardsTop, SummaryCardsBottom } from "@/components/sections/summary-cards-section";
 import { GenerationSection } from "@/components/sections/generation-section";
 import { DashboardHeader, SectionToggle } from "@/components/sections/dashboard-header";
-import { JepxMarketCard, JepxAreaBreakdown } from "@/components/sections/jepx-market-section";
-import { GeneratorStatusSection } from "@/components/sections/generator-status-section";
+// Heavy / conditionally-rendered sections are code-split so they're fetched
+// only when actually needed. Keeps the initial JS payload lean.
+const CongestionSection = dynamic(
+  () => import("@/components/sections/congestion-section").then((m) => m.CongestionSection),
+  { ssr: false },
+);
+const JepxMarketCard = dynamic(
+  () => import("@/components/sections/jepx-market-section").then((m) => m.JepxMarketCard),
+  { ssr: false },
+);
+const JepxAreaBreakdown = dynamic(
+  () => import("@/components/sections/jepx-market-section").then((m) => m.JepxAreaBreakdown),
+  { ssr: false },
+);
+const GeneratorStatusSection = dynamic(
+  () => import("@/components/sections/generator-status-section").then((m) => m.GeneratorStatusSection),
+  { ssr: false },
+);
 import { useViewport } from "@/hooks/use-viewport";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useTimeSlider } from "@/hooks/use-time-slider";
@@ -116,6 +137,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     setNetworkFlowSlotIndex,
     selectedFlowSlotLabel,
   } = useTimeSlider(flowSlotLabels);
+
+  // Heavy subtrees (chart options, flow network, area cards) consume the
+  // deferred value so time-slider drags stay responsive. The slider thumb and
+  // the live time label still reflect the immediate `clampedNetworkFlowSlotIndex`.
+  const deferredSlotIndex = useDeferredValue(clampedNetworkFlowSlotIndex);
 
   const {
     visibleSectionSet,
@@ -193,15 +219,15 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const reserveCurrentRows = useMemo(() => {
     const rows = reserveAreaSeries.map((item) => ({
       area: item.area,
-      demandMw: item.demandMw[clampedNetworkFlowSlotIndex] ?? 0,
-      supplyMw: item.supplyMw[clampedNetworkFlowSlotIndex] ?? 0,
-      reserveMw: item.reserveMw[clampedNetworkFlowSlotIndex] ?? 0,
-      reserveRate: item.reserveRate[clampedNetworkFlowSlotIndex] ?? 0,
-      usageRate: item.usageRate[clampedNetworkFlowSlotIndex] ?? 0,
-      blockReserveRate: item.blockReserveRate[clampedNetworkFlowSlotIndex] ?? 0,
+      demandMw: item.demandMw[deferredSlotIndex] ?? 0,
+      supplyMw: item.supplyMw[deferredSlotIndex] ?? 0,
+      reserveMw: item.reserveMw[deferredSlotIndex] ?? 0,
+      reserveRate: item.reserveRate[deferredSlotIndex] ?? 0,
+      usageRate: item.usageRate[deferredSlotIndex] ?? 0,
+      blockReserveRate: item.blockReserveRate[deferredSlotIndex] ?? 0,
     }));
     return rows.sort((a, b) => a.reserveRate - b.reserveRate);
-  }, [clampedNetworkFlowSlotIndex, reserveAreaSeries]);
+  }, [deferredSlotIndex, reserveAreaSeries]);
 
   // --- Chart options ---
   const reserveTrendOption = useMemo(() => {
@@ -363,11 +389,11 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       buildFlowNetworkOption(flowNetworkTopology, {
         lineSeries: data.flows.lineSeries,
         filteredIntertieSeries,
-        clampedNetworkFlowSlotIndex,
+        clampedNetworkFlowSlotIndex: deferredSlotIndex,
         selectedFlowDateTimeLabel,
         maxAnimatedFlowLinesPerArea,
       }),
-    [flowNetworkTopology, data.flows.lineSeries, filteredIntertieSeries, clampedNetworkFlowSlotIndex, selectedFlowDateTimeLabel, maxAnimatedFlowLinesPerArea],
+    [flowNetworkTopology, data.flows.lineSeries, filteredIntertieSeries, deferredSlotIndex, selectedFlowDateTimeLabel, maxAnimatedFlowLinesPerArea],
   );
   const flowNetworkOption = flowNetworkResult.option;
   const majorFlowAnimationPaths = flowNetworkResult.majorFlowAnimationPaths;
@@ -378,9 +404,9 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
   const interAreaFlowTextRows = useMemo(
     () => buildInterAreaFlowTextRows({
       selectedArea, isMobileViewport, filteredIntertieSeries,
-      clampedNetworkFlowSlotIndex, interAreaFlows: data.flows.interAreaFlows,
+      clampedNetworkFlowSlotIndex: deferredSlotIndex, interAreaFlows: data.flows.interAreaFlows,
     }),
-    [clampedNetworkFlowSlotIndex, data.flows.interAreaFlows, filteredIntertieSeries, isMobileViewport, selectedArea],
+    [deferredSlotIndex, data.flows.interAreaFlows, filteredIntertieSeries, isMobileViewport, selectedArea],
   );
 
   const dashboardHighlights = useMemo(
@@ -388,7 +414,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
       data,
       reserveCurrentRows,
       filteredIntertieSeries,
-      clampedNetworkFlowSlotIndex,
+      clampedNetworkFlowSlotIndex: deferredSlotIndex,
       interAreaFlowTextRows,
       allPlantSummaries,
       sourceColorByName,
@@ -396,7 +422,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     [
       data,
       allPlantSummaries,
-      clampedNetworkFlowSlotIndex,
+      deferredSlotIndex,
       filteredIntertieSeries,
       interAreaFlowTextRows,
       reserveCurrentRows,
@@ -408,7 +434,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     () => buildAreaSupplyCards({
       data,
       filteredIntertieSeries,
-      clampedNetworkFlowSlotIndex,
+      clampedNetworkFlowSlotIndex: deferredSlotIndex,
       allPlantSummaries,
       reserveAreaMap,
       selectedArea,
@@ -418,7 +444,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
     [
       data,
       allPlantSummaries,
-      clampedNetworkFlowSlotIndex,
+      deferredSlotIndex,
       filteredIntertieSeries,
       reserveAreaMap,
       selectedArea,
@@ -544,7 +570,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                       spot={data.jepx.spot}
                       slotLabels={data.meta.slotLabels.generation}
                       selectedArea={selectedArea}
-                      clampedSlotIndex={clampedNetworkFlowSlotIndex}
+                      clampedSlotIndex={deferredSlotIndex}
                     />
                     <JepxAreaBreakdown
                       spot={data.jepx.spot}
@@ -724,7 +750,7 @@ export function DashboardApp({ initialData, availableDates }: DashboardAppProps)
                     maxAreaNetIntertieAbsMw={maxAreaNetIntertieAbsMw}
                     maxAreaPeakAbsMw={maxAreaPeakAbsMw}
                     flowSlotLabels={flowSlotLabels}
-                    currentSlotIndex={clampedNetworkFlowSlotIndex}
+                    currentSlotIndex={deferredSlotIndex}
                   />
                 );
               case "reserve-snapshot":

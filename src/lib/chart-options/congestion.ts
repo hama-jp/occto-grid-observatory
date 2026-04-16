@@ -1,12 +1,10 @@
 /**
  * ECharts option builders for congestion (連系線混雑度) charts.
- *
- * Split from chart-options.ts to keep individual modules under 800 lines.
  */
 
-import { FLOW_AREA_COLORS, INTERTIE_RATED_CAPACITY_MW } from "./constants";
-import { numberFmt, decimalFmt, roundTo } from "./formatters";
-import { responsiveGrid, timeXAxis, heatmapSeries, chartColors } from "./chart-options";
+import { FLOW_AREA_COLORS, INTERTIE_RATED_CAPACITY_MW } from "../constants";
+import { numberFmt, decimalFmt, roundTo } from "../formatters";
+import { chartColors, heatmapSeries, responsiveGrid, timeXAxis } from "./shared";
 
 // ---------------------------------------------------------------------------
 // Congestion data
