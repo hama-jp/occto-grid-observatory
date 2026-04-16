@@ -1,6 +1,5 @@
 import type { GeneratorStatusCard, GeneratorTreemapItem } from "@/lib/dashboard-computations";
-import { SOURCE_COLOR_MAP } from "@/lib/constants";
-import { decimalFmt, formatCompactEnergy, manKwFmt, normalizeSourceName } from "@/lib/formatters";
+import { decimalFmt, formatCompactEnergy, normalizeSourceName } from "@/lib/formatters";
 import {
   buildGeneratorTreemapOption,
   buildAreaGenerationTimeSeriesOption,
@@ -167,6 +166,14 @@ function ExpandedCardModal({
                 <div
                   key={`${card.area}-exp-${unit.label}-${idx}`}
                   className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                  // For large unit lists, let the browser skip layout/paint for
+                  // off-screen items. Cheap win vs. JS virtualization and no
+                  // measurable impact for smaller lists.
+                  style={
+                    units.length >= 50
+                      ? { contentVisibility: "auto", containIntrinsicSize: "auto 32px" }
+                      : undefined
+                  }
                 >
                   <span className="w-5 shrink-0 text-right tabular-nums text-xs text-slate-400">
                     {idx + 1}
@@ -394,7 +401,7 @@ function GeneratorStatusSectionImpl({
                       <ReactECharts
                         option={chartOption}
                         style={{ height: isMobileViewport ? 140 : 170 }}
-                        opts={{ renderer: "svg" }}
+                        opts={{ renderer: "canvas" }}
                       />
                     </div>
                     {/* Mini legend for this chart */}
