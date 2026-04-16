@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import { memo } from "react";
-import type { CongestionSummary } from "@/lib/chart-options";
+import type { CongestionSummary } from "@/lib/chart-options/congestion";
 import { CompactStatCard, Panel } from "@/components/ui/dashboard-ui";
 import { numberFmt, decimalFmt } from "@/lib/formatters";
 

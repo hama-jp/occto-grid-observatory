@@ -6,7 +6,7 @@ import {
   buildAreaGenerationTimeSeriesOption,
   buildExpandedAreaGenerationTimeSeriesOption,
   type AreaGenerationSeries,
-} from "@/lib/chart-options";
+} from "@/lib/chart-options/generator-status";
 import dynamic from "next/dynamic";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";

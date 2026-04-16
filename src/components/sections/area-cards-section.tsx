@@ -222,7 +222,7 @@ function AreaCardsSectionImpl({
                         <ReactECharts
                           option={sparklineMap.get(card.area) ?? {}}
                           style={{ height: 100 }}
-                          opts={{ renderer: "svg" }}
+                          opts={{ renderer: "canvas" }}
                         />
                         <div className="mt-1 flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
                           <span className="flex items-center gap-1">
