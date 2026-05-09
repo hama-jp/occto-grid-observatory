@@ -1,7 +1,7 @@
 {
   "meta": {
     "targetDate": "2026/05/06",
-    "fetchedAt": "2026-05-09T06:40:52.260Z",
+    "fetchedAt": "2026-05-09T09:10:24.397Z",
     "generationRows": 475,
     "flowRows": 464,
     "slotCount": 48,
@@ -110,7 +110,7 @@
     "sources": {
       "generationCsv": "generation-20260506.csv",
       "flowCsv": "flow-20260506-01-北海道.csv,flow-20260506-02-東北.csv,flow-20260506-03-東京.csv,flow-20260506-04-中部.csv,flow-20260506-05-北陸.csv,flow-20260506-06-関西.csv,flow-20260506-07-中国.csv,flow-20260506-08-四国.csv,flow-20260506-09-九州.csv,flow-20260506-10-沖縄.csv",
-      "intertieCsv": "intertie-20260506-01-北海道・本州間電力連系設備.csv,intertie-20260506-02-相馬双葉幹線.csv,intertie-20260506-03-周波数変換設備.csv,intertie-20260506-04-三重東近江線.csv,intertie-20260506-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260506-06-越前嶺南線.csv,intertie-20260506-07-西播東岡山線・山崎智頭線.csv,intertie-20260506-08-阿南紀北直流幹線.csv,intertie-20260506-09-本四連系線.csv,intertie-20260506-10-関門連系線.csv,intertie-20260506-11-中部フェンス.csv,intertie-20260506-12-北陸フェンス.csv,intertie-20260506-13-関西フェンス.csv",
+      "intertieCsv": "intertie-20260506-02-相馬双葉幹線.csv,intertie-20260506-03-周波数変換設備.csv,intertie-20260506-04-三重東近江線.csv,intertie-20260506-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260506-06-越前嶺南線.csv,intertie-20260506-07-西播東岡山線・山崎智頭線.csv,intertie-20260506-08-阿南紀北直流幹線.csv,intertie-20260506-09-本四連系線.csv,intertie-20260506-10-関門連系線.csv,intertie-20260506-11-中部フェンス.csv,intertie-20260506-12-北陸フェンス.csv,intertie-20260506-13-関西フェンス.csv",
       "reserveJson": "reserve-20260506.json"
     }
   },
@@ -82933,64 +82933,6 @@
         ]
       },
       {
-        "intertieName": "北海道・本州間電力連系設備",
-        "sourceArea": "北海道",
-        "targetArea": "東北",
-        "peakAbsMw": 620,
-        "avgMw": 401.4,
-        "avgAbsMw": 401.4,
-        "values": [
-          358.5,
-          412,
-          294.2,
-          385.8,
-          319.2,
-          254.8,
-          268,
-          399.7,
-          519.7,
-          544.3,
-          422.5,
-          365.8,
-          381,
-          474.3,
-          460.7,
-          430.2,
-          593.5,
-          586.8,
-          560.5,
-          574.7,
-          552.8,
-          506,
-          465.8,
-          509.5,
-          479.7,
-          511.5,
-          564.2,
-          558,
-          545.3,
-          550.3,
-          544.5,
-          526.7,
-          458.2,
-          341.2,
-          265.2,
-          199.5,
-          179.7,
-          230.5,
-          284.3,
-          255.3,
-          287.7,
-          233.5,
-          163.3,
-          254,
-          283.7,
-          294,
-          309.2,
-          305.3
-        ]
-      },
-      {
         "intertieName": "北陸フェンス",
         "sourceArea": "中部",
         "targetArea": "北陸",
@@ -83288,17 +83230,6 @@
         "intertieCount": 1,
         "intertieNames": [
           "周波数変換設備"
-        ]
-      },
-      {
-        "sourceArea": "北海道",
-        "targetArea": "東北",
-        "avgMw": 401.4,
-        "avgAbsMw": 401.4,
-        "peakAbsMw": 620,
-        "intertieCount": 1,
-        "intertieNames": [
-          "北海道・本州間電力連系設備"
         ]
       },
       {
