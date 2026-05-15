@@ -4,7 +4,6 @@
 
 import { SOURCE_COLORS, SOURCE_COLOR_MAP } from "../constants";
 import {
-  numberFmt,
   decimalFmt,
   normalizeSourceName,
   formatCompactEnergy,
@@ -24,9 +23,11 @@ export function buildGenerationLineOption(
   isDark = false,
 ) {
   const c = chartColors(isDark);
+  // 元データは30分スロット毎のkWh。2倍して1時間換算kWhとして表示する。
+  const HOURLY_SCALE = 2;
   return {
     backgroundColor: "transparent",
-    tooltip: { trigger: "axis", valueFormatter: (value: number) => `${numberFmt.format(value)} MW` },
+    tooltip: { trigger: "axis", valueFormatter: (value: number) => formatCompactEnergy(value) },
     legend: {
       type: "scroll",
       top: 8,
@@ -47,11 +48,11 @@ export function buildGenerationLineOption(
     },
     yAxis: {
       type: "value",
-      name: "発電量(MW)",
+      name: "発電量(1時間換算)",
       nameLocation: "middle",
       nameGap: isMobile ? 36 : 44,
       nameTextStyle: { color: c.axisName, fontSize: isMobile ? 10 : 11 },
-      axisLabel: { color: c.axis, formatter: (v: number) => numberFmt.format(v) },
+      axisLabel: { color: c.axis, formatter: (v: number) => formatCompactEnergy(v) },
     },
     graphic:
       sourceKeys.length > 0
@@ -66,7 +67,7 @@ export function buildGenerationLineOption(
       symbol: "none",
       lineStyle: { width: 2 },
       color: sourceColorByName.get(source) ?? SOURCE_COLOR_MAP[source] ?? SOURCE_COLORS[idx % SOURCE_COLORS.length],
-      data: scopedSeries.map((point) => point.values[source] ?? 0),
+      data: scopedSeries.map((point) => (point.values[source] ?? 0) * HOURLY_SCALE),
     })),
   };
 }
