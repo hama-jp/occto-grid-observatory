@@ -38,7 +38,7 @@ function GenerationSectionImpl({
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
       {showGenerationTrend ? (
         <Panel
-          title="発電方式別 30分推移"
+          title="発電方式別 30分推移（1時間換算MWh）"
           className={showSourceComposition ? "lg:col-span-7" : "lg:col-span-12"}
           testId="generation-trend-panel"
         >
@@ -59,7 +59,7 @@ function GenerationSectionImpl({
               ))}
             </select>
           </div>
-          <div data-testid="generation-trend-chart" role="img" aria-label="発電方式別30分推移チャート">
+          <div data-testid="generation-trend-chart" role="img" aria-label="発電方式別30分推移チャート（1時間換算MWh）">
             <ReactECharts option={generationLineOption} style={{ height: 360 }} />
           </div>
         </Panel>
