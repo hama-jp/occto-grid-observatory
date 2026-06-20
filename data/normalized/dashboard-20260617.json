@@ -1,7 +1,7 @@
 {
   "meta": {
     "targetDate": "2026/06/17",
-    "fetchedAt": "2026-06-19T15:58:15.040Z",
+    "fetchedAt": "2026-06-20T08:18:40.917Z",
     "generationRows": 475,
     "flowRows": 464,
     "slotCount": 48,
@@ -110,7 +110,7 @@
     "sources": {
       "generationCsv": "generation-20260617.csv",
       "flowCsv": "flow-20260617-01-北海道.csv,flow-20260617-02-東北.csv,flow-20260617-03-東京.csv,flow-20260617-04-中部.csv,flow-20260617-05-北陸.csv,flow-20260617-06-関西.csv,flow-20260617-07-中国.csv,flow-20260617-08-四国.csv,flow-20260617-09-九州.csv,flow-20260617-10-沖縄.csv",
-      "intertieCsv": "intertie-20260617-01-北海道・本州間電力連系設備.csv,intertie-20260617-02-相馬双葉幹線.csv,intertie-20260617-03-周波数変換設備.csv,intertie-20260617-04-三重東近江線.csv,intertie-20260617-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260617-06-越前嶺南線.csv,intertie-20260617-07-西播東岡山線・山崎智頭線.csv,intertie-20260617-08-阿南紀北直流幹線.csv,intertie-20260617-09-本四連系線.csv,intertie-20260617-10-関門連系線.csv,intertie-20260617-11-中部フェンス.csv,intertie-20260617-12-北陸フェンス.csv,intertie-20260617-13-関西フェンス.csv",
+      "intertieCsv": "intertie-20260617-01-北海道・本州間電力連系設備.csv,intertie-20260617-02-相馬双葉幹線.csv,intertie-20260617-03-周波数変換設備.csv,intertie-20260617-04-三重東近江線.csv,intertie-20260617-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260617-06-越前嶺南線.csv,intertie-20260617-07-西播東岡山線・山崎智頭線.csv,intertie-20260617-08-阿南紀北直流幹線.csv,intertie-20260617-09-本四連系線.csv,intertie-20260617-11-中部フェンス.csv,intertie-20260617-12-北陸フェンス.csv,intertie-20260617-13-関西フェンス.csv",
       "reserveJson": "reserve-20260617.json"
     }
   },
@@ -82701,64 +82701,6 @@
         ]
       },
       {
-        "intertieName": "関門連系線",
-        "sourceArea": "中国",
-        "targetArea": "九州",
-        "peakAbsMw": 2720,
-        "avgMw": -1413.8,
-        "avgAbsMw": 1515.5,
-        "values": [
-          -1704.7,
-          -1847.3,
-          -1780,
-          -1808.7,
-          -1798,
-          -1798.7,
-          -1892,
-          -1948.7,
-          -1973.3,
-          -1914.7,
-          -1980,
-          -1950,
-          -1707.3,
-          -1249.3,
-          -486,
-          48,
-          329.3,
-          257.3,
-          261.3,
-          234.7,
-          353.3,
-          286,
-          199.3,
-          182.7,
-          234.7,
-          -186.7,
-          -691.3,
-          -1939.3,
-          -2629.3,
-          -2563.3,
-          -2484.7,
-          -2362,
-          -2458.7,
-          -2434.7,
-          -2372,
-          -2175.3,
-          -1690.7,
-          -1541.3,
-          -1668.7,
-          -1724,
-          -1710.7,
-          -1888,
-          -1952.7,
-          -2031.3,
-          -1952.7,
-          -2036.7,
-          -1992,
-          -1926.7
-        ]
-      },
-      {
         "intertieName": "周波数変換設備",
         "sourceArea": "東京",
         "targetArea": "中部",
@@ -83244,17 +83186,6 @@
         "intertieCount": 1,
         "intertieNames": [
           "相馬双葉幹線"
-        ]
-      },
-      {
-        "sourceArea": "中国",
-        "targetArea": "九州",
-        "avgMw": -1413.8,
-        "avgAbsMw": 1515.5,
-        "peakAbsMw": 2720,
-        "intertieCount": 1,
-        "intertieNames": [
-          "関門連系線"
         ]
       },
       {
