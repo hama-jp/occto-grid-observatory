@@ -1,7 +1,7 @@
 {
   "meta": {
     "targetDate": "2026/07/07",
-    "fetchedAt": "2026-07-11T09:22:55.425Z",
+    "fetchedAt": "2026-07-11T14:20:21.152Z",
     "generationRows": 473,
     "flowRows": 464,
     "slotCount": 48,
@@ -110,7 +110,7 @@
     "sources": {
       "generationCsv": "generation-20260707.csv",
       "flowCsv": "flow-20260707-01-北海道.csv,flow-20260707-02-東北.csv,flow-20260707-03-東京.csv,flow-20260707-04-中部.csv,flow-20260707-05-北陸.csv,flow-20260707-06-関西.csv,flow-20260707-07-中国.csv,flow-20260707-08-四国.csv,flow-20260707-09-九州.csv,flow-20260707-10-沖縄.csv",
-      "intertieCsv": "intertie-20260707-02-相馬双葉幹線.csv,intertie-20260707-03-周波数変換設備.csv,intertie-20260707-04-三重東近江線.csv,intertie-20260707-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260707-06-越前嶺南線.csv,intertie-20260707-07-西播東岡山線・山崎智頭線.csv,intertie-20260707-08-阿南紀北直流幹線.csv,intertie-20260707-09-本四連系線.csv,intertie-20260707-10-関門連系線.csv,intertie-20260707-11-中部フェンス.csv,intertie-20260707-12-北陸フェンス.csv,intertie-20260707-13-関西フェンス.csv",
+      "intertieCsv": "intertie-20260707-01-北海道・本州間電力連系設備.csv,intertie-20260707-02-相馬双葉幹線.csv,intertie-20260707-03-周波数変換設備.csv,intertie-20260707-04-三重東近江線.csv,intertie-20260707-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260707-06-越前嶺南線.csv,intertie-20260707-07-西播東岡山線・山崎智頭線.csv,intertie-20260707-08-阿南紀北直流幹線.csv,intertie-20260707-09-本四連系線.csv,intertie-20260707-10-関門連系線.csv,intertie-20260707-11-中部フェンス.csv,intertie-20260707-12-北陸フェンス.csv,intertie-20260707-13-関西フェンス.csv",
       "reserveJson": "reserve-20260707.json"
     }
   },
@@ -82820,6 +82820,64 @@
         ]
       },
       {
+        "intertieName": "北海道・本州間電力連系設備",
+        "sourceArea": "北海道",
+        "targetArea": "東北",
+        "peakAbsMw": 482,
+        "avgMw": 175.7,
+        "avgAbsMw": 219.3,
+        "values": [
+          464.7,
+          393.2,
+          339.5,
+          373.8,
+          301.7,
+          176.3,
+          219.7,
+          176.8,
+          86.8,
+          128.2,
+          214.2,
+          303,
+          247.3,
+          191,
+          134.7,
+          32.2,
+          14.3,
+          -10.2,
+          0.8,
+          30.7,
+          -57.8,
+          -144.2,
+          -286.3,
+          -209.5,
+          -196.2,
+          -120,
+          11.3,
+          158.2,
+          134,
+          115.3,
+          114.3,
+          196.3,
+          198,
+          277.7,
+          234.3,
+          261.7,
+          282,
+          289.5,
+          345.7,
+          410.7,
+          368.2,
+          281.7,
+          325,
+          310.5,
+          341.7,
+          318,
+          307.2,
+          346.8
+        ]
+      },
+      {
         "intertieName": "三重東近江線",
         "sourceArea": "中部",
         "targetArea": "関西",
@@ -83070,6 +83128,17 @@
         "intertieCount": 1,
         "intertieNames": [
           "北陸フェンス"
+        ]
+      },
+      {
+        "sourceArea": "北海道",
+        "targetArea": "東北",
+        "avgMw": 175.7,
+        "avgAbsMw": 219.3,
+        "peakAbsMw": 482,
+        "intertieCount": 1,
+        "intertieNames": [
+          "北海道・本州間電力連系設備"
         ]
       },
       {
