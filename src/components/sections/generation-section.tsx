@@ -1,10 +1,9 @@
-import dynamic from "next/dynamic";
 import { memo } from "react";
 import { Panel, CompositionLegendList } from "@/components/ui/dashboard-ui";
 import { ChartErrorBoundary } from "@/components/ui/error-boundary";
 import { SELECT_COMPACT_CLASS } from "@/lib/styles";
 
-const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
+import { ResponsiveECharts as ReactECharts } from "@/components/ui/responsive-echarts";
 
 type GenerationSectionProps = {
   showGenerationTrend: boolean;

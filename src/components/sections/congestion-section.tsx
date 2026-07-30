@@ -1,10 +1,9 @@
-import dynamic from "next/dynamic";
 import { memo } from "react";
 import type { CongestionSummary } from "@/lib/chart-options/congestion";
 import { CompactStatCard, Panel } from "@/components/ui/dashboard-ui";
 import { numberFmt, decimalFmt } from "@/lib/formatters";
 
-const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
+import { ResponsiveECharts as ReactECharts } from "@/components/ui/responsive-echarts";
 
 type CongestionSectionProps = {
   congestionData: CongestionSummary;

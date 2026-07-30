@@ -1,4 +1,3 @@
-import dynamic from "next/dynamic";
 import { memo, type MutableRefObject, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buildExpandedFlowNetworkOption } from "@/lib/network-flow-builder";
@@ -18,7 +17,7 @@ import {
 import { MAX_ANIMATED_FLOW_LINES_PER_AREA } from "@/lib/constants";
 import { Panel } from "@/components/ui/dashboard-ui";
 
-const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
+import { ResponsiveECharts as ReactECharts } from "@/components/ui/responsive-echarts";
 
 type NetworkSectionProps = {
   flowNetworkOption: Record<string, unknown>;

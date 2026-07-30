@@ -13,10 +13,9 @@ import {
   SupplyDemandMeter,
   NetFlowMeter,
 } from "@/components/ui/dashboard-ui";
-import dynamic from "next/dynamic";
 import { memo, useMemo } from "react";
 
-const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
+import { ResponsiveECharts as ReactECharts } from "@/components/ui/responsive-echarts";
 
 type AreaCardsSectionProps = {
   areaSupplyCards: AreaSupplyCard[];
