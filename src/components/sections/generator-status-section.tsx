@@ -6,11 +6,10 @@ import {
   buildExpandedAreaGenerationTimeSeriesOption,
   type AreaGenerationSeries,
 } from "@/lib/chart-options/generator-status";
-import dynamic from "next/dynamic";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
-const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
+import { ResponsiveECharts as ReactECharts } from "@/components/ui/responsive-echarts";
 
 type GeneratorStatusSectionProps = {
   cards: GeneratorStatusCard[];
