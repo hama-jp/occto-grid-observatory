@@ -95,8 +95,7 @@ import { useTimeSlider } from "@/hooks/use-time-slider";
 import { useSectionVisibility } from "@/hooks/use-section-visibility";
 import { useSectionOrder } from "@/hooks/use-section-order";
 import { SwapyContainer } from "@/components/ui/swapy-container";
-
-const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
+import { ResponsiveECharts as ReactECharts } from "@/components/ui/responsive-echarts";
 
 type DashboardAppProps = {
   initialData: DashboardData;

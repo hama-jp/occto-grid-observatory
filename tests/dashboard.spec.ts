@@ -83,6 +83,25 @@ test("time slider updates the network timestamp and keeps charts rendered", asyn
   await waitForChartSurface(page.getByTestId("inter-area-flow-chart"));
 });
 
+test("charts follow their containers when the viewport is resized", async ({ page }) => {
+  await waitForDashboardReady(page);
+  const chart = page.getByTestId("generation-trend-chart");
+
+  await page.setViewportSize({ width: 900, height: 900 });
+  await expect.poll(() => chart.evaluate((node) => {
+    const surface = node.querySelector("canvas, svg");
+    if (!surface) return Number.POSITIVE_INFINITY;
+    return Math.abs(surface.getBoundingClientRect().width - node.getBoundingClientRect().width);
+  })).toBeLessThanOrEqual(1);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect.poll(() => chart.evaluate((node) => {
+    const surface = node.querySelector("canvas, svg");
+    if (!surface) return Number.POSITIVE_INFINITY;
+    return Math.abs(surface.getBoundingClientRect().width - node.getBoundingClientRect().width);
+  })).toBeLessThanOrEqual(1);
+});
+
 test("network flow chart keeps visible motion on major lines", async ({ page }) => {
   await waitForDashboardReady(page);
 
