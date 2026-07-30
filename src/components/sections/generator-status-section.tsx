@@ -4,6 +4,7 @@ import {
   buildGeneratorTreemapOption,
   buildAreaGenerationTimeSeriesOption,
   buildExpandedAreaGenerationTimeSeriesOption,
+  calculateGenerationYAxisMax,
   type AreaGenerationSeries,
 } from "@/lib/chart-options/generator-status";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
@@ -42,11 +43,13 @@ function ExpandedCardModal({
   slotLabels,
   onClose,
   isDark = false,
+  yAxisMax,
 }: {
   card: GeneratorStatusCard;
   slotLabels: string[];
   onClose: () => void;
   isDark?: boolean;
+  yAxisMax?: number;
 }) {
   // Close on Escape key
   useEffect(() => {
@@ -72,8 +75,9 @@ function ExpandedCardModal({
         slotLabels,
         card.areaColor,
         isDark,
+        yAxisMax,
       ),
-    [card, slotLabels, isDark],
+    [card, slotLabels, isDark, yAxisMax],
   );
 
   const units =
@@ -272,6 +276,13 @@ function GeneratorStatusSectionImpl({
     [treemapItems, isMobileViewport, isDark],
   );
 
+  const sharedYAxisMax = useMemo(
+    () => calculateGenerationYAxisMax(
+      cards.map((card) => card.timeSeries as AreaGenerationSeries[]),
+    ),
+    [cards],
+  );
+
   const areaChartOptions = useMemo(
     () =>
       cards.map((card) => ({
@@ -282,9 +293,10 @@ function GeneratorStatusSectionImpl({
           card.areaColor,
           isMobileViewport,
           isDark,
+          sharedYAxisMax,
         ),
       })),
-    [cards, slotLabels, isMobileViewport, isDark],
+    [cards, slotLabels, isMobileViewport, isDark, sharedYAxisMax],
   );
   const areaChartMap = useMemo(
     () => new Map(areaChartOptions.map((item) => [item.area, item.option])),
@@ -460,6 +472,7 @@ function GeneratorStatusSectionImpl({
           slotLabels={slotLabels}
           onClose={handleClose}
           isDark={isDark}
+          yAxisMax={sharedYAxisMax}
         />,
         document.body,
       )}

@@ -125,12 +125,37 @@ export type AreaGenerationSeries = {
   data: number[];
 };
 
+/** Returns a rounded common upper bound so per-area charts are comparable. */
+export function calculateGenerationYAxisMax(
+  seriesGroups: AreaGenerationSeries[][],
+): number | undefined {
+  const maximum = seriesGroups.reduce(
+    (groupMax, seriesList) => seriesList.reduce(
+      (seriesMax, series) => series.data.reduce(
+        (dataMax, value) => Number.isFinite(value) ? Math.max(dataMax, value) : dataMax,
+        seriesMax,
+      ),
+      groupMax,
+    ),
+    0,
+  );
+
+  if (maximum <= 0) return undefined;
+
+  const paddedMaximum = maximum * 1.05;
+  const magnitude = 10 ** Math.floor(Math.log10(paddedMaximum));
+  const normalized = paddedMaximum / magnitude;
+  const niceNormalized = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return niceNormalized * magnitude;
+}
+
 export function buildAreaGenerationTimeSeriesOption(
   seriesList: AreaGenerationSeries[],
   slotLabels: string[],
   areaColor: string,
   isMobile: boolean,
   isDark = false,
+  yAxisMax?: number,
 ): Record<string, unknown> {
   if (seriesList.length === 0 || slotLabels.length === 0) {
     return { graphic: emptyGraphic("データなし", isDark) };
@@ -164,6 +189,8 @@ export function buildAreaGenerationTimeSeriesOption(
     },
     yAxis: {
       type: "value",
+      min: 0,
+      max: yAxisMax,
       show: true,
       axisLine: { show: false },
       axisTick: { show: false },
@@ -215,6 +242,7 @@ export function buildExpandedAreaGenerationTimeSeriesOption(
   slotLabels: string[],
   areaColor: string,
   isDark = false,
+  yAxisMax?: number,
 ): Record<string, unknown> {
   if (seriesList.length === 0 || slotLabels.length === 0) {
     return { graphic: emptyGraphic("データなし", isDark) };
@@ -279,6 +307,8 @@ export function buildExpandedAreaGenerationTimeSeriesOption(
     },
     yAxis: {
       type: "value",
+      min: 0,
+      max: yAxisMax,
       show: true,
       axisLine: { show: false },
       axisTick: { show: false },
