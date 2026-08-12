@@ -1,7 +1,7 @@
 {
   "meta": {
     "targetDate": "2026/08/11",
-    "fetchedAt": "2026-08-12T08:44:17.719Z",
+    "fetchedAt": "2026-08-12T10:27:44.934Z",
     "generationRows": 470,
     "flowRows": 464,
     "slotCount": 48,
@@ -110,7 +110,7 @@
     "sources": {
       "generationCsv": "generation-20260811.csv",
       "flowCsv": "flow-20260811-01-北海道.csv,flow-20260811-02-東北.csv,flow-20260811-03-東京.csv,flow-20260811-04-中部.csv,flow-20260811-05-北陸.csv,flow-20260811-06-関西.csv,flow-20260811-07-中国.csv,flow-20260811-08-四国.csv,flow-20260811-09-九州.csv,flow-20260811-10-沖縄.csv",
-      "intertieCsv": "intertie-20260811-01-北海道・本州間電力連系設備.csv,intertie-20260811-02-相馬双葉幹線.csv,intertie-20260811-03-周波数変換設備.csv,intertie-20260811-04-三重東近江線.csv,intertie-20260811-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260811-06-越前嶺南線.csv,intertie-20260811-07-西播東岡山線・山崎智頭線.csv,intertie-20260811-08-阿南紀北直流幹線.csv,intertie-20260811-09-本四連系線.csv,intertie-20260811-10-関門連系線.csv,intertie-20260811-11-中部フェンス.csv,intertie-20260811-12-北陸フェンス.csv,intertie-20260811-13-関西フェンス.csv",
+      "intertieCsv": "intertie-20260811-01-北海道・本州間電力連系設備.csv,intertie-20260811-03-周波数変換設備.csv,intertie-20260811-04-三重東近江線.csv,intertie-20260811-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20260811-06-越前嶺南線.csv,intertie-20260811-07-西播東岡山線・山崎智頭線.csv,intertie-20260811-08-阿南紀北直流幹線.csv,intertie-20260811-09-本四連系線.csv,intertie-20260811-10-関門連系線.csv,intertie-20260811-11-中部フェンス.csv,intertie-20260811-12-北陸フェンス.csv,intertie-20260811-13-関西フェンス.csv",
       "reserveJson": "reserve-20260811.json"
     }
   },
@@ -82022,64 +82022,6 @@
     ],
     "intertieSeries": [
       {
-        "intertieName": "相馬双葉幹線",
-        "sourceArea": "東北",
-        "targetArea": "東京",
-        "peakAbsMw": 5440,
-        "avgMw": 4933,
-        "avgAbsMw": 4933,
-        "values": [
-          4898,
-          4889,
-          4945,
-          4950,
-          4972.3,
-          4973.3,
-          4906,
-          4835.7,
-          4819.3,
-          4850,
-          4729.3,
-          4770.7,
-          4858,
-          4714.3,
-          4796.3,
-          4692.3,
-          4854.3,
-          4843.3,
-          5242,
-          5294.3,
-          5294.7,
-          4888.7,
-          4435.5,
-          4409.5,
-          5021,
-          5024.7,
-          4903.3,
-          5036,
-          5158,
-          5176.7,
-          4563.7,
-          4822.7,
-          4719,
-          4683.3,
-          4937,
-          4931.7,
-          4920.7,
-          4936,
-          5028.3,
-          5140,
-          5204,
-          5240,
-          5244,
-          5242,
-          4981.7,
-          5025,
-          4983.7,
-          4999
-        ]
-      },
-      {
         "intertieName": "西播東岡山線・山崎智頭線",
         "sourceArea": "関西",
         "targetArea": "中国",
@@ -82777,17 +82719,6 @@
       }
     ],
     "interAreaFlows": [
-      {
-        "sourceArea": "東北",
-        "targetArea": "東京",
-        "avgMw": 4933,
-        "avgAbsMw": 4933,
-        "peakAbsMw": 5440,
-        "intertieCount": 1,
-        "intertieNames": [
-          "相馬双葉幹線"
-        ]
-      },
       {
         "sourceArea": "関西",
         "targetArea": "中国",
