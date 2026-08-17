@@ -1,7 +1,7 @@
 {
   "meta": {
     "targetDate": "2026/08/15",
-    "fetchedAt": "2026-08-16T13:07:19.917Z",
+    "fetchedAt": "2026-08-17T05:05:55.283Z",
     "generationRows": 470,
     "flowRows": 464,
     "slotCount": 48,
@@ -110,7 +110,7 @@
     "sources": {
       "generationCsv": "generation-20260815.csv",
       "flowCsv": "flow-20260815-01-北海道.csv,flow-20260815-02-東北.csv,flow-20260815-03-東京.csv,flow-20260815-04-中部.csv,flow-20260815-05-北陸.csv,flow-20260815-06-関西.csv,flow-20260815-07-中国.csv,flow-20260815-08-四国.csv,flow-20260815-09-九州.csv,flow-20260815-10-沖縄.csv",
-      "intertieCsv": "intertie-20260815-01-北海道・本州間電力連系設備.csv,intertie-20260815-02-相馬双葉幹線.csv,intertie-20260815-03-周波数変換設備.csv,intertie-20260815-04-三重東近江線.csv,intertie-20260815-05-南福光連系所・南福光変電所の連系設備.csv",
+      "intertieCsv": "intertie-20260815-01-北海道・本州間電力連系設備.csv,intertie-20260815-02-相馬双葉幹線.csv,intertie-20260815-03-周波数変換設備.csv",
       "reserveJson": "reserve-20260815.json"
     }
   },
@@ -82194,122 +82194,6 @@
           287.2,
           337.5
         ]
-      },
-      {
-        "intertieName": "三重東近江線",
-        "sourceArea": "中部",
-        "targetArea": "関西",
-        "peakAbsMw": 0,
-        "avgMw": 0,
-        "avgAbsMw": 0,
-        "values": [
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0
-        ]
-      },
-      {
-        "intertieName": "南福光連系所・南福光変電所の連系設備",
-        "sourceArea": "北陸",
-        "targetArea": "関西",
-        "peakAbsMw": 0,
-        "avgMw": 0,
-        "avgAbsMw": 0,
-        "values": [
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0
-        ]
       }
     ],
     "interAreaFlows": [
@@ -82344,28 +82228,6 @@
         "intertieCount": 1,
         "intertieNames": [
           "北海道・本州間電力連系設備"
-        ]
-      },
-      {
-        "sourceArea": "中部",
-        "targetArea": "関西",
-        "avgMw": 0,
-        "avgAbsMw": 0,
-        "peakAbsMw": 0,
-        "intertieCount": 1,
-        "intertieNames": [
-          "三重東近江線"
-        ]
-      },
-      {
-        "sourceArea": "北陸",
-        "targetArea": "関西",
-        "avgMw": 0,
-        "avgAbsMw": 0,
-        "peakAbsMw": 0,
-        "intertieCount": 1,
-        "intertieNames": [
-          "南福光連系所・南福光変電所の連系設備"
         ]
       }
     ]
