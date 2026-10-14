@@ -1,7 +1,7 @@
 {
   "meta": {
     "targetDate": "2026/10/11",
-    "fetchedAt": "2026-10-14T09:51:02.215Z",
+    "fetchedAt": "2026-10-14T17:26:20.611Z",
     "generationRows": 468,
     "flowRows": 464,
     "slotCount": 48,
@@ -110,7 +110,7 @@
     "sources": {
       "generationCsv": "generation-20261011.csv",
       "flowCsv": "flow-20261011-01-北海道.csv,flow-20261011-02-東北.csv,flow-20261011-03-東京.csv,flow-20261011-04-中部.csv,flow-20261011-05-北陸.csv,flow-20261011-06-関西.csv,flow-20261011-07-中国.csv,flow-20261011-08-四国.csv,flow-20261011-09-九州.csv,flow-20261011-10-沖縄.csv",
-      "intertieCsv": "intertie-20261011-01-北海道・本州間電力連系設備.csv,intertie-20261011-02-相馬双葉幹線.csv,intertie-20261011-03-周波数変換設備.csv,intertie-20261011-04-三重東近江線.csv,intertie-20261011-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20261011-06-越前嶺南線.csv,intertie-20261011-07-西播東岡山線・山崎智頭線.csv,intertie-20261011-08-阿南紀北直流幹線.csv,intertie-20261011-09-本四連系線.csv,intertie-20261011-10-関門連系線.csv,intertie-20261011-11-中部フェンス.csv,intertie-20261011-12-北陸フェンス.csv,intertie-20261011-13-関西フェンス.csv",
+      "intertieCsv": "intertie-20261011-01-北海道・本州間電力連系設備.csv,intertie-20261011-02-相馬双葉幹線.csv,intertie-20261011-03-周波数変換設備.csv,intertie-20261011-04-三重東近江線.csv,intertie-20261011-05-南福光連系所・南福光変電所の連系設備.csv,intertie-20261011-06-越前嶺南線.csv,intertie-20261011-07-西播東岡山線・山崎智頭線.csv,intertie-20261011-08-阿南紀北直流幹線.csv,intertie-20261011-10-関門連系線.csv,intertie-20261011-11-中部フェンス.csv,intertie-20261011-12-北陸フェンス.csv,intertie-20261011-13-関西フェンス.csv",
       "reserveJson": "reserve-20261011.json"
     }
   },
@@ -81978,64 +81978,6 @@
         ]
       },
       {
-        "intertieName": "本四連系線",
-        "sourceArea": "中国",
-        "targetArea": "四国",
-        "peakAbsMw": 1201,
-        "avgMw": -950.2,
-        "avgAbsMw": 950.2,
-        "values": [
-          -844.5,
-          -912,
-          -994.5,
-          -965.5,
-          -919.5,
-          -915,
-          -938.5,
-          -998,
-          -1082.5,
-          -1071.5,
-          -1011,
-          -1028.5,
-          -1101.5,
-          -1042,
-          -969,
-          -873.5,
-          -819,
-          -919.5,
-          -992.5,
-          -956,
-          -1114,
-          -1072,
-          -1028,
-          -1109,
-          -1150.5,
-          -1132.5,
-          -1081.5,
-          -1042,
-          -961.5,
-          -759.5,
-          -801,
-          -931.5,
-          -922,
-          -1002,
-          -885,
-          -788.5,
-          -801,
-          -793,
-          -795,
-          -873,
-          -888,
-          -939.5,
-          -974.5,
-          -974.5,
-          -956.5,
-          -947,
-          -822,
-          -711
-        ]
-      },
-      {
         "intertieName": "周波数変換設備",
         "sourceArea": "東京",
         "targetArea": "中部",
@@ -82521,17 +82463,6 @@
         "intertieCount": 1,
         "intertieNames": [
           "西播東岡山線・山崎智頭線"
-        ]
-      },
-      {
-        "sourceArea": "中国",
-        "targetArea": "四国",
-        "avgMw": -950.2,
-        "avgAbsMw": 950.2,
-        "peakAbsMw": 1201,
-        "intertieCount": 1,
-        "intertieNames": [
-          "本四連系線"
         ]
       },
       {
